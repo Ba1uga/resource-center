@@ -1,9 +1,4 @@
-export interface NavigationItem {
-  key: string
-  label: string
-  icon: string
-  active: boolean
-}
+import type { NavigationItem } from '../../navigation/model/navigation.types'
 
 export interface HomeHighlight {
   key: string
@@ -56,9 +51,12 @@ export interface QuickAction {
   icon: string
 }
 
-export interface DistributionItem {
+export interface DistributionSourceItem {
   label: string
   value: number
+}
+
+export interface DistributionItem extends DistributionSourceItem {
   ratio: number
 }
 
@@ -66,12 +64,6 @@ export interface ChapterCoverageItem {
   chapter: string
   completion: number
   focus: string
-}
-
-export interface TeacherProfile {
-  name: string
-  role: string
-  campus: string
 }
 
 export interface DashboardSummary {
@@ -90,23 +82,7 @@ export interface DashboardViewModel {
   actions: QuickAction[]
   distribution: DistributionItem[]
   chapters: ChapterCoverageItem[]
-  profile: TeacherProfile
   homeHighlights: HomeHighlight[]
   activeNavigation?: NavigationItem
   summary: DashboardSummary
 }
-
-export const navigationItems: NavigationItem[]
-export const homeHighlights: HomeHighlight[]
-export const heroMetrics: MetricCard[]
-export const resourceModules: ResourceModule[]
-export const recentActivities: ActivityItem[]
-export const aiSuggestions: SuggestionItem[]
-export const quickActions: QuickAction[]
-export const resourceDistribution: Array<{ label: string; value: number }>
-export const chapterCoverage: ChapterCoverageItem[]
-export const teacherProfile: TeacherProfile
-
-export function createNavigationItems(activeKey?: string): NavigationItem[]
-export function summarizeResourceModules(modules: ResourceModule[]): DashboardSummary
-export function createDashboardViewModel(activeKey?: string): DashboardViewModel

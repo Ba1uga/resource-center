@@ -1,0 +1,6 @@
+import './model/navigation.test.ts'
+import './model/dashboard-summary.test.ts'
+import './model/dashboard-view-model.test.ts'
+import './ui/sidebar-layout.test.ts'
+import './ui/topbar-sticky.test.ts'
+import './smoke/resource-center-page.test.ts'

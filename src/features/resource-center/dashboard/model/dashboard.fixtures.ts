@@ -1,24 +1,15 @@
-const navigationDefinitions = [
-  { key: 'home', label: '返回首页', icon: 'home' },
-  { key: 'resourceOverview', label: '资源总览', icon: 'dashboard' },
-  { key: 'outline', label: '大纲管理', icon: 'tree' },
-  { key: 'textbook', label: '教材管理', icon: 'book' },
-  { key: 'courseware', label: '课件管理', icon: 'layers' },
-  { key: 'video', label: '视频管理', icon: 'play' },
-  { key: 'question', label: '习题管理', icon: 'clipboard' },
-  { key: 'mapping', label: '资源和知识点挂载', icon: 'link' },
-]
+﻿import type {
+  ActivityItem,
+  ChapterCoverageItem,
+  DistributionSourceItem,
+  HomeHighlight,
+  MetricCard,
+  QuickAction,
+  ResourceModule,
+  SuggestionItem,
+} from './dashboard.types'
 
-export function createNavigationItems(activeKey = 'home') {
-  return navigationDefinitions.map((item) => ({
-    ...item,
-    active: item.key === activeKey,
-  }))
-}
-
-export const navigationItems = createNavigationItems()
-
-export const heroMetrics = [
+export const heroMetrics: MetricCard[] = [
   {
     key: 'outlineNodes',
     label: '大纲节点',
@@ -75,7 +66,7 @@ export const heroMetrics = [
   },
 ]
 
-export const resourceModules = [
+export const resourceModules: ResourceModule[] = [
   {
     key: 'outline',
     label: '大纲管理',
@@ -126,7 +117,7 @@ export const resourceModules = [
   },
 ]
 
-export const recentActivities = [
+export const recentActivities: ActivityItem[] = [
   {
     id: 1,
     actor: '林老师',
@@ -165,11 +156,11 @@ export const recentActivities = [
   },
 ]
 
-export const aiSuggestions = [
+export const aiSuggestions: SuggestionItem[] = [
   {
     id: 1,
     level: '高优先',
-    title: '为 3.2 函数极值补充 2 个视频资源',
+    title: '章 3.2 函数极值补充 2 个视频资源',
     description: '检测到该节点下课件完整，但视频讲解仍为空缺。',
     action: '查看推荐',
   },
@@ -189,13 +180,13 @@ export const aiSuggestions = [
   },
 ]
 
-export const quickActions = [
+export const quickActions: QuickAction[] = [
   { key: 'generate', label: 'AI 生成大纲', caption: '根据教材章节生成骨架', icon: 'spark' },
   { key: 'inspect', label: '检查未挂载资源', caption: '快速定位缺失关联', icon: 'radar' },
   { key: 'mapping', label: '进入挂载台', caption: '处理今日待确认建议', icon: 'arrowUp' },
 ]
 
-export const resourceDistribution = [
+export const resourceDistribution: DistributionSourceItem[] = [
   { label: '教材', value: 54 },
   { label: '课件', value: 72 },
   { label: '视频', value: 48 },
@@ -203,20 +194,14 @@ export const resourceDistribution = [
   { label: '大纲附件', value: 36 },
 ]
 
-export const chapterCoverage = [
+export const chapterCoverage: ChapterCoverageItem[] = [
   { chapter: '第一章 集合与函数', completion: 96, focus: '资源完备' },
   { chapter: '第二章 导数应用', completion: 88, focus: '待补视频' },
   { chapter: '第三章 数列', completion: 82, focus: '习题待标注' },
   { chapter: '第四章 立体几何', completion: 74, focus: '需新增课件' },
 ]
 
-export const teacherProfile = {
-  name: '林知夏',
-  role: '高中数学教研员',
-  campus: '苏州校区',
-}
-
-export const homeHighlights = [
+export const homeHighlights: HomeHighlight[] = [
   {
     key: 'pace',
     label: '今日节奏',
@@ -236,42 +221,3 @@ export const homeHighlights = [
     detail: '查看统计、最近动态与 AI 建议后再进入具体模块。',
   },
 ]
-
-export function summarizeResourceModules(modules) {
-  const totalResources = modules.reduce((sum, module) => sum + module.count, 0)
-  const averageCoverage = Math.round(
-    modules.reduce((sum, module) => sum + module.completion, 0) / modules.length,
-  )
-  const topModule = [...modules].sort((left, right) => right.count - left.count)[0]
-
-  return {
-    totalResources,
-    averageCoverage,
-    topModule,
-    coverageLabel: `挂载完成率 ${averageCoverage}%`,
-  }
-}
-
-export function createDashboardViewModel(activeKey = 'home') {
-  const summary = summarizeResourceModules(resourceModules)
-  const distributionMax = Math.max(...resourceDistribution.map((item) => item.value))
-  const activeNavigation = createNavigationItems(activeKey).find((item) => item.active)
-
-  return {
-    navigation: createNavigationItems(activeKey),
-    metrics: heroMetrics,
-    modules: resourceModules,
-    activities: recentActivities,
-    suggestions: aiSuggestions,
-    actions: quickActions,
-    distribution: resourceDistribution.map((item) => ({
-      ...item,
-      ratio: Math.round((item.value / distributionMax) * 100),
-    })),
-    chapters: chapterCoverage,
-    profile: teacherProfile,
-    homeHighlights,
-    activeNavigation,
-    summary,
-  }
-}
