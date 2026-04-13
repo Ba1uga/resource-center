@@ -1,4 +1,5 @@
 import { createNavigationItems } from '../../navigation/model/navigation.config.ts'
+import type { NavigationKey } from '../../navigation/model/navigation.types'
 
 import {
   aiSuggestions,
@@ -13,7 +14,7 @@ import {
 import { createDistributionItems, summarizeResourceModules } from './dashboard.selectors.ts'
 import type { DashboardViewModel } from './dashboard.types'
 
-export function createDashboardViewModel(activeKey = 'resourceOverview'): DashboardViewModel {
+export function createDashboardViewModel(activeKey: NavigationKey = 'resourceOverview'): DashboardViewModel {
   const navigation = createNavigationItems(activeKey)
 
   return {

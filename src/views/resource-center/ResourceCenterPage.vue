@@ -3,14 +3,20 @@ import './styles/resource-center-page.css'
 
 import { computed, ref } from 'vue'
 
-import { createDashboardViewModel, teacherProfile, type NavigationItem } from '@/features/resource-center/index.ts'
+import {
+  createDashboardViewModel,
+  resolveWorkbenchSectionMeta,
+  teacherProfile,
+  type NavigationItem,
+} from '@/features/resource-center/index.ts'
 import ResourceCenterSidebar from '@/features/resource-center/navigation/ui/ResourceCenterSidebar.vue'
 import ResourceCenterTopbar from '@/views/resource-center/layout/ResourceCenterTopbar.vue'
 import ResourceOverviewSection from '@/views/resource-center/sections/ResourceOverviewSection.vue'
-import ResourcePlaceholderSection from '@/views/resource-center/sections/ResourcePlaceholderSection.vue'
+import WorkbenchSection from '@/views/resource-center/sections/WorkbenchSection.vue'
 
-const activeSection = ref('resourceOverview')
+const activeSection = ref<NavigationItem['key']>('resourceOverview')
 const dashboard = computed(() => createDashboardViewModel(activeSection.value))
+const activeWorkbenchSection = computed(() => resolveWorkbenchSectionMeta(activeSection.value))
 
 function handleNavigationClick(item: NavigationItem) {
   if (item.isExternalEntry) {
@@ -33,11 +39,9 @@ function handleNavigationClick(item: NavigationItem) {
       <main class="dashboard-main">
         <ResourceCenterTopbar :profile="teacherProfile" />
 
-        <template v-if="activeSection === 'resourceOverview'">
-          <ResourceOverviewSection :dashboard="dashboard" />
-        </template>
+        <ResourceOverviewSection v-if="activeSection === 'resourceOverview'" :dashboard="dashboard" />
 
-        <ResourcePlaceholderSection v-else :active-navigation="dashboard.activeNavigation" />
+        <WorkbenchSection v-else :section="activeWorkbenchSection" />
       </main>
     </div>
   </div>

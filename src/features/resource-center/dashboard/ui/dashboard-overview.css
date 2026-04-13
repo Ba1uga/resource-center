@@ -1,25 +1,57 @@
+@import '../../shared/styles/panel-primitives.css';
+
+.overview-shell,
 .metrics-grid,
 .content-grid,
-.bottom-grid {
+.analysis-row,
+.module-section {
   display: grid;
   gap: 18px;
   min-width: 0;
+}
+
+.overview-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.overview-shell .panel,
+.overview-shell .metric-card {
+  background: #FFFFFF;
+}
+
+.overview-shell .metric-card.featured,
+.overview-shell .metric-card.tone-warning {
+  background: #FFFFFF;
+  color: var(--text-main);
+}
+
+.overview-shell .metric-card.featured p,
+.overview-shell .metric-card.featured .metric-head span:first-child {
+  color: var(--text-soft);
+}
+
+.overview-shell .metric-card.featured .metric-chip {
+  background: oklch(0.96 0.02 245);
+  color: oklch(0.42 0.04 250);
 }
 
 .metrics-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.content-grid,
-.bottom-grid {
+.content-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .recent-panel,
 .signal-panel,
-.module-panel,
 .analysis-panel {
   min-width: 0;
+}
+
+.module-section {
+  margin-top: 18px;
 }
 
 .panel-head {
@@ -37,7 +69,8 @@
 
 @media (max-width: 1100px) {
   .content-grid,
-  .bottom-grid {
+  .analysis-row,
+  .module-section {
     grid-template-columns: 1fr;
   }
 }

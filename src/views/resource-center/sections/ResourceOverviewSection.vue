@@ -14,15 +14,20 @@ defineProps<{
 </script>
 
 <template>
-  <DashboardMetricsGrid :dashboard="dashboard" />
+  <section class="overview-shell workbench-surface">
+    <DashboardMetricsGrid :dashboard="dashboard" />
 
-  <section class="content-grid">
-    <RecentActivityPanel :dashboard="dashboard" />
-    <AiSuggestionPanel :dashboard="dashboard" />
+    <section class="content-grid">
+      <RecentActivityPanel :dashboard="dashboard" />
+      <AiSuggestionPanel :dashboard="dashboard" />
+    </section>
+
+    <section class="analysis-row">
+      <ResourceAnalysisPanel :dashboard="dashboard" />
+    </section>
   </section>
 
-  <section class="bottom-grid">
+  <section class="module-section">
     <ResourceModulePanel :dashboard="dashboard" />
-    <ResourceAnalysisPanel :dashboard="dashboard" />
   </section>
 </template>

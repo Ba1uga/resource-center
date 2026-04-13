@@ -1,24 +1,35 @@
 import type { NavigationItem } from './navigation.types'
+import {
+  workbenchSectionByKey,
+  workbenchSectionKeys,
+  type WorkbenchSectionKey,
+} from '../../workbench/model/workbench.registry.ts'
 
-const navigationDefinitions: Array<Pick<NavigationItem, 'key' | 'label' | 'icon'>> = [
+const baseNavigationDefinitions: Array<Pick<NavigationItem, 'key' | 'label' | 'icon'>> = [
   { key: 'home', label: '返回首页', icon: 'home' },
   { key: 'resourceOverview', label: '资源总览', icon: 'dashboard' },
-  { key: 'outline', label: '大纲管理', icon: 'tree' },
-  { key: 'textbook', label: '教材管理', icon: 'book' },
-  { key: 'courseware', label: '课件管理', icon: 'layers' },
-  { key: 'video', label: '视频管理', icon: 'play' },
-  { key: 'question', label: '习题管理', icon: 'clipboard' },
-  { key: 'mapping', label: '资源和知识点挂载', icon: 'link' },
 ]
 
-const externalEntryKeys = new Set(['home'])
-const unsavedNavigationKeys = new Set(['courseware'])
+const workbenchNavigationDefinitions: Array<Pick<NavigationItem, 'key' | 'label' | 'icon'>> = workbenchSectionKeys.map(
+  (key) => ({
+    key,
+    label: workbenchSectionByKey[key].navigationLabel,
+    icon: workbenchSectionByKey[key].icon,
+  }),
+)
 
-export function createNavigationItems(activeKey = 'resourceOverview'): NavigationItem[] {
+const navigationDefinitions = [...baseNavigationDefinitions, ...workbenchNavigationDefinitions]
+const externalEntryKeys = new Set<NavigationItem['key']>(['home'])
+
+function isWorkbenchSectionKey(key: NavigationItem['key']): key is WorkbenchSectionKey {
+  return (workbenchSectionKeys as readonly string[]).includes(key)
+}
+
+export function createNavigationItems(activeKey: NavigationItem['key'] = 'resourceOverview'): NavigationItem[] {
   return navigationDefinitions.map((item) => ({
     ...item,
     isExternalEntry: externalEntryKeys.has(item.key),
-    hasUnsavedChanges: unsavedNavigationKeys.has(item.key),
+    hasUnsavedChanges: isWorkbenchSectionKey(item.key) ? workbenchSectionByKey[item.key].hasUnsavedChanges : false,
     active: item.key === activeKey,
   }))
 }

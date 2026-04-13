@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 
 import { createNavigationItems } from '../../../src/features/resource-center/navigation/model/navigation.config.ts'
+import { workbenchSectionKeys } from '../../../src/features/resource-center/workbench/model/workbench.registry.ts'
 
 const items = createNavigationItems('resourceOverview')
 
@@ -14,4 +15,10 @@ assert.equal(items.find((item) => item.key === 'courseware')?.hasUnsavedChanges,
 assert.equal(
   items.filter((item) => item.key !== 'courseware').every((item) => !item.hasUnsavedChanges),
   true,
+)
+assert.deepEqual(
+  items
+    .filter((item) => !item.isExternalEntry && item.key !== 'resourceOverview')
+    .map((item) => item.key),
+  [...workbenchSectionKeys],
 )
