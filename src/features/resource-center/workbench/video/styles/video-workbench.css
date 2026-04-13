@@ -1,0 +1,376 @@
+@import '../../shared/styles/workbench-surface.css';
+@import '../../shared/styles/workbench-header.css';
+
+.video-management {
+  --video-line: oklch(0.88 0.01 252);
+  --video-line-strong: oklch(0.84 0.014 252);
+  --video-ink: oklch(0.2 0.02 252);
+  --video-soft: oklch(0.5 0.02 252);
+  --video-surface: oklch(0.992 0.003 252);
+  --video-surface-soft: oklch(0.985 0.005 252);
+  --video-action: oklch(0.18 0.01 252);
+  --video-danger: oklch(0.62 0.22 28);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.video-management__controls {
+  display: grid;
+  gap: 16px;
+}
+
+.video-management__heading {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.video-management__heading p {
+  margin: 0;
+  color: var(--video-soft);
+  font-size: 1rem;
+}
+
+.video-management__feedback {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--video-line);
+  border-radius: 18px;
+  background: var(--video-surface);
+  color: var(--video-soft);
+  font-size: 0.95rem;
+}
+
+.video-management__feedback.is-success {
+  color: oklch(0.45 0.12 155);
+}
+
+.video-management__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px auto;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.video-management__search-field,
+.video-management__select-field {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 62px;
+  padding: 0 18px;
+  border: 1px solid var(--video-line);
+  border-radius: 20px;
+  background: var(--video-surface);
+  color: var(--video-soft);
+  transition:
+    border-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.video-management__search-field:focus-within,
+.video-management__select-field:focus-within {
+  border-color: var(--video-line-strong);
+  box-shadow: 0 0 0 4px oklch(0.94 0.015 245);
+}
+
+.video-management__search-field svg {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: oklch(0.67 0.02 250);
+}
+
+.video-management__search-field input,
+.video-management__select-field select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--video-ink);
+  font: inherit;
+}
+
+.video-management__search-field input::placeholder {
+  color: oklch(0.64 0.02 250);
+}
+
+.video-management__search-field input:focus,
+.video-management__select-field select:focus {
+  outline: none;
+}
+
+.video-management__select-field {
+  position: relative;
+  padding-right: 44px;
+}
+
+.video-management__select-field::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid oklch(0.38 0.02 250);
+  border-bottom: 2px solid oklch(0.38 0.02 250);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+.video-management__select-field select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.video-management__upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 62px;
+  padding: 0 26px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, oklch(0.16 0.01 250), oklch(0.12 0.01 250));
+  color: oklch(0.98 0.002 250);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    filter 180ms var(--ease-out);
+}
+
+.video-management__upload-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px oklch(0.18 0.01 250 / 0.16);
+}
+
+.video-management__upload-button:focus-visible,
+.video-management__icon-button:focus-visible {
+  outline: 2px solid oklch(0.55 0.12 245);
+  outline-offset: 3px;
+}
+
+.video-management__upload-button:active,
+.video-management__icon-button:active {
+  transform: translateY(1px);
+}
+
+.video-management__table-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  border: 1px solid var(--video-line);
+  border-radius: 18px;
+  background: var(--video-surface);
+  overflow: hidden;
+}
+
+.video-management__table-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+}
+
+.video-management__table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  color: var(--video-ink);
+}
+
+.video-management__table th,
+.video-management__table td {
+  padding: 18px 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.video-management__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--video-line);
+  background: var(--video-surface);
+  color: oklch(0.32 0.02 252);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.video-management__table tbody tr + tr td {
+  border-top: 1px solid oklch(0.94 0.01 252);
+}
+
+.video-management__table tbody tr {
+  transition: background-color 180ms var(--ease-out);
+}
+
+.video-management__table tbody tr:hover {
+  background: var(--video-surface-soft);
+}
+
+.video-management__title-cell strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.video-management__numeric-cell,
+.video-management__date-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.video-management__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.video-management__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: oklch(0.42 0.02 252);
+  transition:
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.video-management__icon-button:hover {
+  background: oklch(0.95 0.006 252);
+  color: var(--video-action);
+}
+
+.video-management__icon-button.danger {
+  color: var(--video-danger);
+}
+
+.video-management__empty-row td {
+  padding: 42px 24px;
+}
+
+.video-management__empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.video-management__empty-state strong {
+  font-size: 1rem;
+}
+
+.video-management__empty-state p {
+  margin: 0;
+  color: var(--video-soft);
+}
+
+.video-management__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--video-line);
+  background: var(--video-surface);
+}
+
+.video-management__pagination-summary {
+  display: grid;
+  gap: 4px;
+  color: var(--video-soft);
+  font-size: 0.92rem;
+}
+
+.video-management__pagination-summary strong {
+  color: var(--video-ink);
+}
+
+.video-management__pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.video-management__page-button {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--video-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--video-ink);
+  font: inherit;
+  font-weight: 600;
+}
+
+.video-management__page-button.is-active {
+  border-color: transparent;
+  background: linear-gradient(180deg, oklch(0.16 0.01 250), oklch(0.12 0.01 250));
+  color: oklch(0.98 0.002 250);
+}
+
+.video-management__page-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px) {
+  .video-management__toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  }
+
+  .video-management__upload-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .video-management__pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .video-management {
+    gap: 16px;
+  }
+
+  .video-management__toolbar {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .video-management__search-field,
+  .video-management__select-field,
+  .video-management__upload-button {
+    width: 100%;
+  }
+
+  .video-management__upload-button {
+    justify-self: stretch;
+  }
+
+  .video-management__pagination,
+  .video-management__pagination-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .video-management__table th,
+  .video-management__table td {
+    padding: 18px 16px;
+  }
+}

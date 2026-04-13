@@ -1,0 +1,35 @@
+@import './workbench-surface.css';
+@import './workbench-header.css';
+
+.module-workbench-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 100%;
+  gap: 18px;
+}
+
+.module-workbench-shell > * {
+  min-width: 0;
+}
+
+.module-workbench-placeholder {
+  display: grid;
+  gap: 10px;
+}
+
+.module-workbench-placeholder strong {
+  display: block;
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+}
+
+.module-workbench-placeholder p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.98rem;
+  line-height: 1.8;
+}

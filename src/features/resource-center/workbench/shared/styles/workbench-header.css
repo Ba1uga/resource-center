@@ -1,0 +1,38 @@
+:where(.outline-management__head, .textbook-management__head) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+:where(.outline-management__heading, .textbook-management__heading, .video-management__copy) {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+:where(
+  .outline-management__heading h2,
+  .textbook-management__heading h2,
+  .video-management__heading h2,
+  .courseware-management__head h2,
+  .question-management__head h2,
+  .module-workbench-shell__title
+) {
+  margin: 0;
+  font-size: clamp(1.5rem, 2vw, 1.95rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+:where(.outline-management__scope-pill, .textbook-management__scope-pill) {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}

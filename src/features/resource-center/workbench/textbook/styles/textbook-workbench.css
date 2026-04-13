@@ -1,0 +1,453 @@
+@import '../../shared/styles/workbench-surface.css';
+@import '../../shared/styles/workbench-header.css';
+
+.textbook-management {
+  --line: oklch(0.88 0.01 250);
+  --line-strong: oklch(0.82 0.015 250);
+  --ink: oklch(0.23 0.03 255);
+  --soft: oklch(0.46 0.02 250);
+  --surface: oklch(0.985 0.004 250);
+  --surface-strong: oklch(0.99 0.002 250);
+  --accent: oklch(0.25 0.03 255);
+  --danger: oklch(0.63 0.22 27);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.textbook-management__controls {
+  display: grid;
+  gap: 16px;
+}
+
+.textbook-management__scope-pill {
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--soft);
+}
+
+.textbook-management__feedback {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.textbook-management__feedback.is-success {
+  border-color: oklch(0.83 0.08 154);
+  background: oklch(0.97 0.03 154);
+}
+
+.textbook-management__feedback.is-info {
+  border-color: oklch(0.86 0.04 244);
+  background: oklch(0.97 0.02 244);
+}
+
+.textbook-management__feedback.is-danger {
+  border-color: oklch(0.83 0.08 27);
+  background: oklch(0.97 0.03 27);
+}
+
+.textbook-management__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.textbook-management__search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 58px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-strong);
+}
+
+.textbook-management__search-field svg {
+  width: 1.32rem;
+  height: 1.32rem;
+  color: var(--soft);
+}
+
+.textbook-management__search-field input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.02rem;
+  outline: none;
+}
+
+.textbook-management__select-field {
+  display: grid;
+  gap: 6px;
+}
+
+.textbook-management__select-field select {
+  width: 100%;
+  height: 58px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+}
+
+.textbook-management__select-field.compact select {
+  height: 44px;
+}
+
+.textbook-management__select-field span {
+  color: var(--soft);
+  font-size: 0.8rem;
+}
+
+.textbook-management__create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 180px;
+  height: 58px;
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background: linear-gradient(140deg, oklch(0.17 0.01 250), oklch(0.23 0.02 250));
+  color: oklch(0.99 0.001 250);
+  font-size: 1.02rem;
+  font-weight: 600;
+  transition: transform 140ms ease;
+}
+
+.textbook-management__create-button:hover {
+  transform: translateY(-1px);
+}
+
+.textbook-management__toolbar-advanced {
+  display: grid;
+  grid-template-columns: 240px 180px auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.textbook-management__reset-button {
+  justify-self: start;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  color: var(--soft);
+  font: inherit;
+  font-weight: 600;
+}
+
+.textbook-management__table-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  min-width: 0;
+  align-self: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-strong);
+}
+
+.textbook-management__table-scroll {
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.textbook-management__table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.textbook-management__table th,
+.textbook-management__table td {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.textbook-management__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--surface-strong);
+}
+
+.textbook-management__table td {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.textbook-management__name-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.textbook-management__name-cell strong {
+  font-size: 1.02rem;
+}
+
+.textbook-management__name-cell small {
+  color: var(--soft);
+  font-size: 0.82rem;
+}
+
+.textbook-management__isbn-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+.textbook-management__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.textbook-management__row-actions button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--soft);
+}
+
+.textbook-management__row-actions button:hover {
+  background: oklch(0.97 0.01 245);
+}
+
+.textbook-management__row-actions button.danger {
+  color: var(--danger);
+}
+
+.textbook-management__empty {
+  color: var(--soft);
+  text-align: center;
+}
+
+.textbook-management__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.textbook-management__pagination-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--soft);
+  font-size: 0.9rem;
+}
+
+.textbook-management__pagination-summary label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.textbook-management__pagination-summary select {
+  height: 34px;
+  min-width: 64px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+}
+
+.textbook-management__pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.textbook-management__pagination-controls button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+}
+
+.textbook-management__pagination-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.textbook-management__page-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.textbook-management__page-list button {
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+.textbook-management__page-list button.active {
+  border-color: transparent;
+  background: var(--accent);
+  color: oklch(0.99 0.002 250);
+}
+
+.textbook-management__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  color: var(--soft);
+  font-size: 0.88rem;
+}
+
+.textbook-management__jump input {
+  width: 66px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font: inherit;
+}
+
+.textbook-management__pagination-controls .jump-button {
+  border-color: var(--line-strong);
+}
+
+.textbook-management__drawer-mask {
+  position: fixed;
+  inset: 0;
+  background: oklch(0.21 0.02 250 / 0.3);
+  z-index: 20;
+}
+
+.textbook-management__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 32vw);
+  height: 100vh;
+  padding: 20px;
+  border-left: 1px solid var(--line);
+  background: var(--surface-strong);
+  box-shadow: -16px 0 42px oklch(0.2 0.02 250 / 0.12);
+  z-index: 21;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+}
+
+.textbook-management__drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.textbook-management__drawer-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.textbook-management__drawer-head button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--soft);
+}
+
+.textbook-management__drawer-form {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.textbook-management__drawer-field {
+  display: grid;
+  gap: 6px;
+}
+
+.textbook-management__drawer-field span {
+  color: var(--soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.textbook-management__drawer-field input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--ink);
+  font: inherit;
+}
+
+.textbook-management__drawer-field small {
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.textbook-management__drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.textbook-management__drawer-actions button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+}
+
+.textbook-management__drawer-actions button.ghost {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--soft);
+}
+
+.textbook-management__drawer-actions button.solid {
+  background: var(--accent);
+  color: oklch(0.99 0.002 250);
+}
