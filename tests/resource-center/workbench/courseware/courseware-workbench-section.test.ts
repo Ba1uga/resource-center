@@ -34,6 +34,11 @@ const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/courseware-workbench.css'"))
+assert.ok(
+  sectionContent.includes(
+    "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
+  ),
+)
 assert.ok(sectionContent.includes('createCoursewareWorkbenchViewModel'))
 assert.ok(sectionContent.includes('createDefaultCoursewareDraft'))
 assert.ok(sectionContent.includes('createDefaultCoursewareFilterState'))
@@ -65,6 +70,8 @@ assert.ok(sectionContent.includes('class="courseware-management__select-field"')
 assert.ok(sectionContent.includes('class="courseware-management__create-button"'))
 assert.ok(sectionContent.includes('class="courseware-management__table-shell"'))
 assert.ok(sectionContent.includes('class="courseware-management__pagination"'))
+assert.ok(sectionContent.includes('<WorkbenchTablePagination'))
+assert.ok(sectionContent.includes('show-quick-jumper'))
 assert.ok(sectionContent.includes('class="courseware-management__drawer-shell"'))
 assert.ok(sectionContent.includes('placeholder='))
 assert.ok(sectionContent.includes('handleCreate'))

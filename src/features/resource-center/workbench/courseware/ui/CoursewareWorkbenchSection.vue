@@ -4,6 +4,7 @@ import '../styles/courseware-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import {
   coursewareRecords,
   currentCoursewareUploader,
@@ -65,19 +66,6 @@ const drawerDescription = computed(() =>
     ? '补充课件基础信息，保存后会自动归入当前课件台。'
     : '更新课件信息后，上传时间会自动刷新为最新保存时间。',
 )
-const paginationPages = computed(() => {
-  const pageCount = viewModel.value.pagination.pageCount
-  const currentPage = viewModel.value.pagination.page
-  const start = Math.max(1, currentPage - 2)
-  const end = Math.min(pageCount, start + 4)
-  const pages: number[] = []
-
-  for (let nextPage = Math.max(1, end - 4); nextPage <= end; nextPage += 1) {
-    pages.push(nextPage)
-  }
-
-  return pages
-})
 
 watch(
   () => [filters.keyword, filters.course, filters.type],
@@ -360,38 +348,7 @@ function formatCurrentDate() {
       </div>
 
       <footer class="courseware-management__pagination">
-        <div class="courseware-management__pagination-copy">
-          第 {{ viewModel.pagination.from }}-{{ viewModel.pagination.to }} 条，共 {{ viewModel.pagination.total }} 条
-        </div>
-
-        <div class="courseware-management__pagination-actions">
-          <button
-            type="button"
-            class="courseware-management__pager-button"
-            :disabled="!viewModel.pagination.hasPrev"
-            @click="handlePageChange(viewModel.pagination.page - 1)"
-          >
-            上一页
-          </button>
-          <button
-            v-for="item in paginationPages"
-            :key="item"
-            type="button"
-            class="courseware-management__pager-button"
-            :class="{ 'is-active': item === viewModel.pagination.page }"
-            @click="handlePageChange(item)"
-          >
-            {{ item }}
-          </button>
-          <button
-            type="button"
-            class="courseware-management__pager-button"
-            :disabled="!viewModel.pagination.hasNext"
-            @click="handlePageChange(viewModel.pagination.page + 1)"
-          >
-            下一页
-          </button>
-        </div>
+        <WorkbenchTablePagination :pagination="viewModel.pagination" show-quick-jumper @page-change="handlePageChange" />
       </footer>
     </div>
 

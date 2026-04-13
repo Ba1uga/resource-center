@@ -126,8 +126,13 @@ assert.equal(tableContent.includes('class="question-management-table-shell"'), f
 assert.ok(tableContent.includes('<table v-if="rows.length > 0" class="question-management-table">'))
 
 assert.ok(paginationContent.includes('question-management__pagination'))
-assert.ok(paginationContent.includes('question-management__pagination-copy'))
-assert.ok(paginationContent.includes('question-management__pagination-actions'))
+assert.ok(
+  paginationContent.includes(
+    "import WorkbenchTablePagination from '@/features/resource-center/workbench/shared/ui/WorkbenchTablePagination.vue'",
+  ),
+)
+assert.ok(paginationContent.includes('<WorkbenchTablePagination'))
+assert.ok(paginationContent.includes('show-quick-jumper'))
 
 assert.ok(questionEditor.includes('<QuestionChoiceEditor'))
 assert.ok(questionEditor.includes('<QuestionShortAnswerEditor'))

@@ -4,6 +4,7 @@ import '../styles/video-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import { videoRecords } from '@/features/resource-center/workbench/video/model/video-workbench.fixtures.ts'
 import {
   createDefaultVideoFilterState,
@@ -40,20 +41,6 @@ const viewModel = computed(() =>
     pageSize,
   }),
 )
-
-const paginationPages = computed(() => {
-  const pageCount = viewModel.value.pagination.pageCount
-  const currentPage = viewModel.value.pagination.page
-  const start = Math.max(1, currentPage - 2)
-  const end = Math.min(pageCount, start + 4)
-  const pages: number[] = []
-
-  for (let nextPage = Math.max(1, end - 4); nextPage <= end; nextPage += 1) {
-    pages.push(nextPage)
-  }
-
-  return pages
-})
 
 watch(
   () => [filters.keyword, filters.course],
@@ -231,44 +218,7 @@ function handlePageChange(nextPage: number) {
       </div>
 
       <footer class="video-management__pagination">
-        <div class="video-management__pagination-summary">
-          <strong>第 {{ viewModel.pagination.page }} / {{ viewModel.pagination.pageCount }} 页</strong>
-          <span v-if="viewModel.pagination.total > 0">
-            显示 {{ viewModel.pagination.from }} - {{ viewModel.pagination.to }} 条，共 {{ viewModel.pagination.total }} 条
-          </span>
-          <span v-else>暂无结果</span>
-        </div>
-
-        <div class="video-management__pagination-controls">
-          <button
-            type="button"
-            class="video-management__page-button"
-            :disabled="!viewModel.pagination.hasPrev"
-            @click="handlePageChange(viewModel.pagination.page - 1)"
-          >
-            上一页
-          </button>
-
-          <button
-            v-for="pageNumber in paginationPages"
-            :key="pageNumber"
-            type="button"
-            class="video-management__page-button"
-            :class="{ 'is-active': pageNumber === viewModel.pagination.page }"
-            @click="handlePageChange(pageNumber)"
-          >
-            {{ pageNumber }}
-          </button>
-
-          <button
-            type="button"
-            class="video-management__page-button"
-            :disabled="!viewModel.pagination.hasNext"
-            @click="handlePageChange(viewModel.pagination.page + 1)"
-          >
-            下一页
-          </button>
-        </div>
+        <WorkbenchTablePagination :pagination="viewModel.pagination" show-quick-jumper @page-change="handlePageChange" />
       </footer>
     </section>
   </section>

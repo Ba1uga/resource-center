@@ -4,6 +4,7 @@ import '../styles/textbook-workbench.css'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 
@@ -175,7 +176,6 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
 const allRows = ref<TeacherOwnedTextbookRecord[]>([...seedRows])
 const pageSize = ref(10)
 const page = ref(1)
-const jumpPageInput = ref('')
 const keywordInput = ref('')
 const keyword = ref('')
 let keywordDebounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -237,26 +237,6 @@ const rangeStart = computed(() => {
 })
 
 const rangeEnd = computed(() => Math.min(filteredRows.value.length, page.value * pageSize.value))
-
-const visiblePages = computed(() => {
-  const maxButtons = 5
-  const safePage = Math.min(Math.max(page.value, 1), pageCount.value)
-  const half = Math.floor(maxButtons / 2)
-
-  let start = Math.max(1, safePage - half)
-  let end = Math.min(pageCount.value, start + maxButtons - 1)
-
-  if (end - start + 1 < maxButtons) {
-    start = Math.max(1, end - maxButtons + 1)
-  }
-
-  const pages: number[] = []
-  for (let current = start; current <= end; current += 1) {
-    pages.push(current)
-  }
-
-  return pages
-})
 
 watch(keywordInput, (value) => {
   if (keywordDebounceTimer) {
@@ -462,15 +442,9 @@ function goToPage(targetPage: number) {
   page.value = Math.min(pageCount.value, Math.max(1, targetPage))
 }
 
-function applyJumpPage() {
-  const targetPage = Number.parseInt(jumpPageInput.value, 10)
-  if (!Number.isFinite(targetPage)) {
-    jumpPageInput.value = ''
-    return
-  }
-
-  goToPage(targetPage)
-  jumpPageInput.value = ''
+function handlePageSizeChange(nextPageSize: number) {
+  pageSize.value = nextPageSize
+  page.value = 1
 }
 
 function resetFilters() {
@@ -607,56 +581,23 @@ function resetFilters() {
       </div>
 
       <footer class="textbook-management__pagination">
-        <div class="textbook-management__pagination-summary">
-          <span>共 {{ filteredRows.length }} 条</span>
-          <span>第 {{ rangeStart }}-{{ rangeEnd }} 条</span>
-          <label>
-            每页
-            <select v-model.number="pageSize">
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">
-                {{ size }}
-              </option>
-            </select>
-            条
-          </label>
-        </div>
-
-        <div class="textbook-management__pagination-controls">
-          <button type="button" :disabled="page === 1" @click="goToPage(page - 1)">
-            上一页
-          </button>
-
-          <div class="textbook-management__page-list">
-            <button
-              v-for="pageNumber in visiblePages"
-              :key="pageNumber"
-              type="button"
-              :class="{ active: pageNumber === page }"
-              @click="goToPage(pageNumber)"
-            >
-              {{ pageNumber }}
-            </button>
-          </div>
-
-          <button type="button" :disabled="page === pageCount" @click="goToPage(page + 1)">
-            下一页
-          </button>
-
-          <label class="textbook-management__jump">
-            <span>跳页</span>
-            <input
-              v-model="jumpPageInput"
-              type="text"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              @keydown.enter.prevent="applyJumpPage"
-            />
-          </label>
-
-          <button type="button" class="jump-button" @click="applyJumpPage">
-            跳转
-          </button>
-        </div>
+        <WorkbenchTablePagination
+          :pagination="{
+            page,
+            pageSize,
+            total: filteredRows.length,
+            pageCount,
+            from: rangeStart,
+            to: rangeEnd,
+            hasPrev: page > 1,
+            hasNext: page < pageCount,
+          }"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          show-quick-jumper
+          @page-change="goToPage"
+          @page-size-change="handlePageSizeChange"
+        />
       </footer>
     </section>
 

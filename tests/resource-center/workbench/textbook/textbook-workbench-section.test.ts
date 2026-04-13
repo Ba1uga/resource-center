@@ -17,6 +17,11 @@ const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/textbook-workbench.css'"))
+assert.ok(
+  sectionContent.includes(
+    "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
+  ),
+)
 assert.ok(sectionContent.includes('defineProps<{'))
 assert.ok(sectionContent.includes('section: WorkbenchSectionMeta'))
 assert.ok(sectionContent.includes('const currentTeacherId ='))
@@ -31,9 +36,9 @@ assert.ok(sectionContent.includes('版本'))
 assert.ok(sectionContent.includes('ISBN'))
 assert.ok(sectionContent.includes('关联课程'))
 assert.ok(sectionContent.includes('操作'))
-assert.ok(sectionContent.includes('共 {{ filteredRows.length }} 条'))
-assert.ok(sectionContent.includes('每页'))
-assert.ok(sectionContent.includes('跳页'))
+assert.ok(sectionContent.includes('<WorkbenchTablePagination'))
+assert.ok(sectionContent.includes(':page-size="pageSize"'))
+assert.ok(sectionContent.includes(':page-size-options="pageSizeOptions"'))
 assert.ok(sectionContent.includes('openCreateDrawer'))
 assert.ok(sectionContent.includes('openEditDrawer'))
 assert.ok(sectionContent.includes('deleteRow'))
