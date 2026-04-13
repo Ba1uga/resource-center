@@ -23,7 +23,7 @@ import type {
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.types.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 
-defineProps<{
+const props = defineProps<{
   section: WorkbenchSectionMeta
 }>()
 
@@ -425,16 +425,10 @@ function openPrintWindow(documentModel: {
 <template>
   <section class="outline-management workbench-surface">
     <header class="outline-management__head">
-      <div class="outline-management__copy">
-        <p class="panel-kicker">Teacher Workspace</p>
-        <h2>大纲管理</h2>
-        <p>按课程与版本快速定位当前工作版本，并在同一屏内持续维护教学大纲内容。</p>
+      <div class="outline-management__heading">
+        <h2>{{ props.section.title }}</h2>
       </div>
-
-      <div class="outline-management__summary">
-        <span class="outline-summary-pill">{{ viewModel.resultCountLabel }}</span>
-        <span class="outline-summary-pill">{{ liveCompletion.percent }}% 完整度</span>
-      </div>
+      <span class="outline-management__scope-pill">{{ viewModel.resultCountLabel }}</span>
     </header>
 
     <section class="outline-query-bar">

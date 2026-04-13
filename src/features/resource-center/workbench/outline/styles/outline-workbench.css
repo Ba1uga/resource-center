@@ -1,5 +1,6 @@
 @import '../../../shared/styles/panel-primitives.css';
 @import '../../shared/styles/workbench-surface.css';
+@import '../../shared/styles/workbench-header.css';
 
 .outline-management {
   --outline-line: oklch(0.88 0.01 82);
@@ -19,8 +20,6 @@
   color: var(--outline-ink);
 }
 
-.outline-management__head,
-.outline-query-bar,
 .outline-course-tree,
 .outline-workspace__summary,
 .outline-workspace__completion,
@@ -33,28 +32,12 @@
   box-shadow: var(--shadow-soft);
 }
 
-.outline-management__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-}
-
-.outline-management__copy {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.outline-management__copy h2,
 .outline-workspace__copy h3 {
   margin: 0;
   font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
   letter-spacing: -0.04em;
 }
 
-.outline-management__copy p,
 .outline-workspace__copy p,
 .outline-workspace__copy small,
 .outline-status-message,
@@ -65,14 +48,12 @@
   line-height: 1.6;
 }
 
-.outline-management__summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
+.outline-management__scope-pill {
+  border: 1px solid var(--outline-line);
+  background: var(--outline-surface-strong);
+  color: var(--outline-soft);
 }
 
-.outline-summary-pill,
 .outline-status-chip {
   display: inline-flex;
   align-items: center;

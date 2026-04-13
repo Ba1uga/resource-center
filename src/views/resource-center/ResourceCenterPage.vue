@@ -1,21 +1,17 @@
-﻿<script setup lang="ts">
-import './styles/resource-center-page.css'
+<script setup lang="ts">
+import './resource-center-page.css'
 
 import { computed, ref } from 'vue'
 
-import {
-  createDashboardViewModel,
-  resolveWorkbenchSectionMeta,
-  teacherProfile,
-  type NavigationItem,
-} from '@/features/resource-center/index.ts'
+import { createNavigationItems } from '@/features/resource-center/navigation/model/navigation.config.ts'
+import type { NavigationItem } from '@/features/resource-center/navigation/model/navigation.types.ts'
+import { teacherProfile } from '@/features/resource-center/profile/model/profile.fixture.ts'
+import { resolveWorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 import ResourceCenterSidebar from '@/features/resource-center/navigation/ui/ResourceCenterSidebar.vue'
-import ResourceCenterTopbar from '@/views/resource-center/layout/ResourceCenterTopbar.vue'
-import ResourceOverviewSection from '@/views/resource-center/sections/ResourceOverviewSection.vue'
-import WorkbenchSection from '@/views/resource-center/sections/WorkbenchSection.vue'
+import WorkbenchSection from '@/features/resource-center/workbench/shared/ui/WorkbenchSection.vue'
 
-const activeSection = ref<NavigationItem['key']>('resourceOverview')
-const dashboard = computed(() => createDashboardViewModel(activeSection.value))
+const activeSection = ref<NavigationItem['key']>('outline')
+const navigationItems = computed(() => createNavigationItems(activeSection.value))
 const activeWorkbenchSection = computed(() => resolveWorkbenchSectionMeta(activeSection.value))
 
 function handleNavigationClick(item: NavigationItem) {
@@ -34,14 +30,10 @@ function handleNavigationClick(item: NavigationItem) {
     <div class="page-glow page-glow-right"></div>
 
     <div class="dashboard-frame">
-      <ResourceCenterSidebar :items="dashboard.navigation" @select="handleNavigationClick" />
+      <ResourceCenterSidebar :items="navigationItems" :profile="teacherProfile" @select="handleNavigationClick" />
 
       <main class="dashboard-main">
-        <ResourceCenterTopbar :profile="teacherProfile" />
-
-        <ResourceOverviewSection v-if="activeSection === 'resourceOverview'" :dashboard="dashboard" />
-
-        <WorkbenchSection v-else :section="activeWorkbenchSection" />
+        <WorkbenchSection :section="activeWorkbenchSection" />
       </main>
     </div>
   </div>

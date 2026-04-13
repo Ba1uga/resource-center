@@ -3,11 +3,10 @@ import {
   workbenchSectionByKey,
   workbenchSectionKeys,
   type WorkbenchSectionKey,
-} from '../../workbench/model/workbench.registry.ts'
+} from '../../workbench/shared/model/workbench.registry.ts'
 
 const baseNavigationDefinitions: Array<Pick<NavigationItem, 'key' | 'label' | 'icon'>> = [
   { key: 'home', label: '返回首页', icon: 'home' },
-  { key: 'resourceOverview', label: '资源总览', icon: 'dashboard' },
 ]
 
 const workbenchNavigationDefinitions: Array<Pick<NavigationItem, 'key' | 'label' | 'icon'>> = workbenchSectionKeys.map(
@@ -25,7 +24,7 @@ function isWorkbenchSectionKey(key: NavigationItem['key']): key is WorkbenchSect
   return (workbenchSectionKeys as readonly string[]).includes(key)
 }
 
-export function createNavigationItems(activeKey: NavigationItem['key'] = 'resourceOverview'): NavigationItem[] {
+export function createNavigationItems(activeKey: NavigationItem['key'] = 'outline'): NavigationItem[] {
   return navigationDefinitions.map((item) => ({
     ...item,
     isExternalEntry: externalEntryKeys.has(item.key),

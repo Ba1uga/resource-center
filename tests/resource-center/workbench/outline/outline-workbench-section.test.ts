@@ -17,8 +17,11 @@ const outlineSection = readFileSync(outlineSectionUrl, 'utf8')
 const outlineStyles = readFileSync(outlineStylesUrl, 'utf8')
 
 assert.ok(outlineSection.includes("import '../styles/outline-workbench.css'"))
+assert.ok(outlineSection.includes('const props = defineProps<{'))
 assert.ok(outlineSection.includes('class="outline-management workbench-surface"'))
 assert.ok(outlineSection.includes('class="outline-management__head"'))
+assert.ok(outlineSection.includes('class="outline-management__heading"'))
+assert.ok(outlineSection.includes('class="outline-management__scope-pill"'))
 assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
@@ -47,6 +50,13 @@ assert.ok(outlineSection.includes('归档后不会删除内容'))
 assert.ok(outlineSection.includes('复制当前版本'))
 assert.ok(outlineSection.includes('空白版本'))
 assert.ok(outlineSection.includes('恢复使用'))
+assert.ok(outlineSection.includes('<h2>{{ props.section.title }}</h2>'))
+assert.equal(outlineSection.includes('按课程与版本快速定位当前工作版本，并在同一屏内持续维护教学大纲内容。'), false)
+assert.equal(outlineSection.includes('{{ liveCompletion.percent }}% 完整度'), false)
+assert.equal(outlineSection.includes('Teacher Workspace'), false)
+assert.equal(outlineSection.includes('<h2>大纲管理</h2>'), false)
+assert.equal(outlineSection.includes('class="outline-management__copy"'), false)
+assert.equal(outlineSection.includes('class="outline-management__summary"'), false)
 assert.equal(outlineSection.includes('class="outline-overview-shell"'), false)
 assert.equal(outlineSection.includes('class="outline-editor-drawer"'), false)
 assert.equal(outlineSection.includes('function openSectionDrawer('), false)
@@ -56,6 +66,9 @@ assert.match(
   outlineStyles,
   /\.outline-management\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto\s+auto\s+minmax\(0,\s*1fr\);[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/i,
 )
+assert.ok(outlineStyles.includes("@import '../../shared/styles/workbench-header.css';"))
+assert.equal(/\.outline-management__head,\s*[\r\n]+\s*\.outline-query-bar/i.test(outlineStyles), false)
+assert.equal(/\.outline-query-bar,\s*[\r\n]+\s*\.outline-course-tree/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
   /\.outline-query-bar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1\.45fr\)\s+repeat\(4,\s*minmax\(0,\s*150px\)\)\s+auto\s+auto;/i,

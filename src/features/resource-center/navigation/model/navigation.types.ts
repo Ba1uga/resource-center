@@ -1,7 +1,7 @@
-import type { WorkbenchSectionKey } from '../../workbench/model/workbench.registry.ts'
+import type { WorkbenchSectionKey } from '../../workbench/shared/model/workbench.registry.ts'
 
-export type NavigationKey = 'home' | 'resourceOverview' | WorkbenchSectionKey
-export type NavigationIcon = 'home' | 'dashboard' | 'tree' | 'book' | 'layers' | 'play' | 'clipboard' | 'link'
+export type NavigationKey = 'home' | WorkbenchSectionKey
+export type NavigationIcon = 'home' | 'tree' | 'book' | 'layers' | 'play' | 'clipboard' | 'link'
 
 export interface NavigationItem {
   key: NavigationKey

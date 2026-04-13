@@ -1,0 +1,431 @@
+@import '../../shared/styles/workbench-surface.css';
+@import '../../shared/styles/workbench-header.css';
+
+.courseware-management {
+  --courseware-line: oklch(0.88 0.01 252);
+  --courseware-ink: oklch(0.24 0.02 252);
+  --courseware-soft: oklch(0.5 0.02 252);
+  --courseware-faint: oklch(0.68 0.015 252);
+  --courseware-surface: oklch(0.99 0.003 252);
+  --courseware-surface-soft: oklch(0.975 0.006 252);
+  --courseware-strong: oklch(0.18 0.01 252);
+  --courseware-danger: oklch(0.63 0.22 28);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.courseware-management__controls {
+  display: grid;
+  gap: 16px;
+}
+
+.courseware-management__head {
+  display: grid;
+  gap: 8px;
+}
+
+.courseware-management__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.courseware-management__summary-card {
+  display: grid;
+  gap: 6px;
+  min-height: 88px;
+  padding: 14px 16px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, oklch(0.995 0.004 252), oklch(0.985 0.007 252));
+  box-shadow: 0 10px 22px oklch(0.43 0.02 252 / 0.045);
+}
+
+.courseware-management__summary-card span {
+  color: var(--courseware-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.courseware-management__summary-value {
+  color: var(--courseware-ink);
+  font-size: clamp(1.2rem, 1.15vw, 1.55rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.courseware-management__summary-value.is-record {
+  font-size: 1.15rem;
+  line-height: 1.3;
+}
+
+.courseware-management__summary-card p {
+  margin: 0;
+  color: var(--courseware-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.courseware-management__feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 16px;
+  background: var(--courseware-surface-soft);
+  color: var(--courseware-ink);
+  font-size: 0.92rem;
+}
+
+.courseware-management__feedback.is-success {
+  border-color: oklch(0.86 0.05 155);
+  background: oklch(0.97 0.03 155);
+}
+
+.courseware-management__feedback.is-info {
+  border-color: oklch(0.88 0.03 245);
+  background: oklch(0.97 0.015 245);
+}
+
+.courseware-management__feedback.is-danger {
+  border-color: oklch(0.83 0.08 28);
+  background: oklch(0.97 0.03 28);
+}
+
+.courseware-management__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px 220px auto;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.courseware-management__search-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 18px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.courseware-management__search-field svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--courseware-faint);
+}
+
+.courseware-management__search-field input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--courseware-ink);
+  font: inherit;
+  font-size: 0.98rem;
+  outline: none;
+}
+
+.courseware-management__select-field {
+  display: flex;
+  align-items: stretch;
+}
+
+.courseware-management__select-field select,
+.courseware-management__form-field input,
+.courseware-management__form-field select {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 14px;
+  background: var(--courseware-surface);
+  color: var(--courseware-ink);
+  font: inherit;
+  outline: none;
+}
+
+.courseware-management__toolbar .courseware-management__select-field select {
+  height: 56px;
+  background: #fff;
+}
+
+.courseware-management__create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 184px;
+  height: 56px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, oklch(0.16 0.008 252), oklch(0.2 0.012 252));
+  color: oklch(0.99 0.002 252);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 16px 28px oklch(0.18 0.02 252 / 0.18);
+  transition:
+    transform 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
+.courseware-management__create-button:hover {
+  transform: translateY(-1px);
+}
+
+.courseware-management__create-button svg,
+.courseware-management__icon-button svg,
+.courseware-management__drawer-close svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.courseware-management__table-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  border: 1px solid var(--courseware-line);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.courseware-management__table-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.courseware-management__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.courseware-management__table th,
+.courseware-management__table td {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--courseware-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.courseware-management__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--courseware-soft);
+  font-size: 0.94rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #fff;
+}
+
+.courseware-management__table td {
+  color: var(--courseware-ink);
+  font-size: 1rem;
+}
+
+.courseware-management__title-cell {
+  font-weight: 600;
+}
+
+.courseware-management__numeric-cell,
+.courseware-management__date-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.courseware-management__row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.courseware-management__icon-button,
+.courseware-management__drawer-close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--courseware-soft);
+}
+
+.courseware-management__icon-button:hover,
+.courseware-management__drawer-close:hover {
+  border-color: var(--courseware-line);
+  background: var(--courseware-surface-soft);
+  color: var(--courseware-ink);
+}
+
+.courseware-management__icon-button.danger:hover {
+  border-color: oklch(0.84 0.06 28);
+  background: oklch(0.97 0.03 28);
+  color: var(--courseware-danger);
+}
+
+.courseware-management__empty-row td {
+  padding: 44px 24px;
+}
+
+.courseware-management__empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.courseware-management__empty-state strong {
+  color: var(--courseware-ink);
+  font-size: 1.02rem;
+}
+
+.courseware-management__empty-state p,
+.courseware-management__drawer-copy p,
+.courseware-management__drawer-meta p {
+  margin: 0;
+  color: var(--courseware-soft);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.courseware-management__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--courseware-surface);
+  border-top: 1px solid var(--courseware-line);
+}
+
+.courseware-management__pagination-copy {
+  color: var(--courseware-soft);
+  font-size: 0.9rem;
+}
+
+.courseware-management__pagination-actions,
+.courseware-management__drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.courseware-management__pager-button,
+.courseware-management__drawer-action {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--courseware-soft);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.courseware-management__pager-button.is-active,
+.courseware-management__drawer-action.primary {
+  border-color: var(--courseware-strong);
+  background: var(--courseware-strong);
+  color: #fff;
+}
+
+.courseware-management__pager-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.courseware-management__drawer-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+  background: oklch(0.18 0.01 252 / 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.courseware-management__drawer-panel {
+  width: min(460px, calc(100vw - 32px));
+  height: 100vh;
+  padding: 28px 24px 24px;
+  background: #fff;
+  box-shadow: -24px 0 48px oklch(0.17 0.01 252 / 0.14);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+}
+
+.courseware-management__drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.courseware-management__drawer-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.courseware-management__drawer-copy h3 {
+  margin: 0;
+  color: var(--courseware-ink);
+  font-size: 1.28rem;
+  letter-spacing: -0.03em;
+}
+
+.courseware-management__form {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.courseware-management__form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.courseware-management__form-field span,
+.courseware-management__drawer-meta strong {
+  color: var(--courseware-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.courseware-management__field-error {
+  color: var(--courseware-danger);
+  font-size: 0.84rem;
+}
+
+.courseware-management__drawer-meta {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--courseware-line);
+  border-radius: 16px;
+  background: var(--courseware-surface-soft);
+}
+
+.courseware-management__drawer-actions {
+  justify-content: flex-end;
+}
+
+.courseware-management__drawer-action {
+  min-width: 108px;
+  height: 46px;
+  padding: 0 16px;
+  border-radius: 14px;
+}
