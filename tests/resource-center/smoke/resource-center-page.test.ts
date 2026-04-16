@@ -91,8 +91,10 @@ async function main() {
     throw new Error('ResourceCenterPage.vue must build sidebar items directly from createNavigationItems')
   }
 
-  if (!pageContent.includes('<WorkbenchSection :section="activeWorkbenchSection" />')) {
-    throw new Error('ResourceCenterPage.vue must render WorkbenchSection without an overview branch')
+  if (
+    !pageContent.includes('<WorkbenchSection :section="activeWorkbenchSection" :current-teacher-name="teacherProfile.name" />')
+  ) {
+    throw new Error('ResourceCenterPage.vue must pass teacherProfile.name into WorkbenchSection')
   }
 
   if (

@@ -51,6 +51,7 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
         archiveState: 'active',
         archivedAt: null,
         note: input.note,
+        createdBy: input.createdBy,
         updatedAt: now(),
         updatedBy: input.updatedBy,
         sections: createOutlineVersionDraft({
@@ -114,6 +115,7 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
         archiveState: 'active',
         archivedAt: null,
         note: input.note,
+        createdBy: input.createdBy,
         updatedAt: now(),
         updatedBy: input.updatedBy,
       }
@@ -188,6 +190,7 @@ function cloneCourseVersion(version: OutlineVersionRecord): OutlineVersionRecord
     archiveState: version.archiveState,
     archivedAt: version.archivedAt,
     note: version.note,
+    createdBy: version.createdBy,
     updatedAt: version.updatedAt,
     updatedBy: version.updatedBy,
     sections: cloneSections(version.sections),

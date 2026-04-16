@@ -25,6 +25,7 @@ import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/
 
 const props = defineProps<{
   section: WorkbenchSectionMeta
+  currentTeacherName: string
 }>()
 
 type PendingVersionSelection = {
@@ -39,7 +40,7 @@ type PendingArchiveTarget = {
 }
 
 const repository = createOutlineWorkbenchRepository()
-const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))
+const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses(), props.currentTeacherName))
 const dataVersion = ref(0)
 const draft = ref(createOutlineVersionDraft())
 const activeEditorSection = ref<OutlineSectionId>('basic-info')
@@ -54,6 +55,7 @@ const statusMessage = ref('')
 const savedSnapshot = ref('')
 const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
+const isEditing = ref(false)
 
 let localIdSeed = 0
 
@@ -62,6 +64,7 @@ const viewModel = computed(() => {
 
   return createOutlineWorkbenchViewModel({
     courses: repository.listCourses(),
+    currentTeacherName: props.currentTeacherName,
     queryState,
   })
 })
@@ -84,6 +87,7 @@ watch(
     versionCreator.note = `复制自 ${currentVersion.versionName}`
     activeEditorSection.value = 'basic-info'
     showVersionCreator.value = false
+    isEditing.value = false
     statusMessage.value = ''
     pendingSelection.value = null
     pendingArchive.value = null
@@ -111,7 +115,7 @@ function createLocalId(prefix: string) {
 }
 
 function selectCourse(courseId: string) {
-  const course = repository.getCourse(courseId)
+  const course = viewModel.value.courses.find((item) => item.id === courseId)
   queryState.selectedCourseId = courseId
   queryState.selectedVersionId =
     course?.versions.find((version) => version.archiveState === 'active')?.id ?? course?.versions[0]?.id ?? ''
@@ -127,7 +131,7 @@ function requestVersionSelection(courseId: string, versionId: string) {
     return
   }
 
-  if (hasUnsavedChanges.value) {
+  if (isEditing.value && hasUnsavedChanges.value) {
     pendingSelection.value = { courseId, versionId }
     statusMessage.value = '当前版本有未保存内容，可先保存草稿再切换。'
     return
@@ -141,7 +145,10 @@ function confirmPendingSelectionWithSave() {
     return
   }
 
-  handleSaveDraft()
+  const saved = handleSaveDraft()
+  if (!saved) {
+    return
+  }
   selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
   pendingSelection.value = null
 }
@@ -157,7 +164,7 @@ function discardPendingSelection() {
 }
 
 function handleResetFilters() {
-  const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses())
+  const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses(), props.currentTeacherName)
   queryState.searchText = defaults.searchText
   queryState.semester = defaults.semester
   queryState.versionStatus = defaults.versionStatus
@@ -170,13 +177,40 @@ function handleSaveDraft() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
+    statusMessage.value = '保存失败'
+    return false
+  }
+
+  try {
+    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
+    dataVersion.value += 1
+    savedSnapshot.value = createDraftSnapshot(draft.value)
+    statusMessage.value = '保存成功'
+    return true
+  } catch (error) {
+    console.error(error)
+    statusMessage.value = '保存失败'
+    return false
+  }
+}
+
+function handleEditAction() {
+  if (!viewModel.value.currentVersion) {
     return
   }
 
-  const savedVersion = repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
-  dataVersion.value += 1
-  savedSnapshot.value = createDraftSnapshot(draft.value)
-  statusMessage.value = `已保存草稿 · ${savedVersion.updatedAt.slice(0, 10)}`
+  if (!isEditing.value) {
+    isEditing.value = true
+    statusMessage.value = ''
+    return
+  }
+
+  const saved = handleSaveDraft()
+  if (!saved) {
+    return
+  }
+
+  isEditing.value = false
 }
 
 function handleCreateVersion() {
@@ -193,6 +227,7 @@ function handleCreateVersion() {
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim(),
           note: versionCreator.note.trim(),
+          createdBy: props.currentTeacherName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
       : repository.duplicateOutlineVersion({
@@ -201,6 +236,7 @@ function handleCreateVersion() {
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim() || currentVersion?.semester || '',
           note: versionCreator.note.trim(),
+          createdBy: props.currentTeacherName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
 
@@ -559,12 +595,11 @@ function openPrintWindow(documentModel: {
         <header class="outline-workspace__summary">
           <div class="outline-workspace__copy">
             <h3>{{ viewModel.toolbar.courseLabel }}</h3>
-            <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }}</p>
-            <small>{{ viewModel.toolbar.updatedLabel }}</small>
+            <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }} - {{ viewModel.toolbar.updatedLabel }}</p>
+            <small>{{ liveCompletion.percent }}% · {{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出 · {{ liveCompletion.issues[0]?.message || '当前版本已满足导出要求' }}</small>
           </div>
 
           <div class="outline-workspace__actions">
-            <button class="outline-toolbar-button" type="button" @click="handleSaveDraft">保存草稿</button>
             <button class="outline-toolbar-button" type="button" @click="showVersionCreator = !showVersionCreator">
               复制为新版本
             </button>
@@ -595,13 +630,6 @@ function openPrintWindow(documentModel: {
           <button class="outline-toolbar-button primary" type="button" @click="handleCreateVersion">创建版本</button>
         </section>
 
-        <section class="outline-workspace__completion">
-          <strong>{{ liveCompletion.percent }}%</strong>
-          <span>{{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出</span>
-          <small v-if="liveCompletion.issues.length > 0">{{ liveCompletion.issues[0]?.message }}</small>
-          <small v-else>当前版本已满足导出要求</small>
-        </section>
-
         <p v-if="statusMessage" class="outline-status-message">{{ statusMessage }}</p>
         <p v-if="!viewModel.currentVersionMatchesFilters" class="outline-status-message">
           当前正在查看的版本不在筛选结果中。
@@ -618,9 +646,18 @@ function openPrintWindow(documentModel: {
           >
             {{ item.label }}
           </button>
+          <button
+            class="outline-section-tab outline-section-tab--action"
+            :class="{ current: isEditing }"
+            type="button"
+            @click="handleEditAction"
+          >
+            {{ isEditing ? '保存' : '修改' }}
+          </button>
         </nav>
 
         <section class="outline-editor-panel">
+          <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
             <label class="outline-field">
               <span>课程名</span>
@@ -653,11 +690,19 @@ function openPrintWindow(documentModel: {
             <section class="outline-goal-group">
               <header class="outline-subsection__head">
                 <strong>知识目标</strong>
-                <button class="outline-inline-button" type="button" @click="addGoal('knowledge')">新增</button>
+                <button v-if="isEditing" class="outline-inline-button" type="button" @click="addGoal('knowledge')">新增</button>
               </header>
+              <p v-if="draft.sections.knowledgeGoals.length === 0" class="outline-group-empty-state">
+                暂未添加知识目标
+              </p>
               <article v-for="goal in draft.sections.knowledgeGoals" :key="goal.id" class="outline-goal-item">
                 <textarea v-model="goal.text" rows="3"></textarea>
-                <button class="outline-inline-button danger" type="button" @click="removeGoal('knowledge', goal.id)">
+                <button
+                  v-if="isEditing"
+                  class="outline-inline-button danger"
+                  type="button"
+                  @click="removeGoal('knowledge', goal.id)"
+                >
                   删除
                 </button>
               </article>
@@ -666,11 +711,19 @@ function openPrintWindow(documentModel: {
             <section class="outline-goal-group">
               <header class="outline-subsection__head">
                 <strong>能力目标</strong>
-                <button class="outline-inline-button" type="button" @click="addGoal('ability')">新增</button>
+                <button v-if="isEditing" class="outline-inline-button" type="button" @click="addGoal('ability')">新增</button>
               </header>
+              <p v-if="draft.sections.abilityGoals.length === 0" class="outline-group-empty-state">
+                暂未添加能力目标
+              </p>
               <article v-for="goal in draft.sections.abilityGoals" :key="goal.id" class="outline-goal-item">
                 <textarea v-model="goal.text" rows="3"></textarea>
-                <button class="outline-inline-button danger" type="button" @click="removeGoal('ability', goal.id)">
+                <button
+                  v-if="isEditing"
+                  class="outline-inline-button danger"
+                  type="button"
+                  @click="removeGoal('ability', goal.id)"
+                >
                   删除
                 </button>
               </article>
@@ -680,7 +733,7 @@ function openPrintWindow(documentModel: {
           <div v-else-if="activeEditorSection === 'schedule'" class="outline-subsection">
             <header class="outline-subsection__head">
               <strong>周次进度</strong>
-              <button class="outline-inline-button" type="button" @click="addScheduleItem">新增周次</button>
+              <button v-if="isEditing" class="outline-inline-button" type="button" @click="addScheduleItem">新增周次</button>
             </header>
             <table class="outline-schedule-table">
               <thead>
@@ -690,7 +743,7 @@ function openPrintWindow(documentModel: {
                   <th>学时</th>
                   <th>教学方式</th>
                   <th>备注</th>
-                  <th></th>
+                  <th v-if="isEditing"></th>
                 </tr>
               </thead>
               <tbody>
@@ -700,8 +753,13 @@ function openPrintWindow(documentModel: {
                   <td><input v-model.number="item.hours" type="number" min="0" /></td>
                   <td><input v-model="item.teachingMethod" type="text" /></td>
                   <td><input v-model="item.notes" type="text" /></td>
-                  <td>
-                    <button class="outline-inline-button danger" type="button" @click="removeScheduleItem(item.id)">
+                  <td v-if="isEditing">
+                    <button
+                      v-if="isEditing"
+                      class="outline-inline-button danger"
+                      type="button"
+                      @click="removeScheduleItem(item.id)"
+                    >
                       删除
                     </button>
                   </td>
@@ -711,7 +769,7 @@ function openPrintWindow(documentModel: {
           </div>
 
           <div v-else-if="activeEditorSection === 'methods'" class="outline-subsection">
-            <div class="outline-method-tags">
+            <div v-if="isEditing" class="outline-method-tags">
               <button
                 v-for="option in viewModel.teachingMethodOptions"
                 :key="option"
@@ -722,6 +780,18 @@ function openPrintWindow(documentModel: {
               >
                 {{ option }}
               </button>
+            </div>
+            <div v-else class="outline-method-tags outline-method-tags--readonly">
+              <span
+                v-for="option in draft.sections.teachingMethods.selected"
+                :key="option"
+                class="outline-method-tag selected"
+              >
+                {{ option }}
+              </span>
+              <span v-if="draft.sections.teachingMethods.selected.length === 0" class="outline-method-tag">
+                暂无教学方式
+              </span>
             </div>
 
             <label class="outline-field">
@@ -761,26 +831,39 @@ function openPrintWindow(documentModel: {
               >
                 <input v-model="item.label" type="text" />
                 <input v-model.number="item.percentage" type="number" min="0" max="100" />
-                <button class="outline-inline-button danger" type="button" @click="removeAssessmentItem(item.id)">
+                <button
+                  v-if="isEditing"
+                  class="outline-inline-button danger"
+                  type="button"
+                  @click="removeAssessmentItem(item.id)"
+                >
                   删除
                 </button>
               </article>
             </div>
 
-            <button class="outline-inline-button" type="button" @click="addAssessmentItem">新增项</button>
+            <button v-if="isEditing" class="outline-inline-button" type="button" @click="addAssessmentItem">新增项</button>
           </div>
 
           <div v-else class="outline-materials-grid">
             <section class="outline-material-group">
               <header class="outline-subsection__head">
                 <strong>主教材</strong>
-                <button class="outline-inline-button" type="button" @click="addMaterial('primary')">新增</button>
+                <button v-if="isEditing" class="outline-inline-button" type="button" @click="addMaterial('primary')">新增</button>
               </header>
+              <p v-if="draft.sections.materials.primary.length === 0" class="outline-group-empty-state">
+                暂未添加主教材
+              </p>
               <article v-for="item in draft.sections.materials.primary" :key="item.id" class="outline-material-item">
                 <input v-model="item.title" type="text" placeholder="教材名称" />
                 <input v-model="item.author" type="text" placeholder="作者" />
                 <input v-model="item.source" type="text" placeholder="出版社 / 来源" />
-                <button class="outline-inline-button danger" type="button" @click="removeMaterial('primary', item.id)">
+                <button
+                  v-if="isEditing"
+                  class="outline-inline-button danger"
+                  type="button"
+                  @click="removeMaterial('primary', item.id)"
+                >
                   删除
                 </button>
               </article>
@@ -789,8 +872,11 @@ function openPrintWindow(documentModel: {
             <section class="outline-material-group">
               <header class="outline-subsection__head">
                 <strong>参考资料</strong>
-                <button class="outline-inline-button" type="button" @click="addMaterial('references')">新增</button>
+                <button v-if="isEditing" class="outline-inline-button" type="button" @click="addMaterial('references')">新增</button>
               </header>
+              <p v-if="draft.sections.materials.references.length === 0" class="outline-group-empty-state">
+                暂未添加参考资料
+              </p>
               <article
                 v-for="item in draft.sections.materials.references"
                 :key="item.id"
@@ -800,6 +886,7 @@ function openPrintWindow(documentModel: {
                 <input v-model="item.author" type="text" placeholder="作者" />
                 <input v-model="item.source" type="text" placeholder="来源" />
                 <button
+                  v-if="isEditing"
                   class="outline-inline-button danger"
                   type="button"
                   @click="removeMaterial('references', item.id)"
@@ -809,6 +896,7 @@ function openPrintWindow(documentModel: {
               </article>
             </section>
           </div>
+          </fieldset>
         </section>
       </section>
     </div>

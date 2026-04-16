@@ -10,6 +10,7 @@ import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/
 
 defineProps<{
   section: WorkbenchSectionMeta
+  currentTeacherName: string
 }>()
 </script>
 
@@ -18,6 +19,7 @@ defineProps<{
     <OutlineWorkbenchSection
       v-if="section.key === 'outline'"
       :section="section"
+      :current-teacher-name="currentTeacherName"
       class="workbench-section-host__content"
     />
     <TextbookWorkbenchSection

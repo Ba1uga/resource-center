@@ -248,6 +248,21 @@
   gap: 6px;
 }
 
+.courseware-management__row-actions button.danger {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--courseware-danger);
+}
+
+.courseware-management__row-actions button.danger:hover {
+  background: oklch(0.97 0.01 245);
+}
+
 .courseware-management__icon-button,
 .courseware-management__drawer-close {
   display: grid;
@@ -265,12 +280,6 @@
   border-color: var(--courseware-line);
   background: var(--courseware-surface-soft);
   color: var(--courseware-ink);
-}
-
-.courseware-management__icon-button.danger:hover {
-  border-color: oklch(0.84 0.06 28);
-  background: oklch(0.97 0.03 28);
-  color: var(--courseware-danger);
 }
 
 .courseware-management__empty-row td {

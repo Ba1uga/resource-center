@@ -85,6 +85,7 @@ export interface OutlineVersionRecord {
   archiveState: OutlineArchiveState
   archivedAt: string | null
   note: string
+  createdBy: string
   updatedAt: string
   updatedBy: string
   sections: OutlineVersionSectionState
@@ -114,6 +115,7 @@ export interface DuplicateOutlineVersionInput {
   versionName: string
   semester: string
   note: string
+  createdBy: string
   updatedBy: string
 }
 
@@ -122,6 +124,7 @@ export interface CreateOutlineVersionInput {
   versionName: string
   semester: string
   note: string
+  createdBy: string
   updatedBy: string
 }
 

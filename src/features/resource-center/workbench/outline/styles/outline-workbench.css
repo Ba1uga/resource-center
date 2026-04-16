@@ -22,7 +22,6 @@
 
 .outline-course-tree,
 .outline-workspace__summary,
-.outline-workspace__completion,
 .outline-editor-panel,
 .outline-inline-notice,
 .outline-version-creator {
@@ -306,7 +305,6 @@
 
 .outline-inline-notice,
 .outline-workspace__summary,
-.outline-workspace__completion,
 .outline-version-creator {
   padding: 16px 18px;
 }
@@ -332,16 +330,6 @@
   gap: 6px;
 }
 
-.outline-workspace__completion {
-  display: grid;
-  gap: 4px;
-}
-
-.outline-workspace__completion strong {
-  font-size: 1.45rem;
-  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
-}
-
 .outline-version-creator {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
@@ -360,6 +348,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.outline-section-tab--action {
+  margin-left: auto;
 }
 
 .outline-section-tab {
@@ -386,12 +378,38 @@
   overflow: auto;
 }
 
+.outline-editor-panel__fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.outline-editor-panel__fieldset:disabled {
+  opacity: 0.92;
+}
+
+.outline-editor-panel__fieldset:disabled :is(input, textarea, select) {
+  background: var(--outline-surface-soft);
+  color: var(--outline-soft);
+  cursor: not-allowed;
+}
+
+.outline-editor-panel__fieldset:disabled :is(button, input, textarea, select) {
+  cursor: not-allowed;
+}
+
+.outline-editor-panel__fieldset:disabled :is(.outline-goal-group, .outline-material-group, .outline-subsection) {
+  background: oklch(0.985 0.004 88);
+}
+
 .outline-form-grid,
 .outline-goals-grid,
 .outline-materials-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  align-items: start;
 }
 
 .outline-field,
@@ -426,6 +444,24 @@
   background: #fff;
 }
 
+.outline-goal-group,
+.outline-material-group {
+  align-content: start;
+}
+
+.outline-group-empty-state {
+  margin: 0;
+  min-height: 88px;
+  padding: 18px 16px;
+  border: 1px dashed var(--outline-line);
+  border-radius: 16px;
+  background: var(--outline-surface-soft);
+  color: var(--outline-soft);
+  line-height: 1.6;
+  display: grid;
+  align-content: center;
+}
+
 .outline-subsection__head {
   display: flex;
   align-items: center;
@@ -442,6 +478,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.outline-method-tags--readonly {
+  min-height: 42px;
+  align-items: center;
 }
 
 .outline-method-tag {

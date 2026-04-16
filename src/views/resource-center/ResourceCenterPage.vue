@@ -33,7 +33,7 @@ function handleNavigationClick(item: NavigationItem) {
       <ResourceCenterSidebar :items="navigationItems" :profile="teacherProfile" @select="handleNavigationClick" />
 
       <main class="dashboard-main">
-        <WorkbenchSection :section="activeWorkbenchSection" />
+        <WorkbenchSection :section="activeWorkbenchSection" :current-teacher-name="teacherProfile.name" />
       </main>
     </div>
   </div>

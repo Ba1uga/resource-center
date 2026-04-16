@@ -32,6 +32,7 @@ for (const fileUrl of [sectionUrl, stylesUrl, typesUrl, fixturesUrl, viewModelUr
 
 const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
+const normalizedSectionContent = sectionContent.replace(/\s+/g, ' ')
 
 assert.ok(sectionContent.includes("import '../styles/courseware-workbench.css'"))
 assert.ok(
@@ -78,6 +79,13 @@ assert.ok(sectionContent.includes('handleCreate'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
 assert.ok(sectionContent.includes('saveDrawer'))
+assert.ok(
+  normalizedSectionContent.includes(
+    '<button type="button" class="danger" aria-label=',
+  ),
+)
+assert.ok(normalizedSectionContent.includes('class="danger" aria-label='))
+assert.ok(normalizedSectionContent.includes('@click="handleDelete(row.id)"'))
 assert.equal(sectionContent.includes('module-workbench-placeholder'), false)
 assert.equal(sectionContent.includes('placeholderTitle'), false)
 assert.equal(sectionContent.includes('placeholderDescription'), false)
@@ -130,6 +138,14 @@ assert.match(
   /\.courseware-management__table\s+th\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*0;/i,
 )
 assert.match(stylesContent, /\.courseware-management__table\s+th\s*\{[\s\S]*?z-index:\s*1;/i)
+assert.match(
+  stylesContent,
+  /\.courseware-management__row-actions\s+button\.danger\s*\{[\s\S]*?width:\s*34px;[\s\S]*?height:\s*34px;[\s\S]*?border:\s*0;[\s\S]*?border-radius:\s*10px;[\s\S]*?background:\s*transparent;[\s\S]*?color:\s*var\(--courseware-danger\);/i,
+)
+assert.match(
+  stylesContent,
+  /\.courseware-management__row-actions\s+button\.danger:hover\s*\{[\s\S]*?background:\s*oklch\(0\.97 0\.01 245\);/i,
+)
 assert.match(
   stylesContent,
   /\.courseware-management__pagination\s*\{[\s\S]*?padding:\s*14px 16px;/i,

@@ -322,7 +322,7 @@ function formatCurrentDate() {
                   </button>
                   <button
                     type="button"
-                    class="courseware-management__icon-button danger"
+                    class="danger"
                     aria-label="删除课件"
                     @click="handleDelete(row.id)"
                   >
