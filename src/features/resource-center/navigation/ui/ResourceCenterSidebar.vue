@@ -2,12 +2,12 @@
 import ProfileCard from '@/features/resource-center/profile/ui/ProfileCard.vue'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 
-import type { TeacherProfile } from '@/features/resource-center/profile/model/profile.types'
+import type { AdminProfile } from '@/features/resource-center/profile/model/profile.types'
 import type { NavigationItem } from '@/features/resource-center/navigation/model/navigation.types'
 
 defineProps<{
   items: NavigationItem[]
-  profile: TeacherProfile
+  profile: AdminProfile
 }>()
 
 const emit = defineEmits<{

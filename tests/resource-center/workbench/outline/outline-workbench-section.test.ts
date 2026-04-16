@@ -19,7 +19,7 @@ const normalizedOutlineSection = outlineSection.replace(/\s+/g, ' ')
 
 assert.ok(outlineSection.includes("import '../styles/outline-workbench.css'"))
 assert.ok(outlineSection.includes('const props = defineProps<{'))
-assert.ok(outlineSection.includes('currentTeacherName: string'))
+assert.ok(outlineSection.includes('currentAdminName: string'))
 assert.ok(outlineSection.includes('class="outline-management workbench-surface"'))
 assert.ok(outlineSection.includes('class="outline-management__head"'))
 assert.ok(outlineSection.includes('class="outline-management__heading"'))
@@ -34,10 +34,10 @@ assert.ok(outlineSection.includes('class="outline-editor-panel"'))
 assert.ok(outlineSection.includes("const activeEditorSection = ref<OutlineSectionId>('basic-info')"))
 assert.ok(
   outlineSection.includes(
-    'const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses(), props.currentTeacherName))',
+    'const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))',
   ),
 )
-assert.ok(outlineSection.includes('currentTeacherName: props.currentTeacherName'))
+assert.equal(outlineSection.includes('currentAdminName: props.currentAdminName'), false)
 assert.ok(outlineSection.includes('@click="handleResetFilters"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
 assert.ok(outlineSection.includes('const savedSnapshot = ref('))
@@ -53,6 +53,7 @@ assert.ok(outlineSection.includes('function confirmArchiveVersion()'))
 assert.ok(outlineSection.includes('function handleRestoreVersion('))
 assert.ok(outlineSection.includes('function handleEditAction()'))
 assert.ok(outlineSection.includes('function handleCreateVersion()'))
+assert.ok(outlineSection.includes('createdBy: props.currentAdminName'))
 assert.ok(outlineSection.includes('保存成功'))
 assert.ok(outlineSection.includes('保存失败'))
 assert.ok(outlineSection.includes('@click="handleEditAction"'))
@@ -116,6 +117,7 @@ assert.equal(outlineSection.includes('class="outline-workspace__completion"'), f
 assert.equal(outlineSection.includes('Teacher Workspace'), false)
 assert.equal(outlineSection.includes('class="outline-overview-shell"'), false)
 assert.equal(outlineSection.includes('class="outline-editor-drawer"'), false)
+assert.equal(outlineSection.includes('currentTeacherName'), false)
 
 assert.match(
   outlineStyles,

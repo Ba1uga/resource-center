@@ -44,8 +44,8 @@ async function main() {
     throw new Error('ResourceCenterPage.vue must not include ResourceCenterTopbar')
   }
 
-  if (!pageContent.includes(':profile="teacherProfile"')) {
-    throw new Error('ResourceCenterSidebar must receive teacherProfile')
+  if (!pageContent.includes(':profile="adminProfile"')) {
+    throw new Error('ResourceCenterSidebar must receive adminProfile')
   }
 
   if (pageContent.includes('ResourceOverviewSection')) {
@@ -92,9 +92,9 @@ async function main() {
   }
 
   if (
-    !pageContent.includes('<WorkbenchSection :section="activeWorkbenchSection" :current-teacher-name="teacherProfile.name" />')
+    !pageContent.includes('<WorkbenchSection :section="activeWorkbenchSection" :current-admin-name="adminProfile.name" />')
   ) {
-    throw new Error('ResourceCenterPage.vue must pass teacherProfile.name into WorkbenchSection')
+    throw new Error('ResourceCenterPage.vue must pass adminProfile.name into WorkbenchSection')
   }
 
   if (

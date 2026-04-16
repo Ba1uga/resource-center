@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 import { createNavigationItems } from '@/features/resource-center/navigation/model/navigation.config.ts'
 import type { NavigationItem } from '@/features/resource-center/navigation/model/navigation.types.ts'
-import { teacherProfile } from '@/features/resource-center/profile/model/profile.fixture.ts'
+import { adminProfile } from '@/features/resource-center/profile/model/profile.fixture.ts'
 import { resolveWorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 import ResourceCenterSidebar from '@/features/resource-center/navigation/ui/ResourceCenterSidebar.vue'
 import WorkbenchSection from '@/features/resource-center/workbench/shared/ui/WorkbenchSection.vue'
@@ -30,10 +30,10 @@ function handleNavigationClick(item: NavigationItem) {
     <div class="page-glow page-glow-right"></div>
 
     <div class="dashboard-frame">
-      <ResourceCenterSidebar :items="navigationItems" :profile="teacherProfile" @select="handleNavigationClick" />
+      <ResourceCenterSidebar :items="navigationItems" :profile="adminProfile" @select="handleNavigationClick" />
 
       <main class="dashboard-main">
-        <WorkbenchSection :section="activeWorkbenchSection" :current-teacher-name="teacherProfile.name" />
+        <WorkbenchSection :section="activeWorkbenchSection" :current-admin-name="adminProfile.name" />
       </main>
     </div>
   </div>

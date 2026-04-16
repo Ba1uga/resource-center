@@ -36,12 +36,12 @@ const props = defineProps<{
   section: WorkbenchSectionMeta
 }>()
 
-const currentTeacherId = 'teacher-xie'
+const currentAdminId = 'admin-xie'
 
 const seedRows: TeacherOwnedTextbookRecord[] = [
   {
     id: 'tb-1001',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '计算机网络（第8版）',
     author: '谢希仁',
     publisher: '电子工业出版社',
@@ -52,7 +52,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1002',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '数据结构（C语言版）',
     author: '严蔚敏',
     publisher: '清华大学出版社',
@@ -63,7 +63,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1003',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '操作系统概念',
     author: 'Abraham Silberschatz',
     publisher: '高等教育出版社',
@@ -74,7 +74,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1004',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '数据库系统概论',
     author: '王珊',
     publisher: '高等教育出版社',
@@ -85,7 +85,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1005',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '编译原理',
     author: '陈意云',
     publisher: '清华大学出版社',
@@ -96,7 +96,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1006',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '离散数学',
     author: '屈婉玲',
     publisher: '高等教育出版社',
@@ -107,7 +107,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1007',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '软件工程导论',
     author: '张海藩',
     publisher: '清华大学出版社',
@@ -118,7 +118,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1008',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '人工智能导论',
     author: '李德毅',
     publisher: '机械工业出版社',
@@ -129,7 +129,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1009',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '计算机组成原理',
     author: '唐朔飞',
     publisher: '高等教育出版社',
@@ -140,7 +140,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
   {
     id: 'tb-1010',
-    ownerId: currentTeacherId,
+    ownerId: currentAdminId,
     name: '程序设计基础（Python）',
     author: '嵩天',
     publisher: '高等教育出版社',
@@ -199,16 +199,16 @@ const feedback = ref<{
 
 const pageSizeOptions = [10, 20, 50]
 
-const ownedRows = computed(() => allRows.value.filter((row) => row.ownerId === currentTeacherId))
+const visibleRows = computed(() => allRows.value)
 
-const courseOptions = computed(() => buildDistinctOptions(ownedRows.value, (row) => row.course, '全部课程'))
-const publisherOptions = computed(() => buildDistinctOptions(ownedRows.value, (row) => row.publisher, '全部出版社'))
-const editionOptions = computed(() => buildDistinctOptions(ownedRows.value, (row) => row.edition, '全部版本'))
+const courseOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.course, '全部课程'))
+const publisherOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.publisher, '全部出版社'))
+const editionOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.edition, '全部版本'))
 
 const filteredRows = computed(() => {
   const normalizedKeyword = keyword.value.trim().toLowerCase()
 
-  return ownedRows.value.filter((row) => {
+  return visibleRows.value.filter((row) => {
     const matchesKeyword =
       normalizedKeyword.length === 0 ||
       [row.name, row.author, row.isbn].some((field) => field.toLowerCase().includes(normalizedKeyword))
@@ -319,7 +319,7 @@ function openCreateDrawer() {
 }
 
 function openEditDrawer(id: string) {
-  const target = ownedRows.value.find((row) => row.id === id)
+  const target = allRows.value.find((row) => row.id === id)
   if (!target) {
     return
   }
@@ -358,7 +358,7 @@ function validateDrawer(): boolean {
     drawerErrors.isbn = 'ISBN 需为 10 到 13 位数字。'
   }
 
-  const duplicate = ownedRows.value.find((row) => {
+  const duplicate = allRows.value.find((row) => {
     if (drawerMode.value === 'edit' && row.id === drawerTargetId.value) {
       return false
     }
@@ -391,7 +391,7 @@ function saveDrawer() {
     allRows.value = [
       {
         id: `tb-${Date.now().toString(36)}`,
-        ownerId: currentTeacherId,
+        ownerId: currentAdminId,
         updatedAt: new Date().toISOString().slice(0, 10),
         ...payload,
       },
@@ -422,7 +422,7 @@ function saveDrawer() {
 }
 
 function deleteRow(id: string) {
-  const target = ownedRows.value.find((row) => row.id === id)
+  const target = allRows.value.find((row) => row.id === id)
   if (!target) {
     return
   }
@@ -464,7 +464,7 @@ function resetFilters() {
         <div class="textbook-management__heading">
           <h2>{{ props.section.title }}</h2>
         </div>
-        <span class="textbook-management__scope-pill">仅显示我上传的教材</span>
+        <span class="textbook-management__scope-pill">管理员可管理全部教材</span>
       </header>
 
       <div

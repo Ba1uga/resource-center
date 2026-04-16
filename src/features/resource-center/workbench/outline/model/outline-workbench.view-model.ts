@@ -15,16 +15,13 @@ import type {
 
 export interface CreateOutlineWorkbenchViewModelOptions {
   courses?: OutlineCourseRecord[]
-  currentTeacherName?: string
   queryState?: Partial<OutlineWorkbenchQueryState>
 }
 
 export function createDefaultOutlineWorkbenchQueryState(
   courses: OutlineCourseRecord[] = outlineWorkbenchCourses,
-  currentTeacherName?: string,
 ): OutlineWorkbenchQueryState {
-  const ownedCourses = filterCoursesByCreator(courses, currentTeacherName)
-  const firstCourse = ownedCourses[0]
+  const firstCourse = courses[0]
   const firstVersion = firstCourse?.versions.find((version) => version.archiveState === 'active') ?? firstCourse?.versions[0]
 
   return {
@@ -42,9 +39,9 @@ export function createDefaultOutlineWorkbenchQueryState(
 export function createOutlineWorkbenchViewModel(
   options: CreateOutlineWorkbenchViewModelOptions = {},
 ): OutlineWorkbenchViewModel {
-  const courses = filterCoursesByCreator(options.courses ?? outlineWorkbenchCourses, options.currentTeacherName)
+  const courses = options.courses ?? outlineWorkbenchCourses
   const queryState = {
-    ...createDefaultOutlineWorkbenchQueryState(courses, options.currentTeacherName),
+    ...createDefaultOutlineWorkbenchQueryState(courses),
     ...options.queryState,
   }
   const currentCourse = resolveCurrentCourse(courses, queryState.selectedCourseId)
@@ -84,27 +81,6 @@ function createEmptyCompletion(): OutlineCompletionSummary {
 
 function resolveCurrentCourse(courses: OutlineCourseRecord[], selectedCourseId: string): OutlineCourseRecord | undefined {
   return courses.find((course) => course.id === selectedCourseId) ?? courses[0]
-}
-
-function filterCoursesByCreator(courses: OutlineCourseRecord[], currentTeacherName?: string): OutlineCourseRecord[] {
-  if (!currentTeacherName) {
-    return courses
-  }
-
-  return courses
-    .map((course) => {
-      const ownedVersions = course.versions.filter((version) => version.createdBy === currentTeacherName)
-
-      if (ownedVersions.length === 0) {
-        return null
-      }
-
-      return {
-        ...course,
-        versions: ownedVersions,
-      }
-    })
-    .filter((course): course is OutlineCourseRecord => course !== null)
 }
 
 function resolveCurrentVersion(

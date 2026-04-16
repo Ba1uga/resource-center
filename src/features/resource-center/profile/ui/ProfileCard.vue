@@ -3,10 +3,10 @@ import './profile-card.css'
 
 import { computed } from 'vue'
 
-import type { TeacherProfile } from '@/features/resource-center/profile/model/profile.types'
+import type { AdminProfile } from '@/features/resource-center/profile/model/profile.types'
 
 const props = defineProps<{
-  profile: TeacherProfile
+  profile: AdminProfile
 }>()
 
 const profileInitial = computed(() => props.profile.name.trim().charAt(0) || '?')

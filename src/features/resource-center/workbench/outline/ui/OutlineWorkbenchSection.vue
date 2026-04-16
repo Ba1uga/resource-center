@@ -25,7 +25,7 @@ import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/
 
 const props = defineProps<{
   section: WorkbenchSectionMeta
-  currentTeacherName: string
+  currentAdminName: string
 }>()
 
 type PendingVersionSelection = {
@@ -40,7 +40,7 @@ type PendingArchiveTarget = {
 }
 
 const repository = createOutlineWorkbenchRepository()
-const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses(), props.currentTeacherName))
+const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))
 const dataVersion = ref(0)
 const draft = ref(createOutlineVersionDraft())
 const activeEditorSection = ref<OutlineSectionId>('basic-info')
@@ -64,7 +64,6 @@ const viewModel = computed(() => {
 
   return createOutlineWorkbenchViewModel({
     courses: repository.listCourses(),
-    currentTeacherName: props.currentTeacherName,
     queryState,
   })
 })
@@ -164,7 +163,7 @@ function discardPendingSelection() {
 }
 
 function handleResetFilters() {
-  const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses(), props.currentTeacherName)
+  const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses())
   queryState.searchText = defaults.searchText
   queryState.semester = defaults.semester
   queryState.versionStatus = defaults.versionStatus
@@ -227,7 +226,7 @@ function handleCreateVersion() {
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim(),
           note: versionCreator.note.trim(),
-          createdBy: props.currentTeacherName,
+          createdBy: props.currentAdminName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
       : repository.duplicateOutlineVersion({
@@ -236,7 +235,7 @@ function handleCreateVersion() {
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim() || currentVersion?.semester || '',
           note: versionCreator.note.trim(),
-          createdBy: props.currentTeacherName,
+          createdBy: props.currentAdminName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
 
