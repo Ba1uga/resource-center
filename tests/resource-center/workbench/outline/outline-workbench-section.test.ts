@@ -40,6 +40,12 @@ assert.ok(
 assert.equal(outlineSection.includes('currentAdminName: props.currentAdminName'), false)
 assert.ok(outlineSection.includes('@click="handleResetFilters"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
+assert.ok(outlineSection.includes('class="outline-version-row__identity"'))
+assert.ok(outlineSection.includes('class="outline-version-row__status-line"'))
+assert.match(
+  normalizedOutlineSection,
+  /class="outline-version-row__identity"[\s\S]*?<\/button>\s*<div class="outline-version-row__status-line">/i,
+)
 assert.ok(outlineSection.includes('const savedSnapshot = ref('))
 assert.ok(outlineSection.includes('const pendingSelection = ref<'))
 assert.ok(outlineSection.includes('const pendingArchive = ref<'))
@@ -137,6 +143,18 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-row\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?align-items:\s*stretch;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-row__status-line\s*\{[\s\S]*?display:\s*flex;[\s\S]*?align-items:\s*center;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-row__meta\s*\.outline-status-chip,\s*[\r\n]+\s*\.outline-version-row__actions\s*\.outline-inline-button\s*\{[\s\S]*?white-space:\s*nowrap;/i,
 )
 assert.match(
   outlineStyles,

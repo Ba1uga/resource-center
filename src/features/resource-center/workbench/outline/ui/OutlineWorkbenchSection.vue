@@ -534,7 +534,7 @@ function openPrintWindow(documentModel: {
               :class="{ current: version.current, archived: version.archiveState === 'archived' }"
             >
               <button
-                class="outline-version-row__button"
+                class="outline-version-row__identity"
                 type="button"
                 @click="requestVersionSelection(course.id, version.id)"
               >
@@ -542,30 +542,32 @@ function openPrintWindow(documentModel: {
                   {{ version.versionName }}
                   <small>{{ version.semester }}</small>
                 </span>
+              </button>
 
+              <div class="outline-version-row__status-line">
                 <span class="outline-version-row__meta">
                   <span class="outline-status-chip">{{ statusLabel(version.status) }}</span>
                   <span class="outline-status-chip subtle">{{ version.completionPercent }}%</span>
                 </span>
-              </button>
 
-              <div class="outline-version-row__actions">
-                <button
-                  v-if="version.archiveState === 'active'"
-                  class="outline-inline-button"
-                  type="button"
-                  @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
-                >
-                  归档
-                </button>
-                <button
-                  v-else
-                  class="outline-inline-button"
-                  type="button"
-                  @click.stop="handleRestoreVersion(course.id, version.id)"
-                >
-                  恢复使用
-                </button>
+                <div class="outline-version-row__actions">
+                  <button
+                    v-if="version.archiveState === 'active'"
+                    class="outline-inline-button"
+                    type="button"
+                    @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
+                  >
+                    归档
+                  </button>
+                  <button
+                    v-else
+                    class="outline-inline-button"
+                    type="button"
+                    @click.stop="handleRestoreVersion(course.id, version.id)"
+                  >
+                    恢复使用
+                  </button>
+                </div>
               </div>
             </article>
           </div>
