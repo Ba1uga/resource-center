@@ -28,6 +28,8 @@ assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
 assert.ok(outlineSection.includes('class="outline-workspace"'))
+assert.ok(outlineSection.includes('class="outline-workspace__top"'))
+assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
 assert.ok(outlineSection.includes('class="outline-workspace__summary"'))
 assert.ok(outlineSection.includes('class="outline-section-tabs"'))
 assert.ok(outlineSection.includes('class="outline-editor-panel"'))
@@ -42,9 +44,19 @@ assert.ok(outlineSection.includes('@click="handleResetFilters"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
 assert.ok(outlineSection.includes('class="outline-version-row__identity"'))
 assert.ok(outlineSection.includes('class="outline-version-row__status-line"'))
+assert.ok(outlineSection.includes('class="outline-archive-popconfirm"'))
+assert.ok(outlineSection.includes('class="outline-archive-popconfirm__actions"'))
+assert.ok(outlineSection.includes('@click.stop="confirmArchiveVersion"'))
+assert.ok(outlineSection.includes('@click.stop="cancelArchiveVersion"'))
+assert.ok(outlineSection.includes('@click="undoArchivedVersion"'))
+assert.equal(outlineSection.includes('class="outline-inline-notice warning"'), false)
 assert.match(
   normalizedOutlineSection,
   /class="outline-version-row__identity"[\s\S]*?<\/button>\s*<div class="outline-version-row__status-line">/i,
+)
+assert.match(
+  normalizedOutlineSection,
+  /class="outline-version-row__status-line"[\s\S]*?(?:<\/div>\s*){2}<div\s+v-if="pendingArchive\?\.courseId === course\.id && pendingArchive\?\.versionId === version\.id"\s+class="outline-archive-popconfirm"\s*>/i,
 )
 assert.ok(outlineSection.includes('const savedSnapshot = ref('))
 assert.ok(outlineSection.includes('const pendingSelection = ref<'))
@@ -56,6 +68,8 @@ assert.ok(outlineSection.includes('function confirmPendingSelectionWithSave()'))
 assert.ok(outlineSection.includes('function discardPendingSelection()'))
 assert.ok(outlineSection.includes('function requestArchiveVersion('))
 assert.ok(outlineSection.includes('function confirmArchiveVersion()'))
+assert.ok(outlineSection.includes('function cancelArchiveVersion()'))
+assert.ok(outlineSection.includes('function undoArchivedVersion()'))
 assert.ok(outlineSection.includes('function handleRestoreVersion('))
 assert.ok(outlineSection.includes('function handleEditAction()'))
 assert.ok(outlineSection.includes('function handleCreateVersion()'))
@@ -158,7 +172,28 @@ assert.match(
 )
 assert.match(
   outlineStyles,
-  /\.outline-workspace\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto\s+auto\s+auto\s+minmax\(0,\s*1fr\);[\s\S]*?min-height:\s*0;/i,
+  /\.outline-version-row\s*\{[\s\S]*?position:\s*relative;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-archive-popconfirm\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-status-message__action\s*\{[\s\S]*?display:\s*inline-flex;/i,
+)
+assert.equal(/\.outline-archive-popconfirm\s*\{[\s\S]*?position:\s*absolute;/i.test(outlineStyles), false)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\);[\s\S]*?min-height:\s*0;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__top\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*14px;[\s\S]*?align-content:\s*start;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__feedback\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*8px;/i,
 )
 assert.match(
   outlineStyles,
@@ -171,8 +206,13 @@ assert.match(
 )
 assert.match(
   outlineStyles,
+  /\.outline-section-tabs\s*\{[\s\S]*?display:\s*flex;[\s\S]*?align-items:\s*flex-start;[\s\S]*?align-self:\s*start;/i,
+)
+assert.match(
+  outlineStyles,
   /\.outline-method-tags--readonly\s*\{[\s\S]*?min-height:\s*42px;/i,
 )
+assert.equal(/\.outline-inline-notice\.warning\s*\{/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
   /@media \(max-width: 1180px\)\s*\{[\s\S]*?\.outline-management__body\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\}[\s\S]*?\.outline-query-bar\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/i,

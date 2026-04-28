@@ -248,6 +248,7 @@
   grid-template-columns: 1fr;
   gap: 10px;
   align-items: stretch;
+  position: relative;
   padding: 10px;
   border: 1px solid var(--outline-line);
   border-radius: 16px;
@@ -314,13 +315,55 @@
 
 .outline-version-row__actions {
   margin-left: auto;
+  position: relative;
+}
+
+.outline-version-row__archive-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.outline-archive-popconfirm {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid oklch(0.82 0.08 78);
+  border-radius: 18px;
+  background: oklch(0.98 0.014 86);
+  box-shadow: var(--shadow-soft);
+}
+
+.outline-archive-popconfirm p {
+  margin: 0;
+  color: var(--outline-soft);
+  line-height: 1.6;
+}
+
+.outline-archive-popconfirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .outline-workspace {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
   min-height: 0;
+}
+
+.outline-workspace__top {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.outline-workspace__feedback {
+  display: grid;
+  gap: 8px;
 }
 
 .outline-inline-notice,
@@ -332,11 +375,6 @@
 .outline-inline-notice {
   display: grid;
   gap: 12px;
-}
-
-.outline-inline-notice.warning {
-  border-color: oklch(0.82 0.08 78);
-  background: oklch(0.98 0.014 86);
 }
 
 .outline-workspace__summary {
@@ -361,13 +399,34 @@
 }
 
 .outline-status-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   padding: 0 4px;
+}
+
+.outline-status-message__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--outline-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--outline-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .outline-section-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: flex-start;
+  align-self: start;
 }
 
 .outline-section-tab--action {
