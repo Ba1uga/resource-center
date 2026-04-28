@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../styles/outline-workbench.css'
 
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import {
   createOutlineVersionDraft,
@@ -270,6 +270,12 @@ function cancelArchiveVersion() {
   pendingArchive.value = null
 }
 
+function handleWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && pendingArchive.value) {
+    cancelArchiveVersion()
+  }
+}
+
 function confirmArchiveVersion() {
   if (!pendingArchive.value) {
     return
@@ -423,6 +429,18 @@ function removeMaterial(kind: 'primary' | 'references', itemId: string) {
 function statusLabel(status: 'draft' | 'final') {
   return status === 'final' ? '定稿' : '草稿'
 }
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleWindowKeydown)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleWindowKeydown)
+  }
+})
 
 function renderPrintHtml(documentModel: {
   title: string
@@ -583,6 +601,7 @@ function openPrintWindow(documentModel: {
                   <div v-if="version.archiveState === 'active'" class="outline-version-row__archive-action">
                     <button
                       class="outline-inline-button"
+                      :class="{ 'archive-pending': pendingArchive?.courseId === course.id && pendingArchive?.versionId === version.id }"
                       type="button"
                       @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
                     >
@@ -600,35 +619,14 @@ function openPrintWindow(documentModel: {
                 </div>
               </div>
 
-              <div
-                v-if="pendingArchive?.courseId === course.id && pendingArchive?.versionId === version.id"
-                class="outline-archive-popconfirm"
-              >
-                <p>归档不会删除内容，只会从默认工作列表中收起 {{ pendingArchive.versionLabel }}。</p>
-                <div class="outline-archive-popconfirm__actions">
-                  <button
-                    class="outline-toolbar-button primary"
-                    type="button"
-                    @click.stop="confirmArchiveVersion"
-                  >
-                    确认归档
-                  </button>
-                  <button
-                    class="outline-toolbar-button"
-                    type="button"
-                    @click.stop="cancelArchiveVersion"
-                  >
-                    取消
-                  </button>
-                </div>
-              </div>
             </article>
           </div>
         </article>
       </aside>
 
       <section class="outline-workspace">
-        <div class="outline-workspace__top">
+        <div class="outline-workspace__content" :class="{ 'archive-blurred': !!pendingArchive }">
+          <div class="outline-workspace__top">
           <section v-if="pendingSelection" class="outline-inline-notice">
             <p>当前版本有未保存内容，可先保存草稿再切换。</p>
             <div class="outline-inline-notice__actions">
@@ -714,9 +712,9 @@ function openPrintWindow(documentModel: {
               {{ isEditing ? '保存' : '修改' }}
             </button>
           </nav>
-        </div>
+          </div>
 
-        <section class="outline-editor-panel">
+          <section class="outline-editor-panel">
           <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
             <label class="outline-field">
@@ -957,7 +955,28 @@ function openPrintWindow(documentModel: {
             </section>
           </div>
           </fieldset>
-        </section>
+          </section>
+        </div>
+
+        <div v-if="pendingArchive" class="outline-archive-mode">
+          <button
+            class="outline-archive-mode__scrim"
+            type="button"
+            aria-label="取消归档模式"
+            @click="cancelArchiveVersion"
+          ></button>
+          <section class="outline-archive-mode__panel">
+            <p class="outline-archive-mode__eyebrow">归档模式</p>
+            <h3>确认归档 {{ pendingArchive.versionLabel }}</h3>
+            <p>归档不会删除内容，只会从默认工作列表中收起该版本。</p>
+            <div class="outline-archive-mode__actions">
+              <button class="outline-toolbar-button primary" type="button" @click.stop="confirmArchiveVersion">
+                确认归档
+              </button>
+              <button class="outline-toolbar-button" type="button" @click.stop="cancelArchiveVersion">取消</button>
+            </div>
+          </section>
+        </div>
       </section>
     </div>
   </section>

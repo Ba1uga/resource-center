@@ -44,19 +44,24 @@ assert.ok(outlineSection.includes('@click="handleResetFilters"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
 assert.ok(outlineSection.includes('class="outline-version-row__identity"'))
 assert.ok(outlineSection.includes('class="outline-version-row__status-line"'))
-assert.ok(outlineSection.includes('class="outline-archive-popconfirm"'))
-assert.ok(outlineSection.includes('class="outline-archive-popconfirm__actions"'))
+assert.ok(outlineSection.includes('class="outline-archive-mode"'))
+assert.ok(outlineSection.includes('class="outline-archive-mode__scrim"'))
+assert.ok(outlineSection.includes('class="outline-archive-mode__panel"'))
+assert.ok(outlineSection.includes('class="outline-archive-mode__actions"'))
+assert.ok(outlineSection.includes('archive-pending'))
 assert.ok(outlineSection.includes('@click.stop="confirmArchiveVersion"'))
 assert.ok(outlineSection.includes('@click.stop="cancelArchiveVersion"'))
 assert.ok(outlineSection.includes('@click="undoArchivedVersion"'))
+assert.ok(outlineSection.includes("if (event.key === 'Escape' && pendingArchive.value)"))
 assert.equal(outlineSection.includes('class="outline-inline-notice warning"'), false)
+assert.equal(outlineSection.includes('class="outline-archive-popconfirm"'), false)
 assert.match(
   normalizedOutlineSection,
-  /class="outline-version-row__identity"[\s\S]*?<\/button>\s*<div class="outline-version-row__status-line">/i,
+  /class="outline-inline-button"[\s\S]*?archive-pending/i,
 )
 assert.match(
   normalizedOutlineSection,
-  /class="outline-version-row__status-line"[\s\S]*?(?:<\/div>\s*){2}<div\s+v-if="pendingArchive\?\.courseId === course\.id && pendingArchive\?\.versionId === version\.id"\s+class="outline-archive-popconfirm"\s*>/i,
+  /v-if="pendingArchive" class="outline-archive-mode"[\s\S]*?class="outline-archive-mode__scrim"[\s\S]*?class="outline-archive-mode__panel"/i,
 )
 assert.ok(outlineSection.includes('const savedSnapshot = ref('))
 assert.ok(outlineSection.includes('const pendingSelection = ref<'))
@@ -164,25 +169,33 @@ assert.match(
 )
 assert.match(
   outlineStyles,
-  /\.outline-version-row__status-line\s*\{[\s\S]*?display:\s*flex;[\s\S]*?align-items:\s*center;/i,
+  /\.archive-pending\s*\{[\s\S]*?border-color:/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-version-row__meta\s*\.outline-status-chip,\s*[\r\n]+\s*\.outline-version-row__actions\s*\.outline-inline-button\s*\{[\s\S]*?white-space:\s*nowrap;/i,
+  /\.outline-archive-mode\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?inset:\s*0;/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-version-row\s*\{[\s\S]*?position:\s*relative;/i,
+  /\.outline-archive-mode__scrim\s*\{[\s\S]*?backdrop-filter:/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-archive-popconfirm\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;/i,
+  /\.outline-archive-mode__panel\s*\{[\s\S]*?z-index:\s*1;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__content\.archive-blurred\s*\{[\s\S]*?filter:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-archive-mode__actions\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-wrap:\s*wrap;/i,
 )
 assert.match(
   outlineStyles,
   /\.outline-status-message__action\s*\{[\s\S]*?display:\s*inline-flex;/i,
 )
-assert.equal(/\.outline-archive-popconfirm\s*\{[\s\S]*?position:\s*absolute;/i.test(outlineStyles), false)
+assert.equal(/\.outline-archive-popconfirm\s*\{/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
   /\.outline-workspace\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\);[\s\S]*?min-height:\s*0;/i,
@@ -206,7 +219,7 @@ assert.match(
 )
 assert.match(
   outlineStyles,
-  /\.outline-section-tabs\s*\{[\s\S]*?display:\s*flex;[\s\S]*?align-items:\s*flex-start;[\s\S]*?align-self:\s*start;/i,
+  /\.outline-section-tabs\s*\{[\s\S]*?display:\s*flex;[\s\S]*?align-items:\s*flex-start;[\s\S]*?align-self:\s*start;[\s\S]*?padding-bottom:\s*8px;/i,
 )
 assert.match(
   outlineStyles,
