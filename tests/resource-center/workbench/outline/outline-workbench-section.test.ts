@@ -31,6 +31,11 @@ assert.ok(outlineSection.includes('class="outline-workspace"'))
 assert.ok(outlineSection.includes('class="outline-workspace__top"'))
 assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
 assert.ok(outlineSection.includes('class="outline-workspace__summary"'))
+assert.ok(outlineSection.includes('class="outline-workspace__content"'))
+assert.ok(outlineSection.includes('class="outline-version-creator-mode"'))
+assert.ok(outlineSection.includes('class="outline-version-creator-mode__scrim"'))
+assert.ok(outlineSection.includes('class="outline-version-creator-mode__panel"'))
+assert.ok(outlineSection.includes('class="outline-version-creator-mode__actions"'))
 assert.ok(outlineSection.includes('class="outline-section-tabs"'))
 assert.ok(outlineSection.includes('class="outline-editor-panel"'))
 assert.ok(outlineSection.includes("const activeEditorSection = ref<OutlineSectionId>('basic-info')"))
@@ -71,6 +76,9 @@ assert.ok(outlineSection.includes('const hasUnsavedChanges = computed(() =>'))
 assert.ok(outlineSection.includes('function requestVersionSelection('))
 assert.ok(outlineSection.includes('function confirmPendingSelectionWithSave()'))
 assert.ok(outlineSection.includes('function discardPendingSelection()'))
+assert.ok(outlineSection.includes('function openBlankVersionCreator()'))
+assert.ok(outlineSection.includes('function openCopyVersionCreator()'))
+assert.ok(outlineSection.includes('function closeVersionCreator()'))
 assert.ok(outlineSection.includes('function requestArchiveVersion('))
 assert.ok(outlineSection.includes('function confirmArchiveVersion()'))
 assert.ok(outlineSection.includes('function cancelArchiveVersion()'))
@@ -81,9 +89,17 @@ assert.ok(outlineSection.includes('function handleCreateVersion()'))
 assert.ok(outlineSection.includes('createdBy: props.currentAdminName'))
 assert.ok(outlineSection.includes('保存成功'))
 assert.ok(outlineSection.includes('保存失败'))
+assert.ok(outlineSection.includes('@click="openBlankVersionCreator"'))
+assert.ok(outlineSection.includes('@click="openCopyVersionCreator"'))
 assert.ok(outlineSection.includes('@click="handleEditAction"'))
 assert.ok(outlineSection.includes("{{ isEditing ? '保存' : '修改' }}"))
 assert.ok(outlineSection.includes('<fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">'))
+assert.ok(outlineSection.includes("'creator-mode-blurred': showVersionCreator"))
+assert.ok(outlineSection.includes("if (event.key === 'Escape' && showVersionCreator.value)"))
+assert.equal(
+  normalizedOutlineSection.includes('v-if="showVersionCreator" class="outline-version-creator"'),
+  false,
+)
 assert.ok(normalizedOutlineSection.includes('v-if="isEditing" class="outline-inline-button" type="button" @click="addGoal(\'knowledge\')"'))
 assert.ok(
   normalizedOutlineSection.includes(
@@ -190,6 +206,26 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-archive-mode__actions\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-wrap:\s*wrap;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-creator-mode\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?inset:\s*0;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-creator-mode__scrim\s*\{[\s\S]*?backdrop-filter:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-creator-mode__panel\s*\{[\s\S]*?z-index:\s*1;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-version-creator-mode__actions\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-wrap:\s*wrap;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__content\.creator-mode-blurred\s*\{[\s\S]*?filter:/i,
 )
 assert.match(
   outlineStyles,

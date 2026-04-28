@@ -116,6 +116,21 @@ function createLocalId(prefix: string) {
   return `${prefix}-${localIdSeed}`
 }
 
+function seedVersionCreator(mode: 'copy' | 'blank') {
+  const currentVersion = viewModel.value.currentVersion
+  versionCreator.mode = mode
+  if (mode === 'blank') {
+    versionCreator.versionName = ''
+    versionCreator.semester = currentVersion?.semester ?? ''
+    versionCreator.note = ''
+    return
+  }
+
+  versionCreator.versionName = currentVersion ? `${currentVersion.versionName} 副本` : ''
+  versionCreator.semester = currentVersion?.semester ?? ''
+  versionCreator.note = currentVersion ? `复制自 ${currentVersion.versionName}` : ''
+}
+
 function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTarget | null = null) {
   statusMessage.value = message
   undoArchiveTarget.value = nextUndoArchiveTarget
@@ -168,6 +183,22 @@ function discardPendingSelection() {
   selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
   pendingSelection.value = null
   setStatusMessage('已放弃未保存修改并切换版本。')
+}
+
+function openBlankVersionCreator() {
+  pendingArchive.value = null
+  seedVersionCreator('blank')
+  showVersionCreator.value = true
+}
+
+function openCopyVersionCreator() {
+  pendingArchive.value = null
+  seedVersionCreator('copy')
+  showVersionCreator.value = true
+}
+
+function closeVersionCreator() {
+  showVersionCreator.value = false
 }
 
 function handleResetFilters() {
@@ -251,6 +282,7 @@ function handleCreateVersion() {
   queryState.archiveState = 'active'
   queryState.selectedCourseId = currentCourse.id
   queryState.selectedVersionId = createdVersion.id
+  closeVersionCreator()
   setStatusMessage(
     versionCreator.mode === 'blank'
       ? `已创建空白版本 ${createdVersion.versionName}`
@@ -259,6 +291,7 @@ function handleCreateVersion() {
 }
 
 function requestArchiveVersion(courseId: string, versionId: string, versionLabel: string) {
+  closeVersionCreator()
   pendingArchive.value = {
     courseId,
     versionId,
@@ -273,6 +306,10 @@ function cancelArchiveVersion() {
 function handleWindowKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && pendingArchive.value) {
     cancelArchiveVersion()
+    return
+  }
+  if (event.key === 'Escape' && showVersionCreator.value) {
+    closeVersionCreator()
   }
 }
 
@@ -553,7 +590,7 @@ function openPrintWindow(documentModel: {
       </label>
 
       <button class="outline-toolbar-button" type="button" @click="handleResetFilters">重置</button>
-      <button class="outline-toolbar-button primary" type="button" @click="showVersionCreator = !showVersionCreator">
+      <button class="outline-toolbar-button primary" type="button" @click="openBlankVersionCreator">
         新建版本
       </button>
     </section>
@@ -625,7 +662,10 @@ function openPrintWindow(documentModel: {
       </aside>
 
       <section class="outline-workspace">
-        <div class="outline-workspace__content" :class="{ 'archive-blurred': !!pendingArchive }">
+        <div
+          class="outline-workspace__content"
+          :class="{ 'archive-blurred': !!pendingArchive, 'creator-mode-blurred': showVersionCreator }"
+        >
           <div class="outline-workspace__top">
           <section v-if="pendingSelection" class="outline-inline-notice">
             <p>当前版本有未保存内容，可先保存草稿再切换。</p>
@@ -645,35 +685,12 @@ function openPrintWindow(documentModel: {
             </div>
 
             <div class="outline-workspace__actions">
-              <button class="outline-toolbar-button" type="button" @click="showVersionCreator = !showVersionCreator">
+              <button class="outline-toolbar-button" type="button" @click="openCopyVersionCreator">
                 复制为新版本
               </button>
               <button class="outline-toolbar-button primary" type="button" @click="handleExportVersion">导出 / 打印</button>
             </div>
           </header>
-
-          <section v-if="showVersionCreator" class="outline-version-creator">
-            <label class="outline-field">
-              <span>创建方式</span>
-              <select v-model="versionCreator.mode">
-                <option value="copy">复制当前版本</option>
-                <option value="blank">空白版本</option>
-              </select>
-            </label>
-            <label class="outline-field">
-              <span>版本名称</span>
-              <input v-model="versionCreator.versionName" type="text" />
-            </label>
-            <label class="outline-field">
-              <span>学期</span>
-              <input v-model="versionCreator.semester" type="text" />
-            </label>
-            <label class="outline-field wide">
-              <span>备注</span>
-              <input v-model="versionCreator.note" type="text" />
-            </label>
-            <button class="outline-toolbar-button primary" type="button" @click="handleCreateVersion">创建版本</button>
-          </section>
 
           <div class="outline-workspace__feedback">
             <p v-if="statusMessage" class="outline-status-message">
@@ -974,6 +991,49 @@ function openPrintWindow(documentModel: {
                 确认归档
               </button>
               <button class="outline-toolbar-button" type="button" @click.stop="cancelArchiveVersion">取消</button>
+            </div>
+          </section>
+        </div>
+
+        <div v-if="showVersionCreator" class="outline-version-creator-mode">
+          <button
+            class="outline-version-creator-mode__scrim"
+            type="button"
+            aria-label="取消版本创建模式"
+            @click="closeVersionCreator"
+          ></button>
+          <section class="outline-version-creator-mode__panel">
+            <p class="outline-version-creator-mode__eyebrow">版本创建模式</p>
+            <h3>{{ versionCreator.mode === 'blank' ? '创建新版本' : '复制为新版本' }}</h3>
+            <p>{{ versionCreator.mode === 'blank' ? '创建一个新的课程大纲版本。' : `复制自 ${viewModel.toolbar.versionLabel}` }}</p>
+
+            <div class="outline-version-creator-form">
+              <label class="outline-field">
+                <span>创建方式</span>
+                <select v-model="versionCreator.mode">
+                  <option value="copy">复制当前版本</option>
+                  <option value="blank">空白版本</option>
+                </select>
+              </label>
+              <label class="outline-field">
+                <span>版本名称</span>
+                <input v-model="versionCreator.versionName" type="text" />
+              </label>
+              <label class="outline-field">
+                <span>学期</span>
+                <input v-model="versionCreator.semester" type="text" />
+              </label>
+              <label class="outline-field wide">
+                <span>备注</span>
+                <input v-model="versionCreator.note" type="text" />
+              </label>
+            </div>
+
+            <div class="outline-version-creator-mode__actions">
+              <button class="outline-toolbar-button primary" type="button" @click.stop="handleCreateVersion">
+                创建版本
+              </button>
+              <button class="outline-toolbar-button" type="button" @click.stop="closeVersionCreator">取消</button>
             </div>
           </section>
         </div>

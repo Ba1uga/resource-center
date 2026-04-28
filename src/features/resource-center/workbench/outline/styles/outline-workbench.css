@@ -346,6 +346,13 @@
   user-select: none;
 }
 
+.outline-workspace__content.creator-mode-blurred {
+  filter: blur(3px) saturate(0.9);
+  opacity: 0.52;
+  pointer-events: none;
+  user-select: none;
+}
+
 .outline-workspace__top {
   display: grid;
   gap: 14px;
@@ -412,6 +419,62 @@
   gap: 10px;
 }
 
+.outline-version-creator-mode {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 116px 40px 40px;
+}
+
+.outline-version-creator-mode__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: oklch(0.98 0.006 86 / 0.28);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.outline-version-creator-mode__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  width: min(920px, calc(100% - 96px));
+  padding: 24px 26px;
+  border: 1px solid var(--outline-line);
+  border-radius: 24px;
+  background: var(--outline-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.outline-version-creator-mode__eyebrow {
+  margin: 0;
+  color: var(--outline-soft);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.outline-version-creator-mode__panel h3,
+.outline-version-creator-mode__panel p {
+  margin: 0;
+}
+
+.outline-version-creator-mode__panel p:last-of-type {
+  color: var(--outline-soft);
+  line-height: 1.65;
+}
+
+.outline-version-creator-mode__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .outline-inline-notice,
 .outline-workspace__summary,
 .outline-version-creator {
@@ -434,13 +497,15 @@
   gap: 6px;
 }
 
-.outline-version-creator {
+.outline-version-creator,
+.outline-version-creator-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   gap: 12px;
 }
 
-.outline-version-creator > .outline-field:last-of-type {
+.outline-version-creator > .outline-field:last-of-type,
+.outline-version-creator-form > .outline-field:last-of-type {
   grid-column: span 2;
 }
 
@@ -694,5 +759,15 @@
 
   .outline-archive-mode__panel {
     width: 100%;
+  }
+
+  .outline-version-creator-mode {
+    padding: 96px 20px 20px;
+  }
+
+  .outline-version-creator-mode__panel,
+  .outline-version-creator-form {
+    width: 100%;
+    grid-template-columns: 1fr;
   }
 }
