@@ -333,10 +333,16 @@
 
 .outline-workspace {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
   min-height: 0;
   position: relative;
+}
+
+.outline-workspace__content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
 }
 
 .outline-workspace__content.archive-blurred {
@@ -362,6 +368,12 @@
 .outline-workspace__feedback {
   display: grid;
   gap: 8px;
+}
+
+.outline-workspace__body {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .outline-archive-mode {
@@ -566,7 +578,7 @@
   border: 1px solid var(--outline-line);
   border-radius: 22px;
   background: var(--outline-surface);
-  overflow: auto;
+  overflow: visible;
 }
 
 .outline-editor-panel__fieldset {

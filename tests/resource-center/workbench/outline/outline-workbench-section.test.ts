@@ -32,6 +32,7 @@ assert.ok(outlineSection.includes('class="outline-workspace__top"'))
 assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
 assert.ok(outlineSection.includes('class="outline-workspace__summary"'))
 assert.ok(outlineSection.includes('class="outline-workspace__content"'))
+assert.ok(outlineSection.includes('class="outline-workspace__body"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode__scrim"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode__panel"'))
@@ -201,6 +202,10 @@ assert.match(
 )
 assert.match(
   outlineStyles,
+  /\.outline-workspace__content\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto\s+minmax\(0,\s*1fr\);[\s\S]*?min-height:\s*0;/i,
+)
+assert.match(
+  outlineStyles,
   /\.outline-workspace__content\.archive-blurred\s*\{[\s\S]*?filter:/i,
 )
 assert.match(
@@ -226,6 +231,10 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-workspace__content\.creator-mode-blurred\s*\{[\s\S]*?filter:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*auto;/i,
 )
 assert.match(
   outlineStyles,

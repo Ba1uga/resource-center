@@ -731,8 +731,9 @@ function openPrintWindow(documentModel: {
           </nav>
           </div>
 
-          <section class="outline-editor-panel">
-          <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
+          <div class="outline-workspace__body">
+            <section class="outline-editor-panel">
+            <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
             <label class="outline-field">
               <span>课程名</span>
@@ -971,8 +972,9 @@ function openPrintWindow(documentModel: {
               </article>
             </section>
           </div>
-          </fieldset>
-          </section>
+            </fieldset>
+            </section>
+          </div>
         </div>
 
         <div v-if="pendingArchive" class="outline-archive-mode">
