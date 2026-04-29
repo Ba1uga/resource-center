@@ -673,53 +673,61 @@ function openPrintWindow(documentModel: {
             <span class="outline-course-group__chevron" aria-hidden="true">⌄</span>
           </button>
 
-          <div v-if="isCourseExpanded(course.id)" class="outline-course-group__versions">
-            <article
-              v-for="version in course.versions"
-              :key="version.id"
-              class="outline-version-row"
-              :class="{ current: version.current, archived: version.archiveState === 'archived' }"
-            >
-              <button
-                class="outline-version-row__identity"
-                type="button"
-                @click="requestVersionSelection(course.id, version.id)"
-              >
-                <span class="outline-version-row__title">
-                  {{ version.versionName }}
-                  <small>{{ version.semester }}</small>
-                </span>
-              </button>
-
-              <div class="outline-version-row__status-line">
-                <span class="outline-version-row__meta">
-                  <span class="outline-status-chip">{{ statusLabel(version.status) }}</span>
-                  <span class="outline-status-chip subtle">{{ version.completionPercent }}%</span>
-                </span>
-
-                <div class="outline-version-row__actions">
-                  <div v-if="version.archiveState === 'active'" class="outline-version-row__archive-action">
-                    <button
-                      class="outline-inline-button"
-                      :class="{ 'archive-pending': pendingArchive?.courseId === course.id && pendingArchive?.versionId === version.id }"
-                      type="button"
-                      @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
-                    >
-                      归档
-                    </button>
-                  </div>
+          <div
+            class="outline-course-group__versions-shell"
+            :class="{ expanded: isCourseExpanded(course.id), collapsed: !isCourseExpanded(course.id) }"
+            :aria-hidden="!isCourseExpanded(course.id)"
+          >
+            <div class="outline-course-group__versions-body">
+              <div class="outline-course-group__versions">
+                <article
+                  v-for="version in course.versions"
+                  :key="version.id"
+                  class="outline-version-row"
+                  :class="{ current: version.current, archived: version.archiveState === 'archived' }"
+                >
                   <button
-                    v-else
-                    class="outline-inline-button"
+                    class="outline-version-row__identity"
                     type="button"
-                    @click.stop="handleRestoreVersion(course.id, version.id)"
+                    @click="requestVersionSelection(course.id, version.id)"
                   >
-                    恢复使用
+                    <span class="outline-version-row__title">
+                      {{ version.versionName }}
+                      <small>{{ version.semester }}</small>
+                    </span>
                   </button>
-                </div>
-              </div>
 
-            </article>
+                  <div class="outline-version-row__status-line">
+                    <span class="outline-version-row__meta">
+                      <span class="outline-status-chip">{{ statusLabel(version.status) }}</span>
+                      <span class="outline-status-chip subtle">{{ version.completionPercent }}%</span>
+                    </span>
+
+                    <div class="outline-version-row__actions">
+                      <div v-if="version.archiveState === 'active'" class="outline-version-row__archive-action">
+                        <button
+                          class="outline-inline-button"
+                          :class="{ 'archive-pending': pendingArchive?.courseId === course.id && pendingArchive?.versionId === version.id }"
+                          type="button"
+                          @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
+                        >
+                          归档
+                        </button>
+                      </div>
+                      <button
+                        v-else
+                        class="outline-inline-button"
+                        type="button"
+                        @click.stop="handleRestoreVersion(course.id, version.id)"
+                      >
+                        恢复使用
+                      </button>
+                    </div>
+                  </div>
+
+                </article>
+              </div>
+            </div>
           </div>
         </article>
       </aside>

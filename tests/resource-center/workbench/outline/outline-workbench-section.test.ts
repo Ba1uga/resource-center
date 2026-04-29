@@ -55,6 +55,9 @@ assert.ok(outlineSection.includes('@click="handleResetFilters"'))
 assert.ok(outlineSection.includes('@click="toggleCourseGroup(course.id)"'))
 assert.ok(outlineSection.includes(':aria-expanded="isCourseExpanded(course.id)"'))
 assert.ok(outlineSection.includes('class="outline-course-group__chevron"'))
+assert.ok(outlineSection.includes('class="outline-course-group__versions-shell"'))
+assert.ok(outlineSection.includes('class="outline-course-group__versions-body"'))
+assert.ok(outlineSection.includes(':aria-hidden="!isCourseExpanded(course.id)"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
 assert.ok(outlineSection.includes('class="outline-version-row__identity"'))
 assert.ok(outlineSection.includes('class="outline-version-row__status-line"'))
@@ -79,7 +82,11 @@ assert.match(
 )
 assert.match(
   normalizedOutlineSection,
-  /v-if="isCourseExpanded\(course\.id\)" class="outline-course-group__versions"/i,
+  /class="outline-course-group__versions-shell"[\s\S]*?expanded:\s*isCourseExpanded\(course\.id\)[\s\S]*?collapsed:\s*!isCourseExpanded\(course\.id\)/i,
+)
+assert.match(
+  normalizedOutlineSection,
+  /class="outline-course-group__versions-body"[\s\S]*?v-for="version in course\.versions"/i,
 )
 assert.match(
   normalizedOutlineSection,
@@ -211,6 +218,34 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-course-group:not\(\.collapsed\)\s+\.outline-course-group__chevron\s*\{[\s\S]*?transform:\s*rotate\(180deg\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__versions-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*0fr;[\s\S]*?overflow:\s*hidden;[\s\S]*?transition:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__versions-shell\.expanded\s*\{[\s\S]*?grid-template-rows:\s*1fr;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__versions-body\s*\{[\s\S]*?opacity:\s*0;[\s\S]*?transform:\s*translateY\(-/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__versions-shell\.expanded\s+\.outline-course-group__versions-body\s*\{[\s\S]*?opacity:\s*1;[\s\S]*?transform:\s*translateY\(0\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__versions-shell\.collapsed\s+\.outline-course-group__versions-body\s*\{[\s\S]*?pointer-events:\s*none;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__head:active\s*\{[\s\S]*?background:/i,
+)
+assert.match(
+  outlineStyles,
+  /@media \(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.outline-course-group__versions-shell[\s\S]*?transition:\s*none;[\s\S]*?\.outline-course-group__versions-body[\s\S]*?transition:\s*none;/i,
 )
 assert.match(
   outlineStyles,
