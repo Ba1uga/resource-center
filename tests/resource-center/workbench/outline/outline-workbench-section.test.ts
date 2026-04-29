@@ -28,6 +28,11 @@ assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
 assert.ok(outlineSection.includes('class="outline-workspace"'))
+assert.match(normalizedOutlineSection, /const hasActiveCourseFilters = computed\(\s*\(\) =>/i)
+assert.ok(outlineSection.includes('const manualExpandedCourseIds = ref<string[]>([])'))
+assert.ok(outlineSection.includes('const expandedCourseIds = computed(() =>'))
+assert.ok(outlineSection.includes('function toggleCourseGroup(courseId: string)'))
+assert.ok(outlineSection.includes('function isCourseExpanded(courseId: string)'))
 assert.ok(outlineSection.includes('class="outline-workspace__top"'))
 assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
 assert.ok(outlineSection.includes('class="outline-workspace__summary"'))
@@ -47,6 +52,9 @@ assert.ok(
 )
 assert.equal(outlineSection.includes('currentAdminName: props.currentAdminName'), false)
 assert.ok(outlineSection.includes('@click="handleResetFilters"'))
+assert.ok(outlineSection.includes('@click="toggleCourseGroup(course.id)"'))
+assert.ok(outlineSection.includes(':aria-expanded="isCourseExpanded(course.id)"'))
+assert.ok(outlineSection.includes('class="outline-course-group__chevron"'))
 assert.ok(outlineSection.includes('@click="requestVersionSelection(course.id, version.id)"'))
 assert.ok(outlineSection.includes('class="outline-version-row__identity"'))
 assert.ok(outlineSection.includes('class="outline-version-row__status-line"'))
@@ -64,6 +72,14 @@ assert.equal(outlineSection.includes('class="outline-archive-popconfirm"'), fals
 assert.match(
   normalizedOutlineSection,
   /class="outline-inline-button"[\s\S]*?archive-pending/i,
+)
+assert.match(
+  normalizedOutlineSection,
+  /class="outline-course-group"[\s\S]*?collapsed:\s*!isCourseExpanded\(course\.id\)/i,
+)
+assert.match(
+  normalizedOutlineSection,
+  /v-if="isCourseExpanded\(course\.id\)" class="outline-course-group__versions"/i,
 )
 assert.match(
   normalizedOutlineSection,
@@ -179,6 +195,22 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group\.collapsed\s*\{[\s\S]*?gap:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__head\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;[\s\S]*?align-items:\s*center;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group__chevron\s*\{[\s\S]*?transition:\s*transform/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-group:not\(\.collapsed\)\s+\.outline-course-group__chevron\s*\{[\s\S]*?transform:\s*rotate\(180deg\);/i,
 )
 assert.match(
   outlineStyles,

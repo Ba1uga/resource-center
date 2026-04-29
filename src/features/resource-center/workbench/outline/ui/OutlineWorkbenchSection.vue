@@ -71,6 +71,48 @@ const viewModel = computed(() => {
   })
 })
 
+const hasActiveCourseFilters = computed(
+  () =>
+    queryState.searchText.trim().length > 0 ||
+    queryState.semester.length > 0 ||
+    queryState.versionStatus !== 'all' ||
+    queryState.completionState !== 'all' ||
+    queryState.archiveState !== 'active',
+)
+const manualExpandedCourseIds = ref<string[]>([])
+const expandedCourseIds = computed(() => {
+  const visibleCourseIds = viewModel.value.courses.map((course) => course.id)
+
+  if (hasActiveCourseFilters.value) {
+    return visibleCourseIds
+  }
+
+  return Array.from(
+    new Set(
+      [queryState.selectedCourseId, ...manualExpandedCourseIds.value].filter(
+        (courseId): courseId is string => courseId.length > 0 && visibleCourseIds.includes(courseId),
+      ),
+    ),
+  )
+})
+
+watch(
+  () => viewModel.value.courses.map((course) => course.id).join('|'),
+  () => {
+    const visibleCourseIds = viewModel.value.courses.map((course) => course.id)
+    manualExpandedCourseIds.value = manualExpandedCourseIds.value.filter((courseId) =>
+      visibleCourseIds.includes(courseId),
+    )
+  },
+  { immediate: true },
+)
+
+watch(hasActiveCourseFilters, (isActive, wasActive) => {
+  if (!isActive && wasActive) {
+    manualExpandedCourseIds.value = []
+  }
+})
+
 watch(
   () => `${viewModel.value.currentCourse?.id ?? ''}:${viewModel.value.currentVersion?.id ?? ''}`,
   () => {
@@ -136,11 +178,25 @@ function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTar
   undoArchiveTarget.value = nextUndoArchiveTarget
 }
 
-function selectCourse(courseId: string) {
-  const course = viewModel.value.courses.find((item) => item.id === courseId)
-  queryState.selectedCourseId = courseId
-  queryState.selectedVersionId =
-    course?.versions.find((version) => version.archiveState === 'active')?.id ?? course?.versions[0]?.id ?? ''
+function isCourseExpanded(courseId: string) {
+  return expandedCourseIds.value.includes(courseId)
+}
+
+function toggleCourseGroup(courseId: string) {
+  if (hasActiveCourseFilters.value) {
+    return
+  }
+
+  if (queryState.selectedCourseId === courseId && isCourseExpanded(courseId)) {
+    return
+  }
+
+  if (isCourseExpanded(courseId)) {
+    manualExpandedCourseIds.value = manualExpandedCourseIds.value.filter((id) => id !== courseId)
+    return
+  }
+
+  manualExpandedCourseIds.value = [...manualExpandedCourseIds.value, courseId]
 }
 
 function selectVersion(courseId: string, versionId: string) {
@@ -209,6 +265,7 @@ function handleResetFilters() {
   queryState.completionState = defaults.completionState
   queryState.archiveState = defaults.archiveState
   queryState.sortBy = defaults.sortBy
+  manualExpandedCourseIds.value = []
 }
 
 function handleSaveDraft() {
@@ -601,16 +658,22 @@ function openPrintWindow(documentModel: {
           v-for="course in viewModel.courses"
           :key="course.id"
           class="outline-course-group"
-          :class="{ current: course.current }"
+          :class="{ current: course.current, collapsed: !isCourseExpanded(course.id) }"
         >
-          <button class="outline-course-group__head" type="button" @click="selectCourse(course.id)">
-            <span>
+          <button
+            class="outline-course-group__head"
+            type="button"
+            :aria-expanded="isCourseExpanded(course.id)"
+            @click="toggleCourseGroup(course.id)"
+          >
+            <span class="outline-course-group__summary">
               <strong>{{ course.title }}</strong>
               <small>{{ course.instructor }} · {{ course.versionCount }} 个版本</small>
             </span>
+            <span class="outline-course-group__chevron" aria-hidden="true">⌄</span>
           </button>
 
-          <div class="outline-course-group__versions">
+          <div v-if="isCourseExpanded(course.id)" class="outline-course-group__versions">
             <article
               v-for="version in course.versions"
               :key="version.id"
