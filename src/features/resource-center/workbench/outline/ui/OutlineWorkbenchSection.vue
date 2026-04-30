@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import '../styles/outline-workbench.css'
+import 'perfect-scrollbar/css/perfect-scrollbar.css'
 
-import { computed, reactive, ref, watch } from 'vue'
+import PerfectScrollbar from 'perfect-scrollbar'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import {
   createOutlineVersionDraft,
@@ -39,6 +41,8 @@ type PendingArchiveTarget = {
   versionLabel: string
 }
 
+type UndoArchiveTarget = PendingArchiveTarget
+
 const repository = createOutlineWorkbenchRepository()
 const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))
 const dataVersion = ref(0)
@@ -55,9 +59,21 @@ const statusMessage = ref('')
 const savedSnapshot = ref('')
 const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
+const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
 const isEditing = ref(false)
+const courseTreeScrollRef = ref<HTMLElement | null>(null)
+const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
 let localIdSeed = 0
+let courseTreeScrollbar: PerfectScrollbar | null = null
+let workspaceBodyScrollbar: PerfectScrollbar | null = null
+
+const outlineScrollbarOptions: PerfectScrollbar.Options = {
+  minScrollbarLength: 28,
+  suppressScrollX: true,
+  wheelPropagation: false,
+  wheelSpeed: 0.8,
+}
 
 const viewModel = computed(() => {
   dataVersion.value
@@ -67,6 +83,63 @@ const viewModel = computed(() => {
     queryState,
   })
 })
+
+const hasActiveCourseFilters = computed(
+  () =>
+    queryState.searchText.trim().length > 0 ||
+    queryState.semester.length > 0 ||
+    queryState.versionStatus !== 'all' ||
+    queryState.completionState !== 'all' ||
+    queryState.archiveState !== 'active',
+)
+const manualExpandedCourseIds = ref<string[]>([])
+const expandedCourseIds = computed(() => {
+  const visibleCourseIds = viewModel.value.courses.map((course) => course.id)
+
+  if (hasActiveCourseFilters.value) {
+    return visibleCourseIds
+  }
+
+  return Array.from(
+    new Set(
+      [queryState.selectedCourseId, ...manualExpandedCourseIds.value].filter(
+        (courseId): courseId is string => courseId.length > 0 && visibleCourseIds.includes(courseId),
+      ),
+    ),
+  )
+})
+
+watch(
+  () => viewModel.value.courses.map((course) => course.id).join('|'),
+  () => {
+    const visibleCourseIds = viewModel.value.courses.map((course) => course.id)
+    manualExpandedCourseIds.value = manualExpandedCourseIds.value.filter((courseId) =>
+      visibleCourseIds.includes(courseId),
+    )
+  },
+  { immediate: true },
+)
+
+watch(hasActiveCourseFilters, (isActive, wasActive) => {
+  if (!isActive && wasActive) {
+    manualExpandedCourseIds.value = []
+  }
+})
+
+watch(
+  () => [
+    expandedCourseIds.value.join('|'),
+    activeEditorSection.value,
+    dataVersion.value,
+    createDraftSnapshot(draft.value),
+    showVersionCreator.value ? 'creating' : 'idle',
+    pendingArchive.value?.versionId ?? '',
+  ],
+  () => {
+    updateOutlineScrollbars()
+  },
+  { flush: 'post' },
+)
 
 watch(
   () => `${viewModel.value.currentCourse?.id ?? ''}:${viewModel.value.currentVersion?.id ?? ''}`,
@@ -87,7 +160,7 @@ watch(
     activeEditorSection.value = 'basic-info'
     showVersionCreator.value = false
     isEditing.value = false
-    statusMessage.value = ''
+    setStatusMessage('')
     pendingSelection.value = null
     pendingArchive.value = null
   },
@@ -113,11 +186,75 @@ function createLocalId(prefix: string) {
   return `${prefix}-${localIdSeed}`
 }
 
-function selectCourse(courseId: string) {
-  const course = viewModel.value.courses.find((item) => item.id === courseId)
-  queryState.selectedCourseId = courseId
-  queryState.selectedVersionId =
-    course?.versions.find((version) => version.archiveState === 'active')?.id ?? course?.versions[0]?.id ?? ''
+function seedVersionCreator(mode: 'copy' | 'blank') {
+  const currentVersion = viewModel.value.currentVersion
+  versionCreator.mode = mode
+  if (mode === 'blank') {
+    versionCreator.versionName = ''
+    versionCreator.semester = currentVersion?.semester ?? ''
+    versionCreator.note = ''
+    return
+  }
+
+  versionCreator.versionName = currentVersion ? `${currentVersion.versionName} 副本` : ''
+  versionCreator.semester = currentVersion?.semester ?? ''
+  versionCreator.note = currentVersion ? `复制自 ${currentVersion.versionName}` : ''
+}
+
+function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTarget | null = null) {
+  statusMessage.value = message
+  undoArchiveTarget.value = nextUndoArchiveTarget
+}
+
+function isCourseExpanded(courseId: string) {
+  return expandedCourseIds.value.includes(courseId)
+}
+
+function createOutlineScrollbar(container: HTMLElement | null) {
+  if (!container) {
+    return null
+  }
+
+  return new PerfectScrollbar(container, outlineScrollbarOptions)
+}
+
+async function initializeOutlineScrollbars() {
+  await nextTick()
+
+  courseTreeScrollbar = createOutlineScrollbar(courseTreeScrollRef.value)
+  workspaceBodyScrollbar = createOutlineScrollbar(workspaceBodyScrollRef.value)
+  updateOutlineScrollbars()
+}
+
+async function updateOutlineScrollbars() {
+  await nextTick()
+
+  courseTreeScrollbar?.update()
+  workspaceBodyScrollbar?.update()
+}
+
+function destroyOutlineScrollbars() {
+  courseTreeScrollbar?.destroy()
+  workspaceBodyScrollbar?.destroy()
+  courseTreeScrollbar = null
+  workspaceBodyScrollbar = null
+}
+
+function toggleCourseGroup(courseId: string) {
+  if (hasActiveCourseFilters.value) {
+    return
+  }
+
+  if (queryState.selectedCourseId === courseId && isCourseExpanded(courseId)) {
+    return
+  }
+
+  if (isCourseExpanded(courseId)) {
+    manualExpandedCourseIds.value = manualExpandedCourseIds.value.filter((id) => id !== courseId)
+    return
+  }
+
+  manualExpandedCourseIds.value = [...manualExpandedCourseIds.value, courseId]
 }
 
 function selectVersion(courseId: string, versionId: string) {
@@ -132,7 +269,7 @@ function requestVersionSelection(courseId: string, versionId: string) {
 
   if (isEditing.value && hasUnsavedChanges.value) {
     pendingSelection.value = { courseId, versionId }
-    statusMessage.value = '当前版本有未保存内容，可先保存草稿再切换。'
+    setStatusMessage('当前版本有未保存内容，可先保存草稿再切换。')
     return
   }
 
@@ -159,7 +296,23 @@ function discardPendingSelection() {
 
   selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
   pendingSelection.value = null
-  statusMessage.value = '已放弃未保存修改并切换版本。'
+  setStatusMessage('已放弃未保存修改并切换版本。')
+}
+
+function openBlankVersionCreator() {
+  pendingArchive.value = null
+  seedVersionCreator('blank')
+  showVersionCreator.value = true
+}
+
+function openCopyVersionCreator() {
+  pendingArchive.value = null
+  seedVersionCreator('copy')
+  showVersionCreator.value = true
+}
+
+function closeVersionCreator() {
+  showVersionCreator.value = false
 }
 
 function handleResetFilters() {
@@ -170,13 +323,14 @@ function handleResetFilters() {
   queryState.completionState = defaults.completionState
   queryState.archiveState = defaults.archiveState
   queryState.sortBy = defaults.sortBy
+  manualExpandedCourseIds.value = []
 }
 
 function handleSaveDraft() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
-    statusMessage.value = '保存失败'
+    setStatusMessage('保存失败')
     return false
   }
 
@@ -184,11 +338,11 @@ function handleSaveDraft() {
     repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
     dataVersion.value += 1
     savedSnapshot.value = createDraftSnapshot(draft.value)
-    statusMessage.value = '保存成功'
+    setStatusMessage('保存成功')
     return true
   } catch (error) {
     console.error(error)
-    statusMessage.value = '保存失败'
+    setStatusMessage('保存失败')
     return false
   }
 }
@@ -200,7 +354,7 @@ function handleEditAction() {
 
   if (!isEditing.value) {
     isEditing.value = true
-    statusMessage.value = ''
+    setStatusMessage('')
     return
   }
 
@@ -243,17 +397,34 @@ function handleCreateVersion() {
   queryState.archiveState = 'active'
   queryState.selectedCourseId = currentCourse.id
   queryState.selectedVersionId = createdVersion.id
-  statusMessage.value =
+  closeVersionCreator()
+  setStatusMessage(
     versionCreator.mode === 'blank'
       ? `已创建空白版本 ${createdVersion.versionName}`
-      : `已复制为 ${createdVersion.versionName}`
+      : `已复制为 ${createdVersion.versionName}`,
+  )
 }
 
 function requestArchiveVersion(courseId: string, versionId: string, versionLabel: string) {
+  closeVersionCreator()
   pendingArchive.value = {
     courseId,
     versionId,
     versionLabel,
+  }
+}
+
+function cancelArchiveVersion() {
+  pendingArchive.value = null
+}
+
+function handleWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && pendingArchive.value) {
+    cancelArchiveVersion()
+    return
+  }
+  if (event.key === 'Escape' && showVersionCreator.value) {
+    closeVersionCreator()
   }
 }
 
@@ -262,18 +433,34 @@ function confirmArchiveVersion() {
     return
   }
 
-  const archived = repository.archiveOutlineVersion(pendingArchive.value.courseId, pendingArchive.value.versionId)
+  const archiveTarget = pendingArchive.value
+  const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
   dataVersion.value += 1
   pendingArchive.value = null
   queryState.archiveState = 'active'
-  statusMessage.value = `已归档 ${archived.versionName}`
+  setStatusMessage(`已归档 ${archived.versionName}`, {
+    courseId: archiveTarget.courseId,
+    versionId: archiveTarget.versionId,
+    versionLabel: archived.versionName,
+  })
+}
+
+function undoArchivedVersion() {
+  if (!undoArchiveTarget.value) {
+    return
+  }
+
+  const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
+  dataVersion.value += 1
+  queryState.archiveState = 'active'
+  setStatusMessage(`已恢复 ${restored.versionName}`)
 }
 
 function handleRestoreVersion(courseId: string, versionId: string) {
   const restored = repository.restoreOutlineVersion(courseId, versionId)
   dataVersion.value += 1
   queryState.archiveState = 'all'
-  statusMessage.value = `已恢复 ${restored.versionName}`
+  setStatusMessage(`已恢复 ${restored.versionName}`)
 }
 
 function handleExportVersion() {
@@ -284,7 +471,7 @@ function handleExportVersion() {
   }
 
   if (!canExport.value) {
-    statusMessage.value = '请先补全缺项后再导出'
+    setStatusMessage('请先补全缺项后再导出')
     return
   }
 
@@ -293,11 +480,11 @@ function handleExportVersion() {
   savedSnapshot.value = createDraftSnapshot(draft.value)
   const exported = repository.exportOutlineVersion(currentCourse.id, currentVersion.id)
   if (!exported.document) {
-    statusMessage.value = '导出失败'
+    setStatusMessage('导出失败')
     return
   }
 
-  statusMessage.value = '已生成打印稿'
+  setStatusMessage('已生成打印稿')
   if (typeof window !== 'undefined') {
     openPrintWindow(exported.document)
   }
@@ -394,6 +581,20 @@ function removeMaterial(kind: 'primary' | 'references', itemId: string) {
 function statusLabel(status: 'draft' | 'final') {
   return status === 'final' ? '定稿' : '草稿'
 }
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleWindowKeydown)
+  }
+  initializeOutlineScrollbars()
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleWindowKeydown)
+  }
+  destroyOutlineScrollbars()
+})
 
 function renderPrintHtml(documentModel: {
   title: string
@@ -506,159 +707,164 @@ function openPrintWindow(documentModel: {
       </label>
 
       <button class="outline-toolbar-button" type="button" @click="handleResetFilters">重置</button>
-      <button class="outline-toolbar-button primary" type="button" @click="showVersionCreator = !showVersionCreator">
+      <button class="outline-toolbar-button primary" type="button" @click="openBlankVersionCreator">
         新建版本
       </button>
     </section>
 
     <div class="outline-management__body">
-      <aside class="outline-course-tree">
+      <aside ref="courseTreeScrollRef" class="outline-course-tree">
         <article
           v-for="course in viewModel.courses"
           :key="course.id"
           class="outline-course-group"
-          :class="{ current: course.current }"
+          :class="{ current: course.current, collapsed: !isCourseExpanded(course.id) }"
         >
-          <button class="outline-course-group__head" type="button" @click="selectCourse(course.id)">
-            <span>
+          <button
+            class="outline-course-group__head"
+            type="button"
+            :aria-expanded="isCourseExpanded(course.id)"
+            @click="toggleCourseGroup(course.id)"
+          >
+            <span class="outline-course-group__summary">
               <strong>{{ course.title }}</strong>
               <small>{{ course.instructor }} · {{ course.versionCount }} 个版本</small>
             </span>
+            <span class="outline-course-group__chevron" aria-hidden="true">⌄</span>
           </button>
 
-          <div class="outline-course-group__versions">
-            <article
-              v-for="version in course.versions"
-              :key="version.id"
-              class="outline-version-row"
-              :class="{ current: version.current, archived: version.archiveState === 'archived' }"
-            >
-              <button
-                class="outline-version-row__identity"
-                type="button"
-                @click="requestVersionSelection(course.id, version.id)"
-              >
-                <span class="outline-version-row__title">
-                  {{ version.versionName }}
-                  <small>{{ version.semester }}</small>
-                </span>
-              </button>
-
-              <div class="outline-version-row__status-line">
-                <span class="outline-version-row__meta">
-                  <span class="outline-status-chip">{{ statusLabel(version.status) }}</span>
-                  <span class="outline-status-chip subtle">{{ version.completionPercent }}%</span>
-                </span>
-
-                <div class="outline-version-row__actions">
+          <div
+            class="outline-course-group__versions-shell"
+            :class="{ expanded: isCourseExpanded(course.id), collapsed: !isCourseExpanded(course.id) }"
+            :aria-hidden="!isCourseExpanded(course.id)"
+          >
+            <div class="outline-course-group__versions-body">
+              <div class="outline-course-group__versions">
+                <article
+                  v-for="version in course.versions"
+                  :key="version.id"
+                  class="outline-version-row"
+                  :class="{ current: version.current, archived: version.archiveState === 'archived' }"
+                >
                   <button
-                    v-if="version.archiveState === 'active'"
-                    class="outline-inline-button"
+                    class="outline-version-row__identity"
                     type="button"
-                    @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
+                    @click="requestVersionSelection(course.id, version.id)"
                   >
-                    归档
+                    <span class="outline-version-row__title">
+                      {{ version.versionName }}
+                      <small>{{ version.semester }}</small>
+                    </span>
                   </button>
-                  <button
-                    v-else
-                    class="outline-inline-button"
-                    type="button"
-                    @click.stop="handleRestoreVersion(course.id, version.id)"
-                  >
-                    恢复使用
-                  </button>
-                </div>
+
+                  <div class="outline-version-row__status-line">
+                    <span class="outline-version-row__meta">
+                      <span class="outline-status-chip">{{ statusLabel(version.status) }}</span>
+                      <span class="outline-status-chip subtle">{{ version.completionPercent }}%</span>
+                    </span>
+
+                    <div class="outline-version-row__actions">
+                      <div v-if="version.archiveState === 'active'" class="outline-version-row__archive-action">
+                        <button
+                          class="outline-inline-button"
+                          :class="{ 'archive-pending': pendingArchive?.courseId === course.id && pendingArchive?.versionId === version.id }"
+                          type="button"
+                          @click.stop="requestArchiveVersion(course.id, version.id, version.versionName)"
+                        >
+                          归档
+                        </button>
+                      </div>
+                      <button
+                        v-else
+                        class="outline-inline-button"
+                        type="button"
+                        @click.stop="handleRestoreVersion(course.id, version.id)"
+                      >
+                        恢复使用
+                      </button>
+                    </div>
+                  </div>
+
+                </article>
               </div>
-            </article>
+            </div>
           </div>
         </article>
       </aside>
 
       <section class="outline-workspace">
-        <section v-if="pendingSelection" class="outline-inline-notice">
-          <p>当前版本有未保存内容，可先保存草稿再切换。</p>
-          <div class="outline-inline-notice__actions">
-            <button class="outline-toolbar-button primary" type="button" @click="confirmPendingSelectionWithSave">
-              保存并切换
+        <div
+          class="outline-workspace__content"
+          :class="{ 'archive-blurred': !!pendingArchive, 'creator-mode-blurred': showVersionCreator }"
+        >
+          <div class="outline-workspace__top">
+          <section v-if="pendingSelection" class="outline-inline-notice">
+            <p>当前版本有未保存内容，可先保存草稿再切换。</p>
+            <div class="outline-inline-notice__actions">
+              <button class="outline-toolbar-button primary" type="button" @click="confirmPendingSelectionWithSave">
+                保存并切换
+              </button>
+              <button class="outline-toolbar-button" type="button" @click="discardPendingSelection">直接切换</button>
+            </div>
+          </section>
+
+          <header class="outline-workspace__summary">
+            <div class="outline-workspace__copy">
+              <h3>{{ viewModel.toolbar.courseLabel }}</h3>
+              <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }} - {{ viewModel.toolbar.updatedLabel }}</p>
+              <small>{{ liveCompletion.percent }}% · {{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出 · {{ liveCompletion.issues[0]?.message || '当前版本已满足导出要求' }}</small>
+            </div>
+
+            <div class="outline-workspace__actions">
+              <button class="outline-toolbar-button" type="button" @click="openCopyVersionCreator">
+                复制为新版本
+              </button>
+              <button class="outline-toolbar-button primary" type="button" @click="handleExportVersion">导出 / 打印</button>
+            </div>
+          </header>
+
+          <div class="outline-workspace__feedback">
+            <p v-if="statusMessage" class="outline-status-message">
+              <span>{{ statusMessage }}</span>
+              <button
+                v-if="undoArchiveTarget"
+                class="outline-status-message__action"
+                type="button"
+                @click="undoArchivedVersion"
+              >
+                撤销
+              </button>
+            </p>
+            <p v-if="!viewModel.currentVersionMatchesFilters" class="outline-status-message">
+              当前正在查看的版本不在筛选结果中。
+            </p>
+          </div>
+
+          <nav class="outline-section-tabs">
+            <button
+              v-for="item in viewModel.directory"
+              :key="item.id"
+              class="outline-section-tab"
+              :class="{ current: activeEditorSection === item.id, complete: item.complete }"
+              type="button"
+              @click="activeEditorSection = item.id"
+            >
+              {{ item.label }}
             </button>
-            <button class="outline-toolbar-button" type="button" @click="discardPendingSelection">直接切换</button>
-          </div>
-        </section>
-
-        <section v-if="pendingArchive" class="outline-inline-notice warning">
-          <p>归档后不会删除内容，只会从默认工作列表中收起 {{ pendingArchive.versionLabel }}。</p>
-          <div class="outline-inline-notice__actions">
-            <button class="outline-toolbar-button primary" type="button" @click="confirmArchiveVersion">确认归档</button>
-            <button class="outline-toolbar-button" type="button" @click="pendingArchive = null">取消</button>
-          </div>
-        </section>
-
-        <header class="outline-workspace__summary">
-          <div class="outline-workspace__copy">
-            <h3>{{ viewModel.toolbar.courseLabel }}</h3>
-            <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }} - {{ viewModel.toolbar.updatedLabel }}</p>
-            <small>{{ liveCompletion.percent }}% · {{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出 · {{ liveCompletion.issues[0]?.message || '当前版本已满足导出要求' }}</small>
-          </div>
-
-          <div class="outline-workspace__actions">
-            <button class="outline-toolbar-button" type="button" @click="showVersionCreator = !showVersionCreator">
-              复制为新版本
+            <button
+              class="outline-section-tab outline-section-tab--action"
+              :class="{ current: isEditing }"
+              type="button"
+              @click="handleEditAction"
+            >
+              {{ isEditing ? '保存' : '修改' }}
             </button>
-            <button class="outline-toolbar-button primary" type="button" @click="handleExportVersion">导出 / 打印</button>
+          </nav>
           </div>
-        </header>
 
-        <section v-if="showVersionCreator" class="outline-version-creator">
-          <label class="outline-field">
-            <span>创建方式</span>
-            <select v-model="versionCreator.mode">
-              <option value="copy">复制当前版本</option>
-              <option value="blank">空白版本</option>
-            </select>
-          </label>
-          <label class="outline-field">
-            <span>版本名称</span>
-            <input v-model="versionCreator.versionName" type="text" />
-          </label>
-          <label class="outline-field">
-            <span>学期</span>
-            <input v-model="versionCreator.semester" type="text" />
-          </label>
-          <label class="outline-field wide">
-            <span>备注</span>
-            <input v-model="versionCreator.note" type="text" />
-          </label>
-          <button class="outline-toolbar-button primary" type="button" @click="handleCreateVersion">创建版本</button>
-        </section>
-
-        <p v-if="statusMessage" class="outline-status-message">{{ statusMessage }}</p>
-        <p v-if="!viewModel.currentVersionMatchesFilters" class="outline-status-message">
-          当前正在查看的版本不在筛选结果中。
-        </p>
-
-        <nav class="outline-section-tabs">
-          <button
-            v-for="item in viewModel.directory"
-            :key="item.id"
-            class="outline-section-tab"
-            :class="{ current: activeEditorSection === item.id, complete: item.complete }"
-            type="button"
-            @click="activeEditorSection = item.id"
-          >
-            {{ item.label }}
-          </button>
-          <button
-            class="outline-section-tab outline-section-tab--action"
-            :class="{ current: isEditing }"
-            type="button"
-            @click="handleEditAction"
-          >
-            {{ isEditing ? '保存' : '修改' }}
-          </button>
-        </nav>
-
-        <section class="outline-editor-panel">
-          <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
+          <div ref="workspaceBodyScrollRef" class="outline-workspace__body">
+            <section class="outline-editor-panel">
+            <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
             <label class="outline-field">
               <span>课程名</span>
@@ -897,8 +1103,73 @@ function openPrintWindow(documentModel: {
               </article>
             </section>
           </div>
-          </fieldset>
-        </section>
+            </fieldset>
+            </section>
+          </div>
+        </div>
+
+        <div v-if="pendingArchive" class="outline-archive-mode">
+          <button
+            class="outline-archive-mode__scrim"
+            type="button"
+            aria-label="取消归档模式"
+            @click="cancelArchiveVersion"
+          ></button>
+          <section class="outline-archive-mode__panel">
+            <p class="outline-archive-mode__eyebrow">归档模式</p>
+            <h3>确认归档 {{ pendingArchive.versionLabel }}</h3>
+            <p>归档不会删除内容，只会从默认工作列表中收起该版本。</p>
+            <div class="outline-archive-mode__actions">
+              <button class="outline-toolbar-button primary" type="button" @click.stop="confirmArchiveVersion">
+                确认归档
+              </button>
+              <button class="outline-toolbar-button" type="button" @click.stop="cancelArchiveVersion">取消</button>
+            </div>
+          </section>
+        </div>
+
+        <div v-if="showVersionCreator" class="outline-version-creator-mode">
+          <button
+            class="outline-version-creator-mode__scrim"
+            type="button"
+            aria-label="取消版本创建模式"
+            @click="closeVersionCreator"
+          ></button>
+          <section class="outline-version-creator-mode__panel">
+            <p class="outline-version-creator-mode__eyebrow">版本创建模式</p>
+            <h3>{{ versionCreator.mode === 'blank' ? '创建新版本' : '复制为新版本' }}</h3>
+            <p>{{ versionCreator.mode === 'blank' ? '创建一个新的课程大纲版本。' : `复制自 ${viewModel.toolbar.versionLabel}` }}</p>
+
+            <div class="outline-version-creator-form">
+              <label class="outline-field">
+                <span>创建方式</span>
+                <select v-model="versionCreator.mode">
+                  <option value="copy">复制当前版本</option>
+                  <option value="blank">空白版本</option>
+                </select>
+              </label>
+              <label class="outline-field">
+                <span>版本名称</span>
+                <input v-model="versionCreator.versionName" type="text" />
+              </label>
+              <label class="outline-field">
+                <span>学期</span>
+                <input v-model="versionCreator.semester" type="text" />
+              </label>
+              <label class="outline-field wide">
+                <span>备注</span>
+                <input v-model="versionCreator.note" type="text" />
+              </label>
+            </div>
+
+            <div class="outline-version-creator-mode__actions">
+              <button class="outline-toolbar-button primary" type="button" @click.stop="handleCreateVersion">
+                创建版本
+              </button>
+              <button class="outline-toolbar-button" type="button" @click.stop="closeVersionCreator">取消</button>
+            </div>
+          </section>
+        </div>
       </section>
     </div>
   </section>
