@@ -9,15 +9,26 @@ const outlineStylesUrl = new URL(
   '../../../../src/features/resource-center/workbench/outline/styles/outline-workbench.css',
   import.meta.url,
 )
+const packageJsonUrl = new URL('../../../../package.json', import.meta.url)
 
 assert.equal(existsSync(outlineSectionUrl), true, 'OutlineWorkbenchSection.vue must exist')
 assert.equal(existsSync(outlineStylesUrl), true, 'outline-workbench.css must exist')
 
 const outlineSection = readFileSync(outlineSectionUrl, 'utf8')
 const outlineStyles = readFileSync(outlineStylesUrl, 'utf8')
+const packageJson = JSON.parse(readFileSync(packageJsonUrl, 'utf8')) as {
+  dependencies?: Record<string, string>
+}
 const normalizedOutlineSection = outlineSection.replace(/\s+/g, ' ')
 
 assert.ok(outlineSection.includes("import '../styles/outline-workbench.css'"))
+assert.ok(
+  packageJson.dependencies?.['perfect-scrollbar'],
+  'package.json must include perfect-scrollbar as a runtime dependency',
+)
+assert.ok(outlineSection.includes("import PerfectScrollbar from 'perfect-scrollbar'"))
+assert.ok(outlineSection.includes("import 'perfect-scrollbar/css/perfect-scrollbar.css'"))
+assert.ok(outlineSection.includes('nextTick'))
 assert.ok(outlineSection.includes('const props = defineProps<{'))
 assert.ok(outlineSection.includes('currentAdminName: string'))
 assert.ok(outlineSection.includes('class="outline-management workbench-surface"'))
@@ -27,17 +38,28 @@ assert.ok(outlineSection.includes('class="outline-management__scope-pill"'))
 assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
+assert.ok(outlineSection.includes('ref="courseTreeScrollRef"'))
 assert.ok(outlineSection.includes('class="outline-workspace"'))
 assert.match(normalizedOutlineSection, /const hasActiveCourseFilters = computed\(\s*\(\) =>/i)
 assert.ok(outlineSection.includes('const manualExpandedCourseIds = ref<string[]>([])'))
 assert.ok(outlineSection.includes('const expandedCourseIds = computed(() =>'))
 assert.ok(outlineSection.includes('function toggleCourseGroup(courseId: string)'))
 assert.ok(outlineSection.includes('function isCourseExpanded(courseId: string)'))
+assert.ok(outlineSection.includes('const courseTreeScrollRef = ref<HTMLElement | null>(null)'))
+assert.ok(outlineSection.includes('const workspaceBodyScrollRef = ref<HTMLElement | null>(null)'))
+assert.ok(outlineSection.includes('function initializeOutlineScrollbars()'))
+assert.ok(outlineSection.includes('function updateOutlineScrollbars()'))
+assert.ok(outlineSection.includes('function destroyOutlineScrollbars()'))
+assert.match(
+  normalizedOutlineSection,
+  /watch\(\s*\(\) => \[[\s\S]*?expandedCourseIds\.value\.join\('\|'\)[\s\S]*?activeEditorSection\.value[\s\S]*?dataVersion\.value[\s\S]*?\][\s\S]*?updateOutlineScrollbars/i,
+)
 assert.ok(outlineSection.includes('class="outline-workspace__top"'))
 assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
 assert.ok(outlineSection.includes('class="outline-workspace__summary"'))
 assert.ok(outlineSection.includes('class="outline-workspace__content"'))
 assert.ok(outlineSection.includes('class="outline-workspace__body"'))
+assert.ok(outlineSection.includes('ref="workspaceBodyScrollRef"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode__scrim"'))
 assert.ok(outlineSection.includes('class="outline-version-creator-mode__panel"'))
@@ -205,6 +227,46 @@ assert.match(
 )
 assert.match(
   outlineStyles,
+  /\.outline-management\s+\.ps\s*\{[\s\S]*?position:\s*relative;[\s\S]*?overflow:\s*hidden\s*!important;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management\s+\.ps__rail-y\s*\{[\s\S]*?width:\s*10px;[\s\S]*?background:\s*transparent;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management\s+\.ps__thumb-y\s*\{[\s\S]*?right:\s*2px;[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-tree-thumb\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body\.ps\s+\.ps__thumb-y\s*\{[\s\S]*?background:\s*var\(--outline-scroll-body-thumb\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management\s*\{[\s\S]*?--outline-scroll-track:[\s\S]*?--outline-scroll-tree-thumb:[\s\S]*?--outline-scroll-body-thumb:/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree\s*\{[\s\S]*?scrollbar-gutter:\s*stable[\s\S]*?scrollbar-width:\s*thin;[\s\S]*?scrollbar-color:\s*var\(--outline-scroll-tree-thumb\)\s+var\(--outline-scroll-track\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree::-webkit-scrollbar\s*\{[\s\S]*?width:\s*\d+px;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree::-webkit-scrollbar-track\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-track\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree::-webkit-scrollbar-thumb\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-tree-thumb\)\s+padding-box;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree::-webkit-scrollbar-button\s*\{[\s\S]*?display:\s*none;[\s\S]*?width:\s*0;[\s\S]*?height:\s*0;/i,
+)
+assert.match(
+  outlineStyles,
   /\.outline-course-group\.collapsed\s*\{[\s\S]*?gap:/i,
 )
 assert.match(
@@ -302,6 +364,26 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-workspace__body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*auto;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body\s*\{[\s\S]*?scrollbar-gutter:\s*stable[\s\S]*?scrollbar-width:\s*thin;[\s\S]*?scrollbar-color:\s*var\(--outline-scroll-body-thumb\)\s+var\(--outline-scroll-track\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body::-webkit-scrollbar\s*\{[\s\S]*?width:\s*\d+px;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body::-webkit-scrollbar-track\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-track\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body::-webkit-scrollbar-thumb\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-body-thumb\)\s+padding-box;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-workspace__body::-webkit-scrollbar-button\s*\{[\s\S]*?display:\s*none;[\s\S]*?width:\s*0;[\s\S]*?height:\s*0;/i,
 )
 assert.match(
   outlineStyles,

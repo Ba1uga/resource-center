@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import '../styles/outline-workbench.css'
+import 'perfect-scrollbar/css/perfect-scrollbar.css'
 
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import PerfectScrollbar from 'perfect-scrollbar'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import {
   createOutlineVersionDraft,
@@ -59,8 +61,19 @@ const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
 const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
 const isEditing = ref(false)
+const courseTreeScrollRef = ref<HTMLElement | null>(null)
+const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
 let localIdSeed = 0
+let courseTreeScrollbar: PerfectScrollbar | null = null
+let workspaceBodyScrollbar: PerfectScrollbar | null = null
+
+const outlineScrollbarOptions: PerfectScrollbar.Options = {
+  minScrollbarLength: 28,
+  suppressScrollX: true,
+  wheelPropagation: false,
+  wheelSpeed: 0.8,
+}
 
 const viewModel = computed(() => {
   dataVersion.value
@@ -112,6 +125,21 @@ watch(hasActiveCourseFilters, (isActive, wasActive) => {
     manualExpandedCourseIds.value = []
   }
 })
+
+watch(
+  () => [
+    expandedCourseIds.value.join('|'),
+    activeEditorSection.value,
+    dataVersion.value,
+    createDraftSnapshot(draft.value),
+    showVersionCreator.value ? 'creating' : 'idle',
+    pendingArchive.value?.versionId ?? '',
+  ],
+  () => {
+    updateOutlineScrollbars()
+  },
+  { flush: 'post' },
+)
 
 watch(
   () => `${viewModel.value.currentCourse?.id ?? ''}:${viewModel.value.currentVersion?.id ?? ''}`,
@@ -180,6 +208,36 @@ function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTar
 
 function isCourseExpanded(courseId: string) {
   return expandedCourseIds.value.includes(courseId)
+}
+
+function createOutlineScrollbar(container: HTMLElement | null) {
+  if (!container) {
+    return null
+  }
+
+  return new PerfectScrollbar(container, outlineScrollbarOptions)
+}
+
+async function initializeOutlineScrollbars() {
+  await nextTick()
+
+  courseTreeScrollbar = createOutlineScrollbar(courseTreeScrollRef.value)
+  workspaceBodyScrollbar = createOutlineScrollbar(workspaceBodyScrollRef.value)
+  updateOutlineScrollbars()
+}
+
+async function updateOutlineScrollbars() {
+  await nextTick()
+
+  courseTreeScrollbar?.update()
+  workspaceBodyScrollbar?.update()
+}
+
+function destroyOutlineScrollbars() {
+  courseTreeScrollbar?.destroy()
+  workspaceBodyScrollbar?.destroy()
+  courseTreeScrollbar = null
+  workspaceBodyScrollbar = null
 }
 
 function toggleCourseGroup(courseId: string) {
@@ -528,12 +586,14 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleWindowKeydown)
   }
+  initializeOutlineScrollbars()
 })
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', handleWindowKeydown)
   }
+  destroyOutlineScrollbars()
 })
 
 function renderPrintHtml(documentModel: {
@@ -653,7 +713,7 @@ function openPrintWindow(documentModel: {
     </section>
 
     <div class="outline-management__body">
-      <aside class="outline-course-tree">
+      <aside ref="courseTreeScrollRef" class="outline-course-tree">
         <article
           v-for="course in viewModel.courses"
           :key="course.id"
@@ -802,7 +862,7 @@ function openPrintWindow(documentModel: {
           </nav>
           </div>
 
-          <div class="outline-workspace__body">
+          <div ref="workspaceBodyScrollRef" class="outline-workspace__body">
             <section class="outline-editor-panel">
             <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
