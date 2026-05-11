@@ -30,6 +30,9 @@ const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/video-workbench.css'"))
+assert.ok(sectionContent.includes("import VideoWorkbenchStatusCards from './VideoWorkbenchStatusCards.vue'"))
+assert.ok(sectionContent.includes("import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'"))
+assert.ok(sectionContent.includes("import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'"))
 assert.ok(
   sectionContent.includes(
     "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
@@ -41,7 +44,14 @@ assert.ok(sectionContent.includes('resolveVideoPageAfterDeletion'))
 assert.ok(sectionContent.includes('videoRecords'))
 assert.ok(sectionContent.includes('const page = ref(1)'))
 assert.ok(sectionContent.includes('const pageSize = 8'))
+assert.ok(sectionContent.includes('const selectedIds = ref<string[]>([])'))
+assert.ok(sectionContent.includes("mode: 'create' as 'create' | 'edit'"))
 assert.ok(sectionContent.includes('function handlePageChange('))
+assert.ok(sectionContent.includes('function handleStatusSelect('))
+assert.ok(sectionContent.includes('function handleBulkAction('))
+assert.ok(sectionContent.includes('function openUploadDrawer('))
+assert.ok(sectionContent.includes('function openEditDrawer('))
+assert.ok(sectionContent.includes('function toggleRecordSelection('))
 assert.ok(sectionContent.includes('class="video-management workbench-surface"'))
 assert.ok(sectionContent.includes('class="video-management__controls"'))
 assert.ok(sectionContent.includes('class="video-management__heading"'))
@@ -54,12 +64,22 @@ assert.ok(sectionContent.includes('class="video-management__table-scroll"'))
 assert.ok(sectionContent.includes('class="video-management__table"'))
 assert.ok(sectionContent.includes('class="video-management__row-actions"'))
 assert.ok(sectionContent.includes('class="video-management__pagination"'))
+assert.ok(sectionContent.includes('class="video-management__selection-cell"'))
+assert.ok(sectionContent.includes('class="video-management__info-cell"'))
+assert.ok(sectionContent.includes('class="video-management__status-badge"'))
+assert.ok(sectionContent.includes('class="video-management__meta-line"'))
+assert.ok(sectionContent.includes('<VideoWorkbenchStatusCards'))
+assert.ok(sectionContent.includes('<VideoWorkbenchBulkBar'))
+assert.ok(sectionContent.includes('<VideoWorkbenchDrawer'))
 assert.ok(sectionContent.includes('<WorkbenchTablePagination'))
 assert.ok(sectionContent.includes('show-quick-jumper'))
 assert.ok(sectionContent.includes(':pagination="viewModel.pagination"'))
 assert.ok(sectionContent.includes('handleUpload'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
+assert.equal(sectionContent.includes('class="video-management__feedback"'), false)
+assert.equal(sectionContent.includes('已打开上传视频抽屉，可继续补齐资源文件与发布信息。'), false)
+assert.ok(sectionContent.includes('class="video-management__table-actions"'))
 assert.equal(sectionContent.includes('管理教学视频资源'), false)
 assert.equal(sectionContent.includes('module-workbench-placeholder'), false)
 assert.equal(sectionContent.includes('placeholderTitle'), false)
@@ -84,7 +104,7 @@ assert.match(
 assert.match(stylesContent, /\.video-management__upload-button\s*\{[\s\S]*?height:\s*62px;/i)
 assert.match(
   stylesContent,
-  /\.video-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\)\s+auto;[\s\S]*?border-radius:\s*18px;/i,
+  /\.video-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\)\s+auto;[\s\S]*?border-radius:\s*18px;/i,
 )
 assert.match(stylesContent, /\.video-management__table\s*\{[\s\S]*?width:\s*100%;/i)
 assert.match(
@@ -103,5 +123,19 @@ assert.match(
   stylesContent,
   /\.video-management__pagination\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;[\s\S]*?padding:\s*14px 16px;/i,
 )
+assert.match(stylesContent, /\.video-management__status-overview\s*\{[\s\S]*?display:\s*grid;/i)
+assert.match(
+  stylesContent,
+  /\.video-management__status-card\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;/i,
+)
+assert.match(stylesContent, /\.video-management__status-card\s*\{[\s\S]*?min-height:\s*64px;/i)
+assert.match(stylesContent, /\.video-management__bulk-bar\s*\{[\s\S]*?display:\s*flex;/i)
+assert.match(stylesContent, /\.video-management__table-actions\s*\{[\s\S]*?padding:\s*8px 16px 10px;/i)
+assert.match(stylesContent, /\.video-management__info-cell\s*\{[\s\S]*?display:\s*grid;/i)
+assert.match(stylesContent, /\.video-management__cover\s*\{[\s\S]*?width:\s*56px;/i)
+assert.match(stylesContent, /\.video-management__status-badge\s*\{[\s\S]*?border-radius:\s*999px;/i)
+assert.match(stylesContent, /\.video-management__drawer-shell\s*\{[\s\S]*?position:\s*fixed;/i)
+assert.match(stylesContent, /\.video-management__drawer\s*\{[\s\S]*?width:\s*min\(720px,\s*100vw\);/i)
+assert.match(stylesContent, /\.video-management__drawer-footer\s*\{[\s\S]*?position:\s*sticky;/i)
 assert.match(stylesContent, /@media \(max-width: 980px\)\s*\{/i)
 assert.match(stylesContent, /@media \(max-width: 760px\)\s*\{/i)
