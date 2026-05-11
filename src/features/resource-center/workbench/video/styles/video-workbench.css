@@ -35,22 +35,6 @@
   font-size: 1rem;
 }
 
-.video-management__feedback {
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid var(--video-line);
-  border-radius: 18px;
-  background: var(--video-surface);
-  color: var(--video-soft);
-  font-size: 0.95rem;
-}
-
-.video-management__feedback.is-success {
-  color: oklch(0.45 0.12 155);
-}
-
 .video-management__status-overview {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -58,9 +42,12 @@
 }
 
 .video-management__status-card {
-  display: grid;
-  gap: 6px;
-  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 0 18px;
   border: 1px solid var(--video-line);
   border-radius: 18px;
   background: var(--video-surface);
@@ -78,13 +65,15 @@
 
 .video-management__status-label {
   color: var(--video-soft);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
 }
 
 .video-management__status-count {
   color: var(--video-ink);
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .video-management__toolbar {
@@ -92,17 +81,6 @@
   grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
   gap: 18px;
   align-items: stretch;
-}
-
-.video-management__bulk-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  border: 1px solid var(--video-line);
-  border-radius: 18px;
-  background: oklch(0.985 0.004 252);
 }
 
 .video-management__bulk-count {
@@ -240,12 +218,25 @@
 
 .video-management__table-shell {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   border: 1px solid var(--video-line);
   border-radius: 18px;
   background: var(--video-surface);
   overflow: hidden;
+}
+
+.video-management__table-actions {
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid var(--video-line);
+}
+
+.video-management__bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0;
 }
 
 .video-management__table-scroll {
@@ -689,6 +680,10 @@
 
   .video-management__status-overview {
     grid-template-columns: 1fr;
+  }
+
+  .video-management__status-card {
+    min-height: 56px;
   }
 
   .video-management__toolbar {

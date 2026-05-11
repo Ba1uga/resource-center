@@ -77,6 +77,9 @@ assert.ok(sectionContent.includes(':pagination="viewModel.pagination"'))
 assert.ok(sectionContent.includes('handleUpload'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
+assert.equal(sectionContent.includes('class="video-management__feedback"'), false)
+assert.equal(sectionContent.includes('已打开上传视频抽屉，可继续补齐资源文件与发布信息。'), false)
+assert.ok(sectionContent.includes('class="video-management__table-actions"'))
 assert.equal(sectionContent.includes('管理教学视频资源'), false)
 assert.equal(sectionContent.includes('module-workbench-placeholder'), false)
 assert.equal(sectionContent.includes('placeholderTitle'), false)
@@ -101,7 +104,7 @@ assert.match(
 assert.match(stylesContent, /\.video-management__upload-button\s*\{[\s\S]*?height:\s*62px;/i)
 assert.match(
   stylesContent,
-  /\.video-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\)\s+auto;[\s\S]*?border-radius:\s*18px;/i,
+  /\.video-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\)\s+auto;[\s\S]*?border-radius:\s*18px;/i,
 )
 assert.match(stylesContent, /\.video-management__table\s*\{[\s\S]*?width:\s*100%;/i)
 assert.match(
@@ -121,8 +124,13 @@ assert.match(
   /\.video-management__pagination\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;[\s\S]*?padding:\s*14px 16px;/i,
 )
 assert.match(stylesContent, /\.video-management__status-overview\s*\{[\s\S]*?display:\s*grid;/i)
-assert.match(stylesContent, /\.video-management__status-card\s*\{[\s\S]*?border-radius:\s*18px;/i)
+assert.match(
+  stylesContent,
+  /\.video-management__status-card\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;/i,
+)
+assert.match(stylesContent, /\.video-management__status-card\s*\{[\s\S]*?min-height:\s*64px;/i)
 assert.match(stylesContent, /\.video-management__bulk-bar\s*\{[\s\S]*?display:\s*flex;/i)
+assert.match(stylesContent, /\.video-management__table-actions\s*\{[\s\S]*?padding:\s*8px 16px 10px;/i)
 assert.match(stylesContent, /\.video-management__info-cell\s*\{[\s\S]*?display:\s*grid;/i)
 assert.match(stylesContent, /\.video-management__cover\s*\{[\s\S]*?width:\s*56px;/i)
 assert.match(stylesContent, /\.video-management__status-badge\s*\{[\s\S]*?border-radius:\s*999px;/i)

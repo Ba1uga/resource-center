@@ -19,11 +19,9 @@ import {
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 import type {
   VideoOverviewStatus,
-  VideoPublishStatus,
   VideoRecord,
 } from '@/features/resource-center/workbench/video/model/video-workbench.types.ts'
 
-type FeedbackTone = 'info' | 'success'
 type DrawerMode = 'create' | 'edit'
 type BulkAction = 'publish' | 'offline' | 'delete' | 'reassign-chapter' | 'tag'
 
@@ -36,10 +34,6 @@ const filters = reactive(createDefaultVideoFilterState())
 const page = ref(1)
 const pageSize = 8
 const selectedIds = ref<string[]>([])
-const feedback = ref<{
-  tone: FeedbackTone
-  text: string
-} | null>(null)
 const drawerState = reactive({
   open: false,
   mode: 'create' as 'create' | 'edit',
@@ -92,10 +86,6 @@ function openUploadDrawer() {
   drawerState.open = true
   drawerState.mode = 'create'
   drawerState.activeRecordId = null
-  feedback.value = {
-    tone: 'info',
-    text: '已打开上传视频抽屉，可继续补齐资源文件与发布信息。',
-  }
 }
 
 function openEditDrawer(id: string) {
@@ -136,10 +126,6 @@ function handleBulkAction(action: BulkAction) {
           }
         : record,
     )
-    feedback.value = {
-      tone: 'success',
-      text: `已批量发布 ${selectedIds.value.length} 条视频。`,
-    }
     selectedIds.value = []
     return
   }
@@ -153,10 +139,6 @@ function handleBulkAction(action: BulkAction) {
           }
         : record,
     )
-    feedback.value = {
-      tone: 'success',
-      text: `已批量下架 ${selectedIds.value.length} 条视频。`,
-    }
     selectedIds.value = []
     return
   }
@@ -174,17 +156,8 @@ function handleBulkAction(action: BulkAction) {
       pageSize,
       totalAfterDeletion,
     })
-    feedback.value = {
-      tone: 'success',
-      text: `已批量移除 ${selectedIds.value.length} 条视频。`,
-    }
     selectedIds.value = []
     return
-  }
-
-  feedback.value = {
-    tone: 'info',
-    text: '该批量动作已预留入口，可在后续接入真实业务流程。',
   }
 }
 
@@ -211,10 +184,6 @@ function handleDelete(id: string) {
     pageSize,
     totalAfterDeletion,
   })
-  feedback.value = {
-    tone: 'success',
-    text: `已移除“${target.title}”。`,
-  }
 }
 
 function handleUpload() {
@@ -228,32 +197,13 @@ function handleEdit(id: string) {
   }
 
   openEditDrawer(id)
-  feedback.value = {
-    tone: 'info',
-    text: `已打开“${target.title}”的编辑抽屉。`,
-  }
 }
 
-function handleDrawerSaveDraft() {
-  feedback.value = {
-    tone: 'success',
-    text: drawerState.mode === 'create' ? '已保存上传草稿。' : '已保存视频修改。',
-  }
-}
+function handleDrawerSaveDraft() {}
 
-function handleDrawerSavePublish() {
-  feedback.value = {
-    tone: 'success',
-    text: drawerState.mode === 'create' ? '已提交上传并发布流程。' : '已保存并发布视频。',
-  }
-}
+function handleDrawerSavePublish() {}
 
-function handleRetryUpload() {
-  feedback.value = {
-    tone: 'info',
-    text: '已触发重新上传入口，可继续补齐转码失败的视频资源。',
-  }
-}
+function handleRetryUpload() {}
 
 function handlePageChange(nextPage: number) {
   if (nextPage < 1 || nextPage > viewModel.value.pagination.pageCount) {
@@ -272,16 +222,6 @@ function handlePageChange(nextPage: number) {
           <h2>{{ props.section.title }}</h2>
         </div>
       </header>
-
-      <div
-        v-if="feedback"
-        class="video-management__feedback"
-        :class="`is-${feedback.tone}`"
-        role="status"
-        aria-live="polite"
-      >
-        {{ feedback.text }}
-      </div>
 
       <VideoWorkbenchStatusCards :items="viewModel.summaryCards" @select-status="handleStatusSelect" />
 
@@ -337,13 +277,11 @@ function handlePageChange(nextPage: number) {
       </section>
     </div>
 
-    <VideoWorkbenchBulkBar
-      v-if="selectedIds.length > 0"
-      :selected-count="selectedIds.length"
-      @apply-action="handleBulkAction"
-    />
-
     <section class="video-management__table-shell">
+      <div v-if="selectedIds.length > 0" class="video-management__table-actions">
+        <VideoWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />
+      </div>
+
       <div class="video-management__table-scroll">
         <table class="video-management__table">
           <thead>
