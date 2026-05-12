@@ -25,6 +25,7 @@ dist-ssr
 .env.*.local
 .worktrees/
 .serena/
+.superpowers/
 .codex-tmp/
 docs/
 outputs/runtime/vibe-sessions/
