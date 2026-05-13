@@ -93,6 +93,11 @@ function handleResetFilters() {
   feedback.value = null
 }
 
+function handleCourseUpdate(course: string) {
+  filters.course = course
+  filters.chapter = 'all'
+}
+
 function toggleRowSelection(id: string) {
   selectedIds.value = selectedIds.value.includes(id)
     ? selectedIds.value.filter((selectedId) => selectedId !== id)
@@ -337,10 +342,7 @@ function createLocalRecords(): MappingRecord[] {
         :confidence-level-options="viewModel.confidenceLevelOptions"
         @update-keyword="filters.keyword = $event"
         @update-resource-type="filters.resourceType = $event"
-        @update-course="
-          filters.course = $event
-          filters.chapter = 'all'
-        "
+        @update-course="handleCourseUpdate"
         @update-chapter="filters.chapter = $event"
         @update-batch="filters.batchId = $event"
         @update-review-status="filters.reviewStatus = $event"
