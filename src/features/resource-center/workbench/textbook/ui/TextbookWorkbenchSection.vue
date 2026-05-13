@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import '../styles/textbook-workbench.css'
 
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
+import { createTextbook, deleteTextbook, listTextbooks, updateTextbook } from '@/api/textbook.ts'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 
+import type { TextbookCreatePayload, TextbookRecord, TextbookUpdatePayload } from '@/api/textbook.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 
 interface TeacherOwnedTextbookRecord {
@@ -173,17 +175,22 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
   },
 ]
 
-const allRows = ref<TeacherOwnedTextbookRecord[]>([...seedRows])
+const fallbackRows = ref<TeacherOwnedTextbookRecord[]>([...seedRows])
+const apiRows = ref<TeacherOwnedTextbookRecord[]>([])
+const knownCourses = ref(
+  [...new Set(seedRows.map((row) => row.course))].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')),
+)
 const pageSize = ref(10)
 const page = ref(1)
 const keywordInput = ref('')
 const keyword = ref('')
+const isUsingFallback = ref(false)
+const isLoading = ref(false)
+const total = ref(seedRows.length)
 let keywordDebounceTimer: ReturnType<typeof setTimeout> | undefined
 
 const filters = reactive({
   course: 'all',
-  publisher: 'all',
-  edition: 'all',
 })
 
 const drawerOpen = ref(false)
@@ -199,13 +206,14 @@ const feedback = ref<{
 
 const pageSizeOptions = [10, 20, 50]
 
-const visibleRows = computed(() => allRows.value)
+const visibleRows = computed(() => (isUsingFallback.value ? fallbackRows.value : apiRows.value))
 
-const courseOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.course, '全部课程'))
-const publisherOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.publisher, '全部出版社'))
-const editionOptions = computed(() => buildDistinctOptions(visibleRows.value, (row) => row.edition, '全部版本'))
+const courseOptions = computed(() => [
+  { value: 'all', label: '全部课程' },
+  ...knownCourses.value.map((value) => ({ value, label: value })),
+])
 
-const filteredRows = computed(() => {
+const filteredFallbackRows = computed(() => {
   const normalizedKeyword = keyword.value.trim().toLowerCase()
 
   return visibleRows.value.filter((row) => {
@@ -214,29 +222,34 @@ const filteredRows = computed(() => {
       [row.name, row.author, row.isbn].some((field) => field.toLowerCase().includes(normalizedKeyword))
 
     const matchesCourse = filters.course === 'all' || row.course === filters.course
-    const matchesPublisher = filters.publisher === 'all' || row.publisher === filters.publisher
-    const matchesEdition = filters.edition === 'all' || row.edition === filters.edition
 
-    return matchesKeyword && matchesCourse && matchesPublisher && matchesEdition
+    return matchesKeyword && matchesCourse
   })
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)))
+const fallbackPageCount = computed(() => Math.max(1, Math.ceil(filteredFallbackRows.value.length / pageSize.value)))
 
 const pageRows = computed(() => {
-  const startIndex = (page.value - 1) * pageSize.value
-  return filteredRows.value.slice(startIndex, startIndex + pageSize.value)
+  if (isUsingFallback.value) {
+    const startIndex = (page.value - 1) * pageSize.value
+    return filteredFallbackRows.value.slice(startIndex, startIndex + pageSize.value)
+  }
+  return visibleRows.value
 })
 
+const effectiveTotal = computed(() => (isUsingFallback.value ? filteredFallbackRows.value.length : total.value))
+const pageCount = computed(() =>
+  isUsingFallback.value ? fallbackPageCount.value : Math.max(1, Math.ceil(total.value / pageSize.value)),
+)
+
 const rangeStart = computed(() => {
-  if (filteredRows.value.length === 0) {
+  if (effectiveTotal.value === 0) {
     return 0
   }
-
   return (page.value - 1) * pageSize.value + 1
 })
 
-const rangeEnd = computed(() => Math.min(filteredRows.value.length, page.value * pageSize.value))
+const rangeEnd = computed(() => Math.min(effectiveTotal.value, page.value * pageSize.value))
 
 watch(keywordInput, (value) => {
   if (keywordDebounceTimer) {
@@ -250,7 +263,7 @@ watch(keywordInput, (value) => {
 })
 
 watch(
-  () => [filters.course, filters.publisher, filters.edition],
+  () => filters.course,
   () => {
     page.value = 1
   },
@@ -264,6 +277,21 @@ watch(pageCount, (nextPageCount) => {
   if (page.value > nextPageCount) {
     page.value = nextPageCount
   }
+})
+
+watch(
+  [page, pageSize, keyword, () => filters.course],
+  async () => {
+    if (isUsingFallback.value) {
+      return
+    }
+    await loadTextbooks()
+  },
+  { flush: 'post' },
+)
+
+onMounted(async () => {
+  await loadTextbooks()
 })
 
 onBeforeUnmount(() => {
@@ -289,10 +317,63 @@ function buildDistinctOptions(
   allLabel: string,
 ) {
   const values = [...new Set(rows.map(selector))].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
-  return [
-    { value: 'all', label: allLabel },
-    ...values.map((value) => ({ value, label: value })),
-  ]
+  return [{ value: 'all', label: allLabel }, ...values.map((value) => ({ value, label: value }))]
+}
+
+function normalizeApiRecord(record: TextbookRecord): TeacherOwnedTextbookRecord {
+  return {
+    id: String(record.id),
+    ownerId: record.ownerId,
+    name: record.name,
+    author: record.author,
+    publisher: record.publisher,
+    edition: record.edition,
+    isbn: record.isbn,
+    course: record.course,
+    updatedAt: record.updatedAt.slice(0, 10),
+  }
+}
+
+function syncKnownCourses(rows: TeacherOwnedTextbookRecord[]) {
+  knownCourses.value = [...new Set([...knownCourses.value, ...rows.map((row) => row.course)])].sort((a, b) =>
+    a.localeCompare(b, 'zh-Hans-CN'),
+  )
+}
+
+async function loadTextbooks() {
+  isLoading.value = true
+
+  try {
+    const result = await listTextbooks({
+      page: page.value,
+      pageSize: pageSize.value,
+      keyword: keyword.value.trim(),
+      course: filters.course === 'all' ? '' : filters.course,
+    })
+
+    apiRows.value = result.records.map(normalizeApiRecord)
+    syncKnownCourses(apiRows.value)
+    total.value = result.total
+
+    if (isUsingFallback.value) {
+      feedback.value = {
+        tone: 'info',
+        text: '已切回真实教材数据。',
+      }
+    }
+
+    isUsingFallback.value = false
+  } catch {
+    apiRows.value = []
+    total.value = seedRows.length
+    isUsingFallback.value = true
+    feedback.value = {
+      tone: 'danger',
+      text: '后端不可用，当前展示本地演示教材数据。',
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function clearDrawerErrors() {
@@ -319,7 +400,7 @@ function openCreateDrawer() {
 }
 
 function openEditDrawer(id: string) {
-  const target = allRows.value.find((row) => row.id === id)
+  const target = visibleRows.value.find((row) => row.id === id)
   if (!target) {
     return
   }
@@ -358,7 +439,7 @@ function validateDrawer(): boolean {
     drawerErrors.isbn = 'ISBN 需为 10 到 13 位数字。'
   }
 
-  const duplicate = allRows.value.find((row) => {
+  const duplicate = visibleRows.value.find((row) => {
     if (drawerMode.value === 'edit' && row.id === drawerTargetId.value) {
       return false
     }
@@ -373,12 +454,8 @@ function validateDrawer(): boolean {
   return Object.keys(drawerErrors).length === 0
 }
 
-function saveDrawer() {
-  if (!validateDrawer()) {
-    return
-  }
-
-  const payload: Omit<TeacherOwnedTextbookRecord, 'id' | 'ownerId' | 'updatedAt'> = {
+function buildPayload(): TextbookUpdatePayload {
+  return {
     name: drawerDraft.name.trim(),
     author: drawerDraft.author.trim(),
     publisher: drawerDraft.publisher.trim(),
@@ -386,23 +463,65 @@ function saveDrawer() {
     isbn: drawerDraft.isbn.trim(),
     course: drawerDraft.course.trim(),
   }
+}
 
-  if (drawerMode.value === 'create') {
-    allRows.value = [
+async function saveDrawer() {
+  if (!validateDrawer()) {
+    return
+  }
+
+  if (isUsingFallback.value) {
+    saveFallbackDrawer()
+    return
+  }
+
+  try {
+    if (drawerMode.value === 'create') {
+      await createTextbook({
+        ...buildPayload(),
+        ownerId: currentAdminId,
+      } satisfies TextbookCreatePayload)
+      feedback.value = {
+        tone: 'success',
+        text: '教材已新建。',
+      }
+    } else if (drawerTargetId.value) {
+      await updateTextbook(Number(drawerTargetId.value), buildPayload())
+      feedback.value = {
+        tone: 'info',
+        text: '教材信息已更新。',
+      }
+    }
+
+    closeDrawer()
+    await loadTextbooks()
+  } catch (error) {
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '教材保存失败，请稍后重试。',
+    }
+  }
+}
+
+function saveFallbackDrawer() {
+  const payload: Omit<TeacherOwnedTextbookRecord, 'id' | 'ownerId' | 'updatedAt'> = buildPayload()
+
+    if (drawerMode.value === 'create') {
+      fallbackRows.value = [
       {
         id: `tb-${Date.now().toString(36)}`,
         ownerId: currentAdminId,
         updatedAt: new Date().toISOString().slice(0, 10),
         ...payload,
       },
-      ...allRows.value,
+      ...fallbackRows.value,
     ]
     feedback.value = {
       tone: 'success',
       text: '教材已新建。',
     }
   } else if (drawerTargetId.value) {
-    allRows.value = allRows.value.map((row) =>
+    fallbackRows.value = fallbackRows.value.map((row) =>
       row.id === drawerTargetId.value
         ? {
             ...row,
@@ -414,15 +533,16 @@ function saveDrawer() {
     feedback.value = {
       tone: 'info',
       text: '教材信息已更新。',
+      }
     }
-  }
 
+  syncKnownCourses(fallbackRows.value)
   page.value = 1
   closeDrawer()
 }
 
-function deleteRow(id: string) {
-  const target = allRows.value.find((row) => row.id === id)
+async function deleteRow(id: string) {
+  const target = visibleRows.value.find((row) => row.id === id)
   if (!target) {
     return
   }
@@ -431,10 +551,27 @@ function deleteRow(id: string) {
     return
   }
 
-  allRows.value = allRows.value.filter((row) => row.id !== id)
-  feedback.value = {
-    tone: 'danger',
-    text: '教材已删除。',
+  if (isUsingFallback.value) {
+    fallbackRows.value = fallbackRows.value.filter((row) => row.id !== id)
+    feedback.value = {
+      tone: 'danger',
+      text: '教材已删除。',
+    }
+    return
+  }
+
+  try {
+    await deleteTextbook(Number(id))
+    feedback.value = {
+      tone: 'danger',
+      text: '教材已删除。',
+    }
+    await loadTextbooks()
+  } catch (error) {
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '教材删除失败，请稍后重试。',
+    }
   }
 }
 
@@ -451,8 +588,6 @@ function resetFilters() {
   keywordInput.value = ''
   keyword.value = ''
   filters.course = 'all'
-  filters.publisher = 'all'
-  filters.edition = 'all'
   page.value = 1
 }
 </script>
@@ -505,24 +640,6 @@ function resetFilters() {
       </section>
 
       <section class="textbook-management__toolbar-advanced">
-        <label class="textbook-management__select-field compact">
-          <span>出版社</span>
-          <select v-model="filters.publisher">
-            <option v-for="option in publisherOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
-
-        <label class="textbook-management__select-field compact">
-          <span>版本</span>
-          <select v-model="filters.edition">
-            <option v-for="option in editionOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
-
         <button class="textbook-management__reset-button" type="button" @click="resetFilters">
           重置筛选
         </button>
@@ -544,7 +661,12 @@ function resetFilters() {
             </tr>
           </thead>
           <tbody>
-            <tr v-if="pageRows.length === 0">
+            <tr v-if="isLoading">
+              <td colspan="7" class="textbook-management__empty">
+                正在加载教材数据...
+              </td>
+            </tr>
+            <tr v-else-if="pageRows.length === 0">
               <td colspan="7" class="textbook-management__empty">
                 暂无符合条件的教材，请调整筛选或新建教材。
               </td>
@@ -585,7 +707,7 @@ function resetFilters() {
           :pagination="{
             page,
             pageSize,
-            total: filteredRows.length,
+            total: effectiveTotal,
             pageCount,
             from: rangeStart,
             to: rangeEnd,

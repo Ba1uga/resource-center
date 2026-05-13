@@ -1,4 +1,5 @@
 import './navigation/navigation.test.ts'
+import './api/request.test.ts'
 import './navigation/sidebar-layout.test.ts'
 import './workbench/shared/workbench-registry.test.ts'
 import './workbench/shared/module-workbench-shell.test.ts'

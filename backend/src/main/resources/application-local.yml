@@ -1,2 +1,13 @@
 # Local developer overrides.
 # Keep machine-specific settings here, such as local database credentials or ports.
+# Recommended IDE environment variables:
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_NAME=resource_center
+# DB_USERNAME=root
+# DB_PASSWORD=your_password
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:resource_center}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
