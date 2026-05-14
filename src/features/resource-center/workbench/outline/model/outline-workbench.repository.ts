@@ -3,6 +3,7 @@ import { outlineWorkbenchCourses } from './outline-workbench.fixtures.ts'
 import { canExportOutlineVersion, validateOutlineVersionForExport } from './outline-workbench.validation.ts'
 
 import type {
+  CreateOutlineCourseInput,
   CreateOutlineVersionInput,
   DuplicateOutlineVersionInput,
   OutlineCourseRecord,
@@ -29,11 +30,27 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
     listCourses(): OutlineCourseRecord[] {
       return cloneCourses(courses)
     },
+    replaceCourses(nextCourses: OutlineCourseRecord[]) {
+      courses = cloneCourses(nextCourses)
+    },
     getCourse(courseId: string): OutlineCourseRecord | undefined {
-      return cloneCourses(courses).find((course) => course.id === courseId)
+      const course = courses.find((item) => item.id === courseId)
+      return course ? cloneCourse(course) : undefined
     },
     getVersion(courseId: string, versionId: string): OutlineVersionRecord | undefined {
       return this.getCourse(courseId)?.versions.find((version) => version.id === versionId)
+    },
+    createCourse(input: CreateOutlineCourseInput): OutlineCourseRecord {
+      const created: OutlineCourseRecord = {
+        id: createId(),
+        title: input.title,
+        instructor: input.instructor,
+        department: input.department,
+        versions: [],
+      }
+
+      courses = [created, ...courses]
+      return cloneCourse(created)
     },
     createOutlineVersion(input: CreateOutlineVersionInput): OutlineVersionRecord {
       const course = courses.find((item) => item.id === input.courseId)
@@ -174,10 +191,14 @@ function createDefaultIdFactory() {
 }
 
 function cloneCourses(courses: OutlineCourseRecord[]): OutlineCourseRecord[] {
-  return courses.map((course) => ({
+  return courses.map((course) => cloneCourse(course))
+}
+
+function cloneCourse(course: OutlineCourseRecord): OutlineCourseRecord {
+  return {
     ...course,
     versions: course.versions.map((version) => cloneCourseVersion(version)),
-  }))
+  }
 }
 
 function cloneCourseVersion(version: OutlineVersionRecord): OutlineVersionRecord {

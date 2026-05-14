@@ -6,6 +6,15 @@ import PerfectScrollbar from 'perfect-scrollbar'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import {
+  archiveOutlineVersion,
+  createOutlineCourse,
+  createOutlineVersion,
+  duplicateOutlineVersion,
+  listOutlineCourses,
+  restoreOutlineVersion,
+  saveOutlineVersion,
+} from '@/api/outline.ts'
+import {
   createOutlineVersionDraft,
   createOutlineVersionDraftFromVersion,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.editor.ts'
@@ -49,11 +58,17 @@ const dataVersion = ref(0)
 const draft = ref(createOutlineVersionDraft())
 const activeEditorSection = ref<OutlineSectionId>('basic-info')
 const showVersionCreator = ref(false)
+const showCourseCreator = ref(false)
 const versionCreator = reactive({
   mode: 'copy' as 'copy' | 'blank',
   versionName: '',
   semester: '',
   note: '',
+})
+const courseCreator = reactive({
+  title: '',
+  instructor: '',
+  department: '',
 })
 const statusMessage = ref('')
 const savedSnapshot = ref('')
@@ -61,6 +76,8 @@ const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
 const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
 const isEditing = ref(false)
+const isLoading = ref(false)
+const isCreatingCourse = ref(false)
 const courseTreeScrollRef = ref<HTMLElement | null>(null)
 const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
@@ -127,12 +144,20 @@ watch(hasActiveCourseFilters, (isActive, wasActive) => {
 })
 
 watch(
+  () => [queryState.semester, queryState.versionStatus, queryState.archiveState].join('|'),
+  () => {
+    loadOutlineCourses()
+  },
+  { flush: 'post' },
+)
+
+watch(
   () => [
     expandedCourseIds.value.join('|'),
     activeEditorSection.value,
     dataVersion.value,
     createDraftSnapshot(draft.value),
-    showVersionCreator.value ? 'creating' : 'idle',
+    showVersionCreator.value || showCourseCreator.value ? 'creating' : 'idle',
     pendingArchive.value?.versionId ?? '',
   ],
   () => {
@@ -145,9 +170,16 @@ watch(
   () => `${viewModel.value.currentCourse?.id ?? ''}:${viewModel.value.currentVersion?.id ?? ''}`,
   () => {
     const currentVersion = viewModel.value.currentVersion
+    activeEditorSection.value = 'basic-info'
+    showVersionCreator.value = false
+    showCourseCreator.value = false
+    isEditing.value = false
+    pendingSelection.value = null
+    pendingArchive.value = null
     if (!currentVersion) {
       draft.value = createOutlineVersionDraft()
       savedSnapshot.value = createDraftSnapshot(draft.value)
+      setStatusMessage('')
       return
     }
 
@@ -157,12 +189,7 @@ watch(
     versionCreator.versionName = `${currentVersion.versionName} 副本`
     versionCreator.semester = currentVersion.semester
     versionCreator.note = `复制自 ${currentVersion.versionName}`
-    activeEditorSection.value = 'basic-info'
-    showVersionCreator.value = false
-    isEditing.value = false
     setStatusMessage('')
-    pendingSelection.value = null
-    pendingArchive.value = null
   },
   { immediate: true },
 )
@@ -206,6 +233,45 @@ function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTar
   undoArchiveTarget.value = nextUndoArchiveTarget
 }
 
+async function loadOutlineCourses(message = '') {
+  isLoading.value = true
+
+  try {
+    const courses = await listOutlineCourses({
+      keyword: queryState.searchText.trim(),
+      semester: queryState.semester,
+      versionStatus: queryState.versionStatus,
+      archiveState: queryState.archiveState,
+    })
+
+    repository.replaceCourses(courses)
+    dataVersion.value += 1
+
+    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(courses)
+    const hasSelectedCourse = courses.some((course) => course.id === queryState.selectedCourseId)
+
+    if (!hasSelectedCourse) {
+      queryState.selectedCourseId = defaultQueryState.selectedCourseId
+    }
+
+    const selectedCourse = courses.find((course) => course.id === queryState.selectedCourseId)
+    const hasSelectedVersion = selectedCourse?.versions.some((version) => version.id === queryState.selectedVersionId) ?? false
+
+    if (!hasSelectedVersion) {
+      queryState.selectedVersionId = selectedCourse?.versions[0]?.id ?? ''
+    }
+
+    if (message) {
+      setStatusMessage(message)
+    }
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '加载大纲数据失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function isCourseExpanded(courseId: string) {
   return expandedCourseIds.value.includes(courseId)
 }
@@ -241,6 +307,11 @@ function destroyOutlineScrollbars() {
 }
 
 function toggleCourseGroup(courseId: string) {
+  const course = viewModel.value.courses.find((item) => item.id === courseId)
+  if (course?.versions.length === 0) {
+    requestVersionSelection(courseId, '')
+  }
+
   if (hasActiveCourseFilters.value) {
     return
   }
@@ -276,12 +347,12 @@ function requestVersionSelection(courseId: string, versionId: string) {
   selectVersion(courseId, versionId)
 }
 
-function confirmPendingSelectionWithSave() {
+async function confirmPendingSelectionWithSave() {
   if (!pendingSelection.value) {
     return
   }
 
-  const saved = handleSaveDraft()
+  const saved = await handleSaveDraft()
   if (!saved) {
     return
   }
@@ -315,6 +386,19 @@ function closeVersionCreator() {
   showVersionCreator.value = false
 }
 
+function openCourseCreator() {
+  pendingArchive.value = null
+  showVersionCreator.value = false
+  courseCreator.title = ''
+  courseCreator.instructor = ''
+  courseCreator.department = ''
+  showCourseCreator.value = true
+}
+
+function closeCourseCreator() {
+  showCourseCreator.value = false
+}
+
 function handleResetFilters() {
   const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses())
   queryState.searchText = defaults.searchText
@@ -326,7 +410,7 @@ function handleResetFilters() {
   manualExpandedCourseIds.value = []
 }
 
-function handleSaveDraft() {
+async function handleSaveDraft() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
@@ -335,7 +419,11 @@ function handleSaveDraft() {
   }
 
   try {
-    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
+    const savedVersion = await saveOutlineVersion(Number(currentVersion.id), draft.value)
+    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, {
+      ...savedVersion,
+      courseId: currentCourse.id,
+    })
     dataVersion.value += 1
     savedSnapshot.value = createDraftSnapshot(draft.value)
     setStatusMessage('保存成功')
@@ -347,7 +435,7 @@ function handleSaveDraft() {
   }
 }
 
-function handleEditAction() {
+async function handleEditAction() {
   if (!viewModel.value.currentVersion) {
     return
   }
@@ -358,7 +446,7 @@ function handleEditAction() {
     return
   }
 
-  const saved = handleSaveDraft()
+  const saved = await handleSaveDraft()
   if (!saved) {
     return
   }
@@ -366,16 +454,22 @@ function handleEditAction() {
   isEditing.value = false
 }
 
-function handleCreateVersion() {
+async function handleCreateVersion() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || versionCreator.versionName.trim().length === 0) {
     return
   }
 
-  const createdVersion =
-    versionCreator.mode === 'blank'
-      ? repository.createOutlineVersion({
+  if (versionCreator.mode === 'copy' && !currentVersion && currentCourse.versions.length === 0) {
+    setStatusMessage('当前课程暂无可复制版本')
+    return
+  }
+
+  try {
+    const createdVersion =
+      versionCreator.mode === 'blank'
+        ? await createOutlineVersion({
           courseId: currentCourse.id,
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim(),
@@ -383,7 +477,7 @@ function handleCreateVersion() {
           createdBy: props.currentAdminName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
-      : repository.duplicateOutlineVersion({
+        : await duplicateOutlineVersion({
           courseId: currentCourse.id,
           sourceVersionId: currentVersion?.id ?? currentCourse.versions[0]!.id,
           versionName: versionCreator.versionName.trim(),
@@ -393,16 +487,54 @@ function handleCreateVersion() {
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
 
-  dataVersion.value += 1
-  queryState.archiveState = 'active'
-  queryState.selectedCourseId = currentCourse.id
-  queryState.selectedVersionId = createdVersion.id
-  closeVersionCreator()
-  setStatusMessage(
-    versionCreator.mode === 'blank'
-      ? `已创建空白版本 ${createdVersion.versionName}`
-      : `已复制为 ${createdVersion.versionName}`,
-  )
+    repository.replaceCourses(repository.listCourses().map((course) =>
+      course.id === currentCourse.id
+        ? {
+            ...course,
+            versions: [createdVersion, ...course.versions],
+          }
+        : course,
+    ))
+    dataVersion.value += 1
+    queryState.archiveState = 'active'
+    queryState.selectedCourseId = currentCourse.id
+    queryState.selectedVersionId = createdVersion.id
+    closeVersionCreator()
+    setStatusMessage(
+      versionCreator.mode === 'blank'
+        ? `已创建空白版本 ${createdVersion.versionName}`
+        : `已复制为 ${createdVersion.versionName}`,
+    )
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '创建版本失败')
+  }
+}
+
+async function handleCreateCourse() {
+  if (!courseCreator.title.trim() || !courseCreator.instructor.trim() || !courseCreator.department.trim()) {
+    return
+  }
+
+  isCreatingCourse.value = true
+
+  try {
+    const createdCourse = await createOutlineCourse({
+      title: courseCreator.title.trim(),
+      instructor: courseCreator.instructor.trim(),
+      department: courseCreator.department.trim(),
+    })
+
+    queryState.selectedCourseId = createdCourse.id
+    queryState.selectedVersionId = ''
+    await loadOutlineCourses(`已创建课程 ${courseCreator.title.trim()}`)
+    closeCourseCreator()
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '创建课程失败')
+  } finally {
+    isCreatingCourse.value = false
+  }
 }
 
 function requestArchiveVersion(courseId: string, versionId: string, versionLabel: string) {
@@ -423,47 +555,69 @@ function handleWindowKeydown(event: KeyboardEvent) {
     cancelArchiveVersion()
     return
   }
+  if (event.key === 'Escape' && showCourseCreator.value) {
+    closeCourseCreator()
+    return
+  }
   if (event.key === 'Escape' && showVersionCreator.value) {
     closeVersionCreator()
   }
 }
 
-function confirmArchiveVersion() {
+async function confirmArchiveVersion() {
   if (!pendingArchive.value) {
     return
   }
 
   const archiveTarget = pendingArchive.value
-  const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
-  dataVersion.value += 1
-  pendingArchive.value = null
-  queryState.archiveState = 'active'
-  setStatusMessage(`已归档 ${archived.versionName}`, {
-    courseId: archiveTarget.courseId,
-    versionId: archiveTarget.versionId,
-    versionLabel: archived.versionName,
-  })
+  try {
+    await archiveOutlineVersion(Number(archiveTarget.versionId))
+    const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
+    dataVersion.value += 1
+    pendingArchive.value = null
+    queryState.archiveState = 'active'
+    setStatusMessage(`已归档 ${archived.versionName}`, {
+      courseId: archiveTarget.courseId,
+      versionId: archiveTarget.versionId,
+      versionLabel: archived.versionName,
+    })
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '归档失败')
+  }
 }
 
-function undoArchivedVersion() {
+async function undoArchivedVersion() {
   if (!undoArchiveTarget.value) {
     return
   }
 
-  const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
-  dataVersion.value += 1
-  queryState.archiveState = 'active'
-  setStatusMessage(`已恢复 ${restored.versionName}`)
+  try {
+    await restoreOutlineVersion(Number(undoArchiveTarget.value.versionId))
+    const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
+    dataVersion.value += 1
+    queryState.archiveState = 'active'
+    setStatusMessage(`已恢复 ${restored.versionName}`)
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+  }
 }
 
-function handleRestoreVersion(courseId: string, versionId: string) {
-  const restored = repository.restoreOutlineVersion(courseId, versionId)
-  dataVersion.value += 1
-  queryState.archiveState = 'all'
-  setStatusMessage(`已恢复 ${restored.versionName}`)
+async function handleRestoreVersion(courseId: string, versionId: string) {
+  try {
+    await restoreOutlineVersion(Number(versionId))
+    const restored = repository.restoreOutlineVersion(courseId, versionId)
+    dataVersion.value += 1
+    queryState.archiveState = 'all'
+    setStatusMessage(`已恢复 ${restored.versionName}`)
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+  }
 }
 
-function handleExportVersion() {
+async function handleExportVersion() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
@@ -475,7 +629,11 @@ function handleExportVersion() {
     return
   }
 
-  repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
+  const saved = await handleSaveDraft()
+  if (!saved) {
+    return
+  }
+
   dataVersion.value += 1
   savedSnapshot.value = createDraftSnapshot(draft.value)
   const exported = repository.exportOutlineVersion(currentCourse.id, currentVersion.id)
@@ -586,6 +744,7 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleWindowKeydown)
   }
+  loadOutlineCourses()
   initializeOutlineScrollbars()
 })
 
@@ -714,6 +873,13 @@ function openPrintWindow(documentModel: {
 
     <div class="outline-management__body">
       <aside ref="courseTreeScrollRef" class="outline-course-tree">
+        <button
+          class="outline-course-create-button"
+          type="button"
+          @click="openCourseCreator"
+        >
+          + 新建课程
+        </button>
         <article
           v-for="course in viewModel.courses"
           :key="course.id"
@@ -795,7 +961,7 @@ function openPrintWindow(documentModel: {
       <section class="outline-workspace">
         <div
           class="outline-workspace__content"
-          :class="{ 'archive-blurred': !!pendingArchive, 'creator-mode-blurred': showVersionCreator }"
+          :class="{ 'archive-blurred': !!pendingArchive, 'creator-mode-blurred': showVersionCreator || showCourseCreator }"
         >
           <div class="outline-workspace__top">
           <section v-if="pendingSelection" class="outline-inline-notice">
@@ -863,7 +1029,16 @@ function openPrintWindow(documentModel: {
           </div>
 
           <div ref="workspaceBodyScrollRef" class="outline-workspace__body">
-            <section class="outline-editor-panel">
+            <div v-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state">
+              <div class="outline-empty-state__icon">📋</div>
+              <h3>暂无大纲版本</h3>
+              <p>此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。</p>
+              <button class="outline-toolbar-button primary" type="button" @click="openBlankVersionCreator">
+                新建版本
+              </button>
+            </div>
+
+            <section v-else class="outline-editor-panel">
             <fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">
           <div v-if="activeEditorSection === 'basic-info'" class="outline-form-grid">
             <label class="outline-field">
@@ -1167,6 +1342,69 @@ function openPrintWindow(documentModel: {
                 创建版本
               </button>
               <button class="outline-toolbar-button" type="button" @click.stop="closeVersionCreator">取消</button>
+            </div>
+          </section>
+        </div>
+
+        <div v-if="showCourseCreator" class="outline-version-creator-mode">
+          <button
+            class="outline-version-creator-mode__scrim"
+            type="button"
+            aria-label="取消课程创建模式"
+            @click="closeCourseCreator"
+          ></button>
+          <section class="outline-version-creator-mode__panel">
+            <p class="outline-version-creator-mode__eyebrow">课程创建模式</p>
+            <h3>创建新课程</h3>
+            <p>创建一个新的课程，随后可在此课程下新建大纲版本。</p>
+
+            <div class="outline-version-creator-form">
+              <label class="outline-field">
+                <span>课程名称</span>
+                <input
+                  v-model="courseCreator.title"
+                  type="text"
+                  :disabled="isCreatingCourse"
+                  @keydown.enter.prevent="handleCreateCourse"
+                />
+              </label>
+              <label class="outline-field">
+                <span>授课教师</span>
+                <input
+                  v-model="courseCreator.instructor"
+                  type="text"
+                  :disabled="isCreatingCourse"
+                  @keydown.enter.prevent="handleCreateCourse"
+                />
+              </label>
+              <label class="outline-field wide">
+                <span>教研室</span>
+                <input
+                  v-model="courseCreator.department"
+                  type="text"
+                  :disabled="isCreatingCourse"
+                  @keydown.enter.prevent="handleCreateCourse"
+                />
+              </label>
+            </div>
+
+            <div class="outline-version-creator-mode__actions">
+              <button
+                class="outline-toolbar-button primary"
+                type="button"
+                :disabled="isCreatingCourse"
+                @click.stop="handleCreateCourse"
+              >
+                确认创建
+              </button>
+              <button
+                class="outline-toolbar-button"
+                type="button"
+                :disabled="isCreatingCourse"
+                @click.stop="closeCourseCreator"
+              >
+                取消
+              </button>
             </div>
           </section>
         </div>
