@@ -118,10 +118,14 @@ assert.ok(outlineSection.includes('const savedSnapshot = ref('))
 assert.ok(outlineSection.includes('const pendingSelection = ref<'))
 assert.ok(outlineSection.includes('const pendingArchive = ref<'))
 assert.ok(outlineSection.includes('const isEditing = ref(false)'))
+assert.ok(outlineSection.includes('const showCourseCreator = ref(false)'))
 assert.ok(outlineSection.includes('const hasUnsavedChanges = computed(() =>'))
 assert.ok(outlineSection.includes('function requestVersionSelection('))
 assert.ok(outlineSection.includes('function confirmPendingSelectionWithSave()'))
 assert.ok(outlineSection.includes('function discardPendingSelection()'))
+assert.ok(outlineSection.includes('function openCourseCreator()'))
+assert.ok(outlineSection.includes('function closeCourseCreator()'))
+assert.ok(outlineSection.includes('function handleCreateCourse()'))
 assert.ok(outlineSection.includes('function openBlankVersionCreator()'))
 assert.ok(outlineSection.includes('function openCopyVersionCreator()'))
 assert.ok(outlineSection.includes('function closeVersionCreator()'))
@@ -135,17 +139,32 @@ assert.ok(outlineSection.includes('function handleCreateVersion()'))
 assert.ok(outlineSection.includes('createdBy: props.currentAdminName'))
 assert.ok(outlineSection.includes('保存成功'))
 assert.ok(outlineSection.includes('保存失败'))
+assert.ok(outlineSection.includes('已创建课程'))
 assert.ok(outlineSection.includes('@click="openBlankVersionCreator"'))
+assert.ok(outlineSection.includes('@click="openCourseCreator"'))
 assert.ok(outlineSection.includes('@click="openCopyVersionCreator"'))
 assert.ok(outlineSection.includes('@click="handleEditAction"'))
 assert.ok(outlineSection.includes("{{ isEditing ? '保存' : '修改' }}"))
 assert.ok(outlineSection.includes('<fieldset class="outline-editor-panel__fieldset" :disabled="!isEditing">'))
 assert.ok(outlineSection.includes("'creator-mode-blurred': showVersionCreator"))
+assert.ok(outlineSection.includes("'creator-mode-blurred': showVersionCreator || showCourseCreator"))
 assert.ok(outlineSection.includes("if (event.key === 'Escape' && showVersionCreator.value)"))
+assert.ok(outlineSection.includes("if (event.key === 'Escape' && showCourseCreator.value)"))
 assert.equal(
   normalizedOutlineSection.includes('v-if="showVersionCreator" class="outline-version-creator"'),
   false,
 )
+assert.ok(normalizedOutlineSection.includes('class="outline-course-create-button" type="button" @click="openCourseCreator"'))
+assert.ok(normalizedOutlineSection.includes('v-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
+assert.ok(normalizedOutlineSection.includes('此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。'))
+assert.ok(normalizedOutlineSection.includes('v-if="showCourseCreator" class="outline-version-creator-mode"'))
+assert.ok(normalizedOutlineSection.includes('创建新课程'))
+assert.ok(normalizedOutlineSection.includes('创建一个新的课程，随后可在此课程下新建大纲版本。'))
+assert.ok(normalizedOutlineSection.includes('<span>课程名称</span>'))
+assert.ok(normalizedOutlineSection.includes('<span>授课教师</span>'))
+assert.ok(normalizedOutlineSection.includes('<span>教研室</span>'))
+assert.ok(normalizedOutlineSection.includes('@click.stop="handleCreateCourse"'))
+assert.ok(normalizedOutlineSection.includes('@click.stop="closeCourseCreator"'))
 assert.ok(normalizedOutlineSection.includes('v-if="isEditing" class="outline-inline-button" type="button" @click="addGoal(\'knowledge\')"'))
 assert.ok(
   normalizedOutlineSection.includes(
@@ -224,6 +243,10 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-create-button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-height:\s*48px;/i,
 )
 assert.match(
   outlineStyles,
@@ -356,6 +379,10 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-version-creator-mode__actions\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-wrap:\s*wrap;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-empty-state\s*\{[\s\S]*?display:\s*grid;[\s\S]*?justify-items:\s*center;/i,
 )
 assert.match(
   outlineStyles,

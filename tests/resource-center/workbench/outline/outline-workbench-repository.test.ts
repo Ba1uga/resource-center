@@ -26,6 +26,18 @@ assert.equal(createdBlankVersion.archivedAt, null)
 assert.equal(createdBlankVersion.createdBy, '张老师')
 assert.equal(createdBlankVersion.sections.schedule.length, 0)
 
+const createdCourse = repository.createCourse({
+  title: '离散数学',
+  instructor: '沈砚',
+  department: '计算机教研组',
+})
+
+assert.equal(createdCourse.title, '离散数学')
+assert.equal(createdCourse.instructor, '沈砚')
+assert.equal(createdCourse.department, '计算机教研组')
+assert.equal(createdCourse.id, 'outline-version-501')
+assert.deepEqual(createdCourse.versions, [])
+
 const duplicatedVersion = repository.duplicateOutlineVersion({
   courseId: 'course-functions-and-derivatives',
   sourceVersionId: 'outline-version-fd-2025-fall',
@@ -36,7 +48,7 @@ const duplicatedVersion = repository.duplicateOutlineVersion({
   createdBy: '林知夏',
 })
 
-assert.equal(duplicatedVersion.id, 'outline-version-501')
+assert.equal(duplicatedVersion.id, 'outline-version-502')
 assert.equal(duplicatedVersion.archiveState, 'active')
 assert.equal(duplicatedVersion.archivedAt, null)
 assert.equal(duplicatedVersion.createdBy, '林知夏')

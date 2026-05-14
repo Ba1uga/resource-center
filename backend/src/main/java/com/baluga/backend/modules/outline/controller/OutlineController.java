@@ -1,12 +1,14 @@
 package com.baluga.backend.modules.outline.controller;
 
 import com.baluga.backend.common.api.R;
+import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineListRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
 import com.baluga.backend.modules.outline.dto.response.OutlineCourseVO;
 import com.baluga.backend.modules.outline.dto.response.OutlineVersionVO;
+import com.baluga.backend.modules.outline.entity.OutlineCourse;
 import com.baluga.backend.modules.outline.entity.OutlineVersion;
 import com.baluga.backend.modules.outline.service.OutlineService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -50,6 +53,12 @@ public class OutlineController {
             return R.fail("大纲版本不存在");
         }
         return R.ok(OutlineVersionVO.fromEntity(version, version.getCourseTitle(), objectMapper));
+    }
+
+    @PostMapping("/courses")
+    public R<OutlineCourseVO> createCourse(@Valid @RequestBody OutlineCreateCourseRequest request) {
+        OutlineCourse course = outlineService.createCourse(request);
+        return R.ok(OutlineCourseVO.fromEntity(course, Collections.emptyList()));
     }
 
     @PostMapping("/versions")

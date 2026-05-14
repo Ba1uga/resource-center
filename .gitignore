@@ -1,3 +1,4 @@
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -5,14 +6,17 @@ yarn-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies and build outputs
 node_modules
 dist
 dist-ssr
 *.local
 
+# IDE and local tool state
 .vscode/*
 !.vscode/extensions.json
 .idea
+.claude/
 .DS_Store
 *.suo
 *.ntvs*
@@ -21,6 +25,7 @@ dist-ssr
 *.iml
 *.sw?
 
+# Local environment and agent runtime artifacts
 .env
 .env.local
 .env.*.local
@@ -28,5 +33,6 @@ dist-ssr
 .serena/
 .superpowers/
 .codex-tmp/
-docs/
-outputs/runtime/vibe-sessions/
+docs/requirements/
+docs/superpowers/
+outputs/runtime/

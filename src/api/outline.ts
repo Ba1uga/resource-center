@@ -2,6 +2,7 @@ import { request } from './request.ts'
 
 import type { QueryValue } from './request.ts'
 import type {
+  CreateOutlineCourseInput,
   CreateOutlineVersionInput,
   DuplicateOutlineVersionInput,
   OutlineCourseRecord,
@@ -110,6 +111,14 @@ function normalizeSavePayload(data: OutlineVersionDraft) {
   }
 }
 
+function normalizeCreateCoursePayload(data: CreateOutlineCourseInput) {
+  return {
+    title: data.title,
+    instructor: data.instructor,
+    department: data.department,
+  }
+}
+
 export async function listOutlineCourses(params: OutlineListParams = {}): Promise<OutlineCourseRecord[]> {
   const query: Record<string, QueryValue> = {
     keyword: params.keyword,
@@ -132,6 +141,15 @@ export async function getOutlineVersion(id: number): Promise<OutlineVersionRecor
   })
 
   return normalizeVersion(response.data)
+}
+
+export async function createOutlineCourse(data: CreateOutlineCourseInput): Promise<OutlineCourseRecord> {
+  const response = await request<ApiResponse<OutlineCourseApiVO>>('/outline/courses', {
+    method: 'POST',
+    body: normalizeCreateCoursePayload(data),
+  })
+
+  return normalizeCourse(response.data)
 }
 
 export async function createOutlineVersion(data: CreateOutlineVersionInput): Promise<OutlineVersionRecord> {

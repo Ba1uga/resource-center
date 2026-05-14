@@ -92,3 +92,28 @@ assert.equal(
   ),
   true,
 )
+
+const zeroVersionCourseView = createOutlineWorkbenchViewModel({
+  courses: [
+    {
+      id: 'course-discrete-math',
+      title: '离散数学',
+      instructor: '沈砚',
+      department: '计算机教研组',
+      versions: [],
+    },
+  ],
+  queryState: {
+    selectedCourseId: 'course-discrete-math',
+    selectedVersionId: '',
+  },
+})
+
+assert.equal(zeroVersionCourseView.resultCountLabel, 'Found 1 courses, 0 versions')
+assert.equal(zeroVersionCourseView.courses.length, 1)
+assert.equal(zeroVersionCourseView.courses[0]?.id, 'course-discrete-math')
+assert.equal(zeroVersionCourseView.courses[0]?.versionCount, 0)
+assert.equal(zeroVersionCourseView.currentCourse?.id, 'course-discrete-math')
+assert.equal(zeroVersionCourseView.currentVersion, undefined)
+assert.equal(zeroVersionCourseView.toolbar.versionLabel, '未选择版本')
+assert.equal(zeroVersionCourseView.toolbar.statusLabel, '未开始')

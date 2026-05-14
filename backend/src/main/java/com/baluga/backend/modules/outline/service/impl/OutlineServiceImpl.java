@@ -2,6 +2,7 @@ package com.baluga.backend.modules.outline.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
@@ -82,13 +83,26 @@ public class OutlineServiceImpl implements OutlineService {
                             .toList();
                     return OutlineCourseVO.fromEntity(course, versionVos);
                 })
-                .filter(course -> !course.getVersions().isEmpty())
                 .toList();
     }
 
     @Override
     public OutlineVersion getVersion(Long versionId) {
         return fillCourseTitle(outlineVersionMapper.selectById(versionId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OutlineCourse createCourse(OutlineCreateCourseRequest request) {
+        OutlineCourse course = OutlineCourse.builder()
+                .title(normalize(request.getTitle()))
+                .instructor(normalize(request.getInstructor()))
+                .department(normalize(request.getDepartment()))
+                .deleted(0)
+                .build();
+
+        outlineCourseMapper.insert(course);
+        return course;
     }
 
     @Override

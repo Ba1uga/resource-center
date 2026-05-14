@@ -1,5 +1,6 @@
 package com.baluga.backend.modules.outline.service.impl;
 
+import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
@@ -45,6 +46,7 @@ class OutlineServiceImplTest {
     private OutlineCourse calculusCourse;
     private OutlineCourse geometryCourse;
     private OutlineCourse statsCourse;
+    private OutlineCourse newCourse;
     private OutlineVersion activeCalculusVersion;
     private OutlineVersion archivedCalculusVersion;
     private OutlineVersion collaboratorCalculusVersion;
@@ -74,6 +76,13 @@ class OutlineServiceImplTest {
                 .title("概率与统计")
                 .instructor("周晨")
                 .department("统计教研组")
+                .deleted(0)
+                .build();
+        newCourse = OutlineCourse.builder()
+                .id(4L)
+                .title("离散数学")
+                .instructor("沈砚")
+                .department("计算机教研组")
                 .deleted(0)
                 .build();
 
@@ -209,6 +218,41 @@ class OutlineServiceImplTest {
         assertEquals("概率与统计", created.getCourseTitle());
         assertTrue(objectMapper.readTree(created.getSections()).get("schedule").isArray());
         assertEquals(0, objectMapper.readTree(created.getSections()).get("schedule").size());
+    }
+
+    @Test
+    void shouldCreateCourse() {
+        OutlineCreateCourseRequest request = new OutlineCreateCourseRequest();
+        request.setTitle("  数据结构  ");
+        request.setInstructor("  张老师 ");
+        request.setDepartment("  计算机教研组 ");
+
+        doAnswer(invocation -> {
+            OutlineCourse entity = invocation.getArgument(0);
+            entity.setId(12L);
+            return 1;
+        }).when(outlineCourseMapper).insert(any(OutlineCourse.class));
+
+        OutlineCourse created = outlineService.createCourse(request);
+        OutlineCourseVO createdVo = OutlineCourseVO.fromEntity(created, List.of());
+
+        assertEquals("数据结构", created.getTitle());
+        assertEquals("张老师", created.getInstructor());
+        assertEquals("计算机教研组", created.getDepartment());
+        assertEquals(0, createdVo.getVersionCount());
+    }
+
+    @Test
+    void shouldListCoursesWithZeroVersions() {
+        when(outlineCourseMapper.selectList(any())).thenReturn(List.of(calculusCourse, newCourse));
+        when(outlineVersionMapper.selectList(any())).thenReturn(List.of(activeCalculusVersion));
+
+        List<OutlineCourseVO> result = outlineService.listCoursesWithVersions("", "", "", "active");
+
+        assertEquals(2, result.size());
+        assertEquals("离散数学", result.get(1).getTitle());
+        assertEquals(0, result.get(1).getVersionCount());
+        assertTrue(result.get(1).getVersions().isEmpty());
     }
 
     @Test
