@@ -102,6 +102,21 @@ function createVisibleCourses(
 ): OutlineCourseNavItem[] {
   return courses
     .map((course) => {
+      if (course.versions.length === 0) {
+        if (!matchesCourseWithoutVersions(course, queryState)) {
+          return null
+        }
+
+        return {
+          id: course.id,
+          title: course.title,
+          instructor: course.instructor,
+          versionCount: 0,
+          current: course.id === currentCourseId,
+          versions: [],
+        }
+      }
+
       const visibleVersions = course.versions
         .filter((version) => matchesVersionFilters(version, queryState, course))
         .sort((left, right) => compareVersions(left, right, queryState.sortBy))
@@ -121,6 +136,29 @@ function createVisibleCourses(
       }
     })
     .filter((course): course is OutlineCourseNavItem => course !== null)
+}
+
+function matchesCourseWithoutVersions(course: OutlineCourseRecord, queryState: OutlineWorkbenchQueryState): boolean {
+  const keyword = queryState.searchText.trim().toLowerCase()
+  const haystack = [course.title, course.instructor, course.department].join(' ').toLowerCase()
+
+  if (keyword.length > 0 && !haystack.includes(keyword)) {
+    return false
+  }
+
+  if (queryState.semester.length > 0) {
+    return false
+  }
+
+  if (queryState.versionStatus !== 'all') {
+    return false
+  }
+
+  if (queryState.completionState !== 'all') {
+    return false
+  }
+
+  return queryState.archiveState !== 'archived'
 }
 
 function matchesVersionFilters(

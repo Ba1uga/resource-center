@@ -128,6 +128,12 @@ export interface CreateOutlineVersionInput {
   updatedBy: string
 }
 
+export interface CreateOutlineCourseInput {
+  title: string
+  instructor: string
+  department: string
+}
+
 export interface OutlineWorkbenchQueryState {
   selectedCourseId: string
   selectedVersionId: string
