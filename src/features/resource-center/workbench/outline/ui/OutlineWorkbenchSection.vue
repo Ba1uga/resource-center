@@ -27,6 +27,7 @@ import {
   createDefaultOutlineWorkbenchQueryState,
   createOutlineWorkbenchViewModel,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.view-model.ts'
+import { outlineWorkbenchCourses } from '@/features/resource-center/workbench/outline/model/outline-workbench.fixtures.ts'
 
 import type {
   OutlineCompletionSummary,
@@ -52,7 +53,9 @@ type PendingArchiveTarget = {
 
 type UndoArchiveTarget = PendingArchiveTarget
 
-const repository = createOutlineWorkbenchRepository()
+const repository = createOutlineWorkbenchRepository({
+  initialCourses: [],
+})
 const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))
 const dataVersion = ref(0)
 const draft = ref(createOutlineVersionDraft())
@@ -71,6 +74,8 @@ const courseCreator = reactive({
   department: '',
 })
 const statusMessage = ref('')
+const connectionStatus = ref<'' | 'offline'>('')
+const statusVisible = ref(false)
 const savedSnapshot = ref('')
 const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
@@ -84,6 +89,7 @@ const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 let localIdSeed = 0
 let courseTreeScrollbar: PerfectScrollbar | null = null
 let workspaceBodyScrollbar: PerfectScrollbar | null = null
+let statusTimer: ReturnType<typeof setTimeout> | undefined
 
 const outlineScrollbarOptions: PerfectScrollbar.Options = {
   minScrollbarLength: 28,
@@ -233,6 +239,25 @@ function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTar
   undoArchiveTarget.value = nextUndoArchiveTarget
 }
 
+function dismissStatus() {
+  statusVisible.value = false
+  if (statusTimer) {
+    clearTimeout(statusTimer)
+    statusTimer = undefined
+  }
+}
+
+function showTransientStatus() {
+  statusVisible.value = true
+  if (statusTimer) {
+    clearTimeout(statusTimer)
+  }
+  statusTimer = setTimeout(() => {
+    statusVisible.value = false
+    statusTimer = undefined
+  }, 3200)
+}
+
 async function loadOutlineCourses(message = '') {
   isLoading.value = true
 
@@ -264,9 +289,17 @@ async function loadOutlineCourses(message = '') {
     if (message) {
       setStatusMessage(message)
     }
+    connectionStatus.value = ''
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '加载大纲数据失败')
+    repository.replaceCourses(outlineWorkbenchCourses)
+    dataVersion.value += 1
+
+    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(outlineWorkbenchCourses)
+    queryState.selectedCourseId = defaultQueryState.selectedCourseId
+    queryState.selectedVersionId = defaultQueryState.selectedVersionId
+    connectionStatus.value = 'offline'
+    showTransientStatus()
   } finally {
     isLoading.value = false
   }
@@ -749,6 +782,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  dismissStatus()
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', handleWindowKeydown)
   }
@@ -819,12 +853,24 @@ function openPrintWindow(documentModel: {
 
 <template>
   <section class="outline-management workbench-surface">
-    <header class="outline-management__head">
-      <div class="outline-management__heading">
-        <h2>{{ props.section.title }}</h2>
-      </div>
-      <span class="outline-management__scope-pill">{{ viewModel.resultCountLabel }}</span>
-    </header>
+      <header class="outline-management__head">
+        <div class="outline-management__heading">
+          <h2>{{ props.section.title }}</h2>
+        </div>
+        <div
+          v-if="connectionStatus === 'offline'"
+          class="outline-management__status-anchor"
+          @mouseenter="statusVisible = true"
+          @mouseleave="dismissStatus"
+        >
+          <button class="outline-management__status-pill" type="button" @click="statusVisible = !statusVisible">
+            连接异常
+          </button>
+          <div v-if="statusVisible" class="outline-management__status-popover">
+            后端连接失败，当前显示本地大纲样例。
+          </div>
+        </div>
+      </header>
 
     <section class="outline-query-bar">
       <label class="outline-query-field outline-query-field--search">
@@ -1029,6 +1075,12 @@ function openPrintWindow(documentModel: {
           </div>
 
           <div ref="workspaceBodyScrollRef" class="outline-workspace__body">
+            <div v-if="isLoading && viewModel.courses.length === 0" class="outline-empty-state">
+              <div class="outline-empty-state__icon">⏳</div>
+              <h3>正在加载大纲数据...</h3>
+              <p>正在尝试连接后端服务，请稍候。</p>
+            </div>
+
             <div v-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state">
               <div class="outline-empty-state__icon">📋</div>
               <h3>暂无大纲版本</h3>

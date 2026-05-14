@@ -18,13 +18,14 @@ import type {
 export interface CreateOutlineWorkbenchRepositoryOptions {
   now?: () => string
   createId?: () => string
+  initialCourses?: OutlineCourseRecord[]
 }
 
 export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbenchRepositoryOptions = {}) {
   const now = options.now ?? (() => new Date().toISOString())
   const createId = options.createId ?? createDefaultIdFactory()
 
-  let courses = cloneCourses(outlineWorkbenchCourses)
+  let courses = cloneCourses(options.initialCourses ?? outlineWorkbenchCourses)
 
   return {
     listCourses(): OutlineCourseRecord[] {

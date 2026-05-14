@@ -203,7 +203,6 @@ export interface OutlineWorkbenchViewModel {
   directory: OutlineDirectoryItem[]
   completion: OutlineCompletionSummary
   teachingMethodOptions: string[]
-  resultCountLabel: string
   currentVersionMatchesFilters: boolean
 }
 

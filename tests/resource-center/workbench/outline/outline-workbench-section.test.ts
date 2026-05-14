@@ -34,7 +34,11 @@ assert.ok(outlineSection.includes('currentAdminName: string'))
 assert.ok(outlineSection.includes('class="outline-management workbench-surface"'))
 assert.ok(outlineSection.includes('class="outline-management__head"'))
 assert.ok(outlineSection.includes('class="outline-management__heading"'))
-assert.ok(outlineSection.includes('class="outline-management__scope-pill"'))
+assert.equal(outlineSection.includes('class="outline-management__scope-pill"'), false)
+assert.ok(outlineSection.includes('class="outline-management__status-anchor"'))
+assert.ok(outlineSection.includes('class="outline-management__status-pill"'))
+assert.ok(outlineSection.includes('class="outline-management__status-popover"'))
+assert.ok(outlineSection.includes('后端连接失败，当前显示本地大纲样例。'))
 assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
@@ -119,6 +123,9 @@ assert.ok(outlineSection.includes('const pendingSelection = ref<'))
 assert.ok(outlineSection.includes('const pendingArchive = ref<'))
 assert.ok(outlineSection.includes('const isEditing = ref(false)'))
 assert.ok(outlineSection.includes('const showCourseCreator = ref(false)'))
+assert.ok(outlineSection.includes('const connectionStatus = ref<'))
+assert.ok(outlineSection.includes('const statusVisible = ref(false)'))
+assert.ok(outlineSection.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
 assert.ok(outlineSection.includes('const hasUnsavedChanges = computed(() =>'))
 assert.ok(outlineSection.includes('function requestVersionSelection('))
 assert.ok(outlineSection.includes('function confirmPendingSelectionWithSave()'))
@@ -129,6 +136,8 @@ assert.ok(outlineSection.includes('function handleCreateCourse()'))
 assert.ok(outlineSection.includes('function openBlankVersionCreator()'))
 assert.ok(outlineSection.includes('function openCopyVersionCreator()'))
 assert.ok(outlineSection.includes('function closeVersionCreator()'))
+assert.ok(outlineSection.includes('function showTransientStatus('))
+assert.ok(outlineSection.includes('function dismissStatus()'))
 assert.ok(outlineSection.includes('function requestArchiveVersion('))
 assert.ok(outlineSection.includes('function confirmArchiveVersion()'))
 assert.ok(outlineSection.includes('function cancelArchiveVersion()'))
@@ -140,6 +149,10 @@ assert.ok(outlineSection.includes('createdBy: props.currentAdminName'))
 assert.ok(outlineSection.includes('保存成功'))
 assert.ok(outlineSection.includes('保存失败'))
 assert.ok(outlineSection.includes('已创建课程'))
+assert.equal(outlineSection.includes('加载大纲数据失败'), false)
+assert.ok(outlineSection.includes('const repository = createOutlineWorkbenchRepository({'))
+assert.ok(outlineSection.includes('initialCourses: []'))
+assert.ok(outlineSection.includes('正在加载大纲数据...'))
 assert.ok(outlineSection.includes('@click="openBlankVersionCreator"'))
 assert.ok(outlineSection.includes('@click="openCourseCreator"'))
 assert.ok(outlineSection.includes('@click="openCopyVersionCreator"'))
@@ -219,6 +232,7 @@ assert.ok(
   ),
 )
 assert.ok(outlineSection.includes('<h2>{{ props.section.title }}</h2>'))
+assert.equal(outlineStyles.includes('.outline-management__scope-pill'), false)
 assert.equal(outlineSection.includes('class="outline-workspace__completion"'), false)
 assert.equal(outlineSection.includes('Teacher Workspace'), false)
 assert.equal(outlineSection.includes('class="outline-overview-shell"'), false)
@@ -424,6 +438,18 @@ assert.match(
 assert.match(
   outlineStyles,
   /\.outline-workspace__top\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*14px;[\s\S]*?align-content:\s*start;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__status-anchor\s*\{[\s\S]*?display:\s*grid;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__status-pill\s*\{[\s\S]*?border-radius:\s*999px;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__status-popover\s*\{[\s\S]*?position:\s*absolute;/i,
 )
 assert.match(
   outlineStyles,

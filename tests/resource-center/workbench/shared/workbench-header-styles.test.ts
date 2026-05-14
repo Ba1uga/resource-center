@@ -63,15 +63,11 @@ assert.ok(sharedHeaderStyles.includes('.video-management__heading h2'))
 assert.ok(sharedHeaderStyles.includes('.courseware-management__head h2'))
 assert.ok(sharedHeaderStyles.includes('.question-management__head h2'))
 assert.ok(sharedHeaderStyles.includes('.module-workbench-shell__title'))
-assert.ok(sharedHeaderStyles.includes('.outline-management__scope-pill'))
-assert.ok(sharedHeaderStyles.includes('.textbook-management__scope-pill'))
+assert.equal(sharedHeaderStyles.includes('.outline-management__scope-pill'), false)
+assert.equal(sharedHeaderStyles.includes('.textbook-management__scope-pill'), false)
 assert.ok(sharedHeaderStyles.includes('.video-management__copy'))
 
 assert.match(
   sharedHeaderStyles,
   /font-size:\s*clamp\(1\.5rem,\s*2vw,\s*1\.95rem\);[\s\S]*?font-weight:\s*700;[\s\S]*?letter-spacing:\s*-0\.04em;[\s\S]*?line-height:\s*1\.1;/i,
-)
-assert.match(
-  sharedHeaderStyles,
-  /padding:\s*7px 12px;[\s\S]*?font-size:\s*0\.82rem;[\s\S]*?font-weight:\s*600;[\s\S]*?line-height:\s*1\.2;[\s\S]*?white-space:\s*nowrap;/i,
 )
