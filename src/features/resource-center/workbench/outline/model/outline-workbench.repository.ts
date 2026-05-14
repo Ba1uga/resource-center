@@ -29,6 +29,9 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
     listCourses(): OutlineCourseRecord[] {
       return cloneCourses(courses)
     },
+    replaceCourses(nextCourses: OutlineCourseRecord[]) {
+      courses = cloneCourses(nextCourses)
+    },
     getCourse(courseId: string): OutlineCourseRecord | undefined {
       return cloneCourses(courses).find((course) => course.id === courseId)
     },

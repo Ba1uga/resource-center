@@ -6,6 +6,14 @@ import PerfectScrollbar from 'perfect-scrollbar'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import {
+  archiveOutlineVersion,
+  createOutlineVersion,
+  duplicateOutlineVersion,
+  listOutlineCourses,
+  restoreOutlineVersion,
+  saveOutlineVersion,
+} from '@/api/outline.ts'
+import {
   createOutlineVersionDraft,
   createOutlineVersionDraftFromVersion,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.editor.ts'
@@ -61,6 +69,7 @@ const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
 const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
 const isEditing = ref(false)
+const isLoading = ref(false)
 const courseTreeScrollRef = ref<HTMLElement | null>(null)
 const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
@@ -125,6 +134,14 @@ watch(hasActiveCourseFilters, (isActive, wasActive) => {
     manualExpandedCourseIds.value = []
   }
 })
+
+watch(
+  () => [queryState.semester, queryState.versionStatus, queryState.archiveState].join('|'),
+  () => {
+    loadOutlineCourses()
+  },
+  { flush: 'post' },
+)
 
 watch(
   () => [
@@ -206,6 +223,45 @@ function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTar
   undoArchiveTarget.value = nextUndoArchiveTarget
 }
 
+async function loadOutlineCourses(message = '') {
+  isLoading.value = true
+
+  try {
+    const courses = await listOutlineCourses({
+      keyword: queryState.searchText.trim(),
+      semester: queryState.semester,
+      versionStatus: queryState.versionStatus,
+      archiveState: queryState.archiveState,
+    })
+
+    repository.replaceCourses(courses)
+    dataVersion.value += 1
+
+    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(courses)
+    const hasSelectedCourse = courses.some((course) => course.id === queryState.selectedCourseId)
+    const selectedCourse = courses.find((course) => course.id === queryState.selectedCourseId)
+    const hasSelectedVersion = selectedCourse?.versions.some((version) => version.id === queryState.selectedVersionId) ?? false
+
+    if (!hasSelectedCourse) {
+      queryState.selectedCourseId = defaultQueryState.selectedCourseId
+    }
+
+    if (!hasSelectedVersion) {
+      queryState.selectedVersionId =
+        courses.find((course) => course.id === queryState.selectedCourseId)?.versions[0]?.id ?? defaultQueryState.selectedVersionId
+    }
+
+    if (message) {
+      setStatusMessage(message)
+    }
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '加载大纲数据失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function isCourseExpanded(courseId: string) {
   return expandedCourseIds.value.includes(courseId)
 }
@@ -276,12 +332,12 @@ function requestVersionSelection(courseId: string, versionId: string) {
   selectVersion(courseId, versionId)
 }
 
-function confirmPendingSelectionWithSave() {
+async function confirmPendingSelectionWithSave() {
   if (!pendingSelection.value) {
     return
   }
 
-  const saved = handleSaveDraft()
+  const saved = await handleSaveDraft()
   if (!saved) {
     return
   }
@@ -326,7 +382,7 @@ function handleResetFilters() {
   manualExpandedCourseIds.value = []
 }
 
-function handleSaveDraft() {
+async function handleSaveDraft() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
@@ -335,7 +391,11 @@ function handleSaveDraft() {
   }
 
   try {
-    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
+    const savedVersion = await saveOutlineVersion(Number(currentVersion.id), draft.value)
+    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, {
+      ...savedVersion,
+      courseId: currentCourse.id,
+    })
     dataVersion.value += 1
     savedSnapshot.value = createDraftSnapshot(draft.value)
     setStatusMessage('保存成功')
@@ -347,7 +407,7 @@ function handleSaveDraft() {
   }
 }
 
-function handleEditAction() {
+async function handleEditAction() {
   if (!viewModel.value.currentVersion) {
     return
   }
@@ -358,7 +418,7 @@ function handleEditAction() {
     return
   }
 
-  const saved = handleSaveDraft()
+  const saved = await handleSaveDraft()
   if (!saved) {
     return
   }
@@ -366,16 +426,17 @@ function handleEditAction() {
   isEditing.value = false
 }
 
-function handleCreateVersion() {
+async function handleCreateVersion() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || versionCreator.versionName.trim().length === 0) {
     return
   }
 
-  const createdVersion =
-    versionCreator.mode === 'blank'
-      ? repository.createOutlineVersion({
+  try {
+    const createdVersion =
+      versionCreator.mode === 'blank'
+        ? await createOutlineVersion({
           courseId: currentCourse.id,
           versionName: versionCreator.versionName.trim(),
           semester: versionCreator.semester.trim(),
@@ -383,7 +444,7 @@ function handleCreateVersion() {
           createdBy: props.currentAdminName,
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
-      : repository.duplicateOutlineVersion({
+        : await duplicateOutlineVersion({
           courseId: currentCourse.id,
           sourceVersionId: currentVersion?.id ?? currentCourse.versions[0]!.id,
           versionName: versionCreator.versionName.trim(),
@@ -393,16 +454,28 @@ function handleCreateVersion() {
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
 
-  dataVersion.value += 1
-  queryState.archiveState = 'active'
-  queryState.selectedCourseId = currentCourse.id
-  queryState.selectedVersionId = createdVersion.id
-  closeVersionCreator()
-  setStatusMessage(
-    versionCreator.mode === 'blank'
-      ? `已创建空白版本 ${createdVersion.versionName}`
-      : `已复制为 ${createdVersion.versionName}`,
-  )
+    repository.replaceCourses(repository.listCourses().map((course) =>
+      course.id === currentCourse.id
+        ? {
+            ...course,
+            versions: [createdVersion, ...course.versions],
+          }
+        : course,
+    ))
+    dataVersion.value += 1
+    queryState.archiveState = 'active'
+    queryState.selectedCourseId = currentCourse.id
+    queryState.selectedVersionId = createdVersion.id
+    closeVersionCreator()
+    setStatusMessage(
+      versionCreator.mode === 'blank'
+        ? `已创建空白版本 ${createdVersion.versionName}`
+        : `已复制为 ${createdVersion.versionName}`,
+    )
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '创建版本失败')
+  }
 }
 
 function requestArchiveVersion(courseId: string, versionId: string, versionLabel: string) {
@@ -428,42 +501,60 @@ function handleWindowKeydown(event: KeyboardEvent) {
   }
 }
 
-function confirmArchiveVersion() {
+async function confirmArchiveVersion() {
   if (!pendingArchive.value) {
     return
   }
 
   const archiveTarget = pendingArchive.value
-  const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
-  dataVersion.value += 1
-  pendingArchive.value = null
-  queryState.archiveState = 'active'
-  setStatusMessage(`已归档 ${archived.versionName}`, {
-    courseId: archiveTarget.courseId,
-    versionId: archiveTarget.versionId,
-    versionLabel: archived.versionName,
-  })
+  try {
+    await archiveOutlineVersion(Number(archiveTarget.versionId))
+    const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
+    dataVersion.value += 1
+    pendingArchive.value = null
+    queryState.archiveState = 'active'
+    setStatusMessage(`已归档 ${archived.versionName}`, {
+      courseId: archiveTarget.courseId,
+      versionId: archiveTarget.versionId,
+      versionLabel: archived.versionName,
+    })
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '归档失败')
+  }
 }
 
-function undoArchivedVersion() {
+async function undoArchivedVersion() {
   if (!undoArchiveTarget.value) {
     return
   }
 
-  const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
-  dataVersion.value += 1
-  queryState.archiveState = 'active'
-  setStatusMessage(`已恢复 ${restored.versionName}`)
+  try {
+    await restoreOutlineVersion(Number(undoArchiveTarget.value.versionId))
+    const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
+    dataVersion.value += 1
+    queryState.archiveState = 'active'
+    setStatusMessage(`已恢复 ${restored.versionName}`)
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+  }
 }
 
-function handleRestoreVersion(courseId: string, versionId: string) {
-  const restored = repository.restoreOutlineVersion(courseId, versionId)
-  dataVersion.value += 1
-  queryState.archiveState = 'all'
-  setStatusMessage(`已恢复 ${restored.versionName}`)
+async function handleRestoreVersion(courseId: string, versionId: string) {
+  try {
+    await restoreOutlineVersion(Number(versionId))
+    const restored = repository.restoreOutlineVersion(courseId, versionId)
+    dataVersion.value += 1
+    queryState.archiveState = 'all'
+    setStatusMessage(`已恢复 ${restored.versionName}`)
+  } catch (error) {
+    console.error(error)
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+  }
 }
 
-function handleExportVersion() {
+async function handleExportVersion() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
@@ -475,7 +566,11 @@ function handleExportVersion() {
     return
   }
 
-  repository.saveOutlineDraft(currentCourse.id, currentVersion.id, draft.value)
+  const saved = await handleSaveDraft()
+  if (!saved) {
+    return
+  }
+
   dataVersion.value += 1
   savedSnapshot.value = createDraftSnapshot(draft.value)
   const exported = repository.exportOutlineVersion(currentCourse.id, currentVersion.id)
@@ -586,6 +681,7 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleWindowKeydown)
   }
+  loadOutlineCourses()
   initializeOutlineScrollbars()
 })
 
