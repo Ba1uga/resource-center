@@ -57,7 +57,6 @@ export function createOutlineWorkbenchViewModel(
     directory: createOutlineDirectoryItems(completion),
     completion,
     teachingMethodOptions: [...outlineTeachingMethodOptions],
-    resultCountLabel: createResultCountLabel(visibleCourses),
     currentVersionMatchesFilters: currentVersion ? matchesVersionFilters(currentVersion, queryState, currentCourse) : true,
   }
 }
@@ -249,7 +248,3 @@ function createToolbarViewModel(
   }
 }
 
-function createResultCountLabel(courses: OutlineCourseNavItem[]): string {
-  const versionCount = courses.reduce((total, course) => total + course.versions.length, 0)
-  return `Found ${courses.length} courses, ${versionCount} versions`
-}

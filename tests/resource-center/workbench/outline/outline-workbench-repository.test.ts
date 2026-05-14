@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict'
 
 import { createOutlineWorkbenchRepository } from '../../../../src/features/resource-center/workbench/outline/model/outline-workbench.repository.ts'
+import { outlineWorkbenchCourses } from '../../../../src/features/resource-center/workbench/outline/model/outline-workbench.fixtures.ts'
+
+const emptyRepository = createOutlineWorkbenchRepository({
+  initialCourses: [],
+})
+
+assert.deepEqual(emptyRepository.listCourses(), [])
+
+emptyRepository.replaceCourses(outlineWorkbenchCourses)
+assert.equal(emptyRepository.listCourses().length > 0, true)
 
 const repository = createOutlineWorkbenchRepository({
   now: () => '2026-04-11T09:30:00.000Z',

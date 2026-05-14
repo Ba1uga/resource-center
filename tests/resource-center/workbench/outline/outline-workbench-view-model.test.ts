@@ -29,7 +29,7 @@ const defaultView = createOutlineWorkbenchViewModel({
   queryState: defaultQuery,
 })
 
-assert.equal(defaultView.resultCountLabel, 'Found 3 courses, 5 versions')
+assert.equal('resultCountLabel' in defaultView, false)
 assert.equal(defaultView.currentVersionMatchesFilters, true)
 assert.equal(defaultView.currentCourse?.id, 'course-functions-and-derivatives')
 assert.equal(defaultView.currentVersion?.id, 'outline-version-fd-2026-spring')
@@ -49,7 +49,7 @@ const archivedView = createOutlineWorkbenchViewModel({
   },
 })
 
-assert.equal(archivedView.resultCountLabel, 'Found 1 courses, 1 versions')
+assert.equal('resultCountLabel' in archivedView, false)
 assert.equal(archivedView.currentVersionMatchesFilters, false)
 assert.equal(archivedView.courses[0]?.id, 'course-functions-and-derivatives')
 assert.equal(archivedView.courses[0]?.versions[0]?.id, 'outline-version-fd-2025-fall')
@@ -62,7 +62,7 @@ const searchedView = createOutlineWorkbenchViewModel({
   },
 })
 
-assert.equal(searchedView.resultCountLabel, 'Found 1 courses, 1 versions')
+assert.equal('resultCountLabel' in searchedView, false)
 assert.equal(searchedView.courses[0]?.id, 'course-solid-geometry')
 
 const collaboratorSearchView = createOutlineWorkbenchViewModel({
@@ -72,7 +72,7 @@ const collaboratorSearchView = createOutlineWorkbenchViewModel({
   },
 })
 
-assert.equal(collaboratorSearchView.resultCountLabel, 'Found 1 courses, 1 versions')
+assert.equal('resultCountLabel' in collaboratorSearchView, false)
 assert.equal(collaboratorSearchView.courses.length, 1)
 assert.equal(collaboratorSearchView.courses[0]?.id, 'course-functions-and-derivatives')
 assert.equal(collaboratorSearchView.courses[0]?.versions[0]?.id, 'outline-version-fd-2026-collab')
@@ -85,7 +85,7 @@ const completedView = createOutlineWorkbenchViewModel({
   },
 })
 
-assert.equal(completedView.resultCountLabel, 'Found 3 courses, 3 versions')
+assert.equal('resultCountLabel' in completedView, false)
 assert.equal(
   completedView.courses.every((course: { versions: Array<{ issueCount: number }> }) =>
     course.versions.every((version) => version.issueCount === 0),
@@ -109,7 +109,7 @@ const zeroVersionCourseView = createOutlineWorkbenchViewModel({
   },
 })
 
-assert.equal(zeroVersionCourseView.resultCountLabel, 'Found 1 courses, 0 versions')
+assert.equal('resultCountLabel' in zeroVersionCourseView, false)
 assert.equal(zeroVersionCourseView.courses.length, 1)
 assert.equal(zeroVersionCourseView.courses[0]?.id, 'course-discrete-math')
 assert.equal(zeroVersionCourseView.courses[0]?.versionCount, 0)
