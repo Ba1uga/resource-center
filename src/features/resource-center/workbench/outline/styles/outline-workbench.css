@@ -111,8 +111,8 @@
 
 .outline-query-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) repeat(4, minmax(0, 150px)) auto auto;
-  gap: 12px;
+  grid-template-columns: minmax(280px, 1.35fr) minmax(0, 118px) minmax(0, 118px) minmax(0, 156px) minmax(0, 124px) minmax(84px, auto) minmax(120px, auto);
+  gap: 14px;
   align-items: stretch;
   padding: 14px;
 }

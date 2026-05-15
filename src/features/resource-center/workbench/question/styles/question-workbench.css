@@ -101,8 +101,8 @@
 
 .question-management__toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) repeat(4, minmax(0, 170px)) auto auto auto;
-  gap: 14px;
+  grid-template-columns: minmax(260px, 1.2fr) repeat(4, minmax(0, 156px)) auto auto minmax(140px, auto);
+  gap: 12px;
   align-items: stretch;
 }
 

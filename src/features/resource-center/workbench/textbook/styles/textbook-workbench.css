@@ -86,8 +86,8 @@
 
 .textbook-management__toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 200px auto;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 200px auto auto;
+  gap: 12px;
   align-items: center;
 }
 
@@ -165,21 +165,13 @@
   transform: translateY(-1px);
 }
 
-.textbook-management__toolbar-advanced {
-  display: grid;
-  grid-template-columns: 240px 180px auto;
-  gap: 14px;
-  align-items: end;
-}
-
 .textbook-management__reset-button {
-  justify-self: start;
-  height: 44px;
+  height: 58px;
   padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-strong);
-  color: var(--soft);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
   font: inherit;
   font-weight: 600;
 }

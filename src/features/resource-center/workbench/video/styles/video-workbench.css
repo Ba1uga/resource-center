@@ -110,8 +110,7 @@
   color: var(--video-danger);
 }
 
-.video-management__search-field,
-.video-management__select-field {
+.video-management__search-field {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -127,8 +126,7 @@
     transform 180ms var(--ease-out);
 }
 
-.video-management__search-field:focus-within,
-.video-management__select-field:focus-within {
+.video-management__search-field:focus-within {
   border-color: var(--video-line-strong);
   box-shadow: 0 0 0 4px oklch(0.94 0.015 245);
 }
@@ -141,7 +139,11 @@
 }
 
 .video-management__search-field input,
-.video-management__select-field select {
+.video-management__select-field {
+  display: contents;
+}
+
+.video-management__search-field input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -154,32 +156,8 @@
   color: oklch(0.64 0.02 250);
 }
 
-.video-management__search-field input:focus,
-.video-management__select-field select:focus {
+.video-management__search-field input:focus {
   outline: none;
-}
-
-.video-management__select-field {
-  position: relative;
-  padding-right: 44px;
-}
-
-.video-management__select-field::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  width: 9px;
-  height: 9px;
-  border-right: 2px solid oklch(0.38 0.02 250);
-  border-bottom: 2px solid oklch(0.38 0.02 250);
-  transform: translateY(-65%) rotate(45deg);
-  pointer-events: none;
-}
-
-.video-management__select-field select {
-  appearance: none;
-  cursor: pointer;
 }
 
 .video-management__upload-button {
@@ -696,7 +674,6 @@
   }
 
   .video-management__search-field,
-  .video-management__select-field,
   .video-management__upload-button {
     width: 100%;
   }

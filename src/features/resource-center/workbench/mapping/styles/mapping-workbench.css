@@ -163,6 +163,10 @@
 
 .mapping-management-filters__search-field,
 .mapping-management-filters__select-field {
+  min-width: 0;
+}
+
+.mapping-management-filters__search-field {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -173,8 +177,7 @@
   background: #fff;
 }
 
-.mapping-management-filters__search-field:focus-within,
-.mapping-management-filters__select-field:focus-within {
+.mapping-management-filters__search-field:focus-within {
   border-color: var(--mapping-line-strong);
   box-shadow: 0 0 0 4px oklch(0.94 0.012 245 / 0.9);
 }
@@ -187,7 +190,11 @@
 }
 
 .mapping-management-filters__search-field input,
-.mapping-management-filters__select-field select {
+.mapping-management-filters__select-field {
+  display: contents;
+}
+
+.mapping-management-filters__search-field input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -195,29 +202,6 @@
   color: var(--mapping-ink);
   font: inherit;
   outline: none;
-}
-
-.mapping-management-filters__select-field {
-  position: relative;
-  padding-right: 42px;
-}
-
-.mapping-management-filters__select-field::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 18px;
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--mapping-soft);
-  border-bottom: 2px solid var(--mapping-soft);
-  transform: translateY(-65%) rotate(45deg);
-  pointer-events: none;
-}
-
-.mapping-management-filters__select-field select {
-  appearance: none;
-  cursor: pointer;
 }
 
 .mapping-management-filters__reset-button {
