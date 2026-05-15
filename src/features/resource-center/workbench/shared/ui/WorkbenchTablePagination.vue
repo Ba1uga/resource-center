@@ -4,6 +4,7 @@ import '../styles/workbench-pagination.css'
 import { computed, ref, watch } from 'vue'
 
 import { buildWorkbenchPaginationItems } from '@/features/resource-center/workbench/shared/model/workbench-pagination.ts'
+import WorkbenchSelect from './WorkbenchSelect.vue'
 
 interface WorkbenchPaginationState {
   page: number
@@ -142,11 +143,13 @@ function handlePageSizeChange(event: Event) {
       </button>
 
       <label v-if="showPageSizeSelector" class="workbench-pagination__page-size">
-        <select :value="pageSize" @change="handlePageSizeChange">
-          <option v-for="option in pageSizeOptions" :key="option" :value="option">
-            {{ option }} 条/页
-          </option>
-        </select>
+        <WorkbenchSelect
+          :model-value="String(pageSize)"
+          aria-label="设置每页条数"
+          size="sm"
+          :options="pageSizeOptions.map((option) => ({ value: String(option), label: `${option} 条/页` }))"
+          @update:model-value="emit('page-size-change', Number($event))"
+        />
       </label>
 
       <label v-if="showQuickJumper" class="workbench-pagination__quick-jumper">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
 import type {
   MappingConfidenceLevelFilter,
@@ -75,51 +76,57 @@ function handleConfidenceLevelChange(event: Event) {
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.resourceType" aria-label="按资源类型筛选" @change="handleResourceTypeChange">
-        <option v-for="option in resourceTypeOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.resourceType"
+        aria-label="按资源类型筛选"
+        :options="resourceTypeOptions"
+        @update:model-value="emit('update-resource-type', $event as MappingResourceTypeFilter)"
+      />
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.course" aria-label="按课程筛选" @change="handleCourseChange">
-        <option v-for="option in courseOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.course"
+        aria-label="按课程筛选"
+        :options="courseOptions"
+        @update:model-value="emit('update-course', $event)"
+      />
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.chapter" aria-label="按章节筛选" @change="handleChapterChange">
-        <option v-for="option in chapterOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.chapter"
+        aria-label="按章节筛选"
+        :options="chapterOptions"
+        @update:model-value="emit('update-chapter', $event)"
+      />
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.batchId" aria-label="按批次筛选" @change="handleBatchChange">
-        <option v-for="option in batchOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.batchId"
+        aria-label="按批次筛选"
+        :options="batchOptions"
+        @update:model-value="emit('update-batch', $event)"
+      />
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.reviewStatus" aria-label="按复核状态筛选" @change="handleReviewStatusChange">
-        <option v-for="option in reviewStatusOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.reviewStatus"
+        aria-label="按复核状态筛选"
+        :options="reviewStatusOptions"
+        @update:model-value="emit('update-review-status', $event as MappingReviewStatusFilter)"
+      />
     </label>
 
     <label class="mapping-management-filters__select-field">
-      <select :value="filters.confidenceLevel" aria-label="按置信度筛选" @change="handleConfidenceLevelChange">
-        <option v-for="option in confidenceLevelOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="filters.confidenceLevel"
+        aria-label="按置信度筛选"
+        :options="confidenceLevelOptions"
+        @update:model-value="emit('update-confidence-level', $event as MappingConfidenceLevelFilter)"
+      />
     </label>
 
     <button type="button" class="mapping-management-filters__reset-button" @click="emit('reset')">重置筛选</button>

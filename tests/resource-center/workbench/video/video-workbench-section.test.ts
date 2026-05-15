@@ -30,6 +30,7 @@ const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/video-workbench.css'"))
+assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
 assert.ok(sectionContent.includes("import VideoWorkbenchStatusCards from './VideoWorkbenchStatusCards.vue'"))
 assert.ok(sectionContent.includes("import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'"))
 assert.ok(sectionContent.includes("import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'"))
@@ -58,6 +59,7 @@ assert.ok(sectionContent.includes('class="video-management__heading"'))
 assert.ok(sectionContent.includes('class="video-management__toolbar"'))
 assert.ok(sectionContent.includes('class="video-management__search-field"'))
 assert.ok(sectionContent.includes('class="video-management__select-field"'))
+assert.ok(sectionContent.includes('<WorkbenchSelect'))
 assert.ok(sectionContent.includes('class="video-management__upload-button"'))
 assert.ok(sectionContent.includes('class="video-management__table-shell"'))
 assert.ok(sectionContent.includes('class="video-management__table-scroll"'))
@@ -77,6 +79,10 @@ assert.ok(sectionContent.includes(':pagination="viewModel.pagination"'))
 assert.ok(sectionContent.includes('handleUpload'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
+assert.equal(sectionContent.includes('<select v-model="filters.course"'), false)
+assert.equal(sectionContent.includes('<select v-model="filters.chapter"'), false)
+assert.equal(sectionContent.includes('<select v-model="filters.processingStatus"'), false)
+assert.equal(sectionContent.includes('<select v-model="filters.publishStatus"'), false)
 assert.equal(sectionContent.includes('class="video-management__feedback"'), false)
 assert.equal(sectionContent.includes('已打开上传视频抽屉，可继续补齐资源文件与发布信息。'), false)
 assert.ok(sectionContent.includes('class="video-management__table-actions"'))
@@ -99,8 +105,11 @@ assert.match(stylesContent, /\.video-management__toolbar\s*\{[\s\S]*?display:\s*
 assert.match(stylesContent, /\.video-management\s*\{[\s\S]*?gap:\s*16px;/i)
 assert.match(
   stylesContent,
-  /\.video-management__search-field,\s*[\r\n]+\s*\.video-management__select-field\s*\{[\s\S]*?height:\s*62px;/i,
+  /\.video-management__search-field\s*\{[\s\S]*?height:\s*62px;/i,
 )
+assert.match(stylesContent, /\.video-management__select-field\s*\{[\s\S]*?display:\s*contents;/i)
+assert.equal(/\.video-management__select-field::after\s*\{/i.test(stylesContent), false)
+assert.equal(/\.video-management__select-field\s+select\s*\{/i.test(stylesContent), false)
 assert.match(stylesContent, /\.video-management__upload-button\s*\{[\s\S]*?height:\s*62px;/i)
 assert.match(
   stylesContent,

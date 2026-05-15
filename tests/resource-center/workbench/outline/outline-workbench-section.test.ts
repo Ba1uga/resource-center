@@ -28,6 +28,7 @@ assert.ok(
 )
 assert.ok(outlineSection.includes("import PerfectScrollbar from 'perfect-scrollbar'"))
 assert.ok(outlineSection.includes("import 'perfect-scrollbar/css/perfect-scrollbar.css'"))
+assert.ok(outlineSection.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
 assert.ok(outlineSection.includes('nextTick'))
 assert.ok(outlineSection.includes('const props = defineProps<{'))
 assert.ok(outlineSection.includes('currentAdminName: string'))
@@ -40,6 +41,7 @@ assert.ok(outlineSection.includes('class="outline-management__status-pill"'))
 assert.ok(outlineSection.includes('class="outline-management__status-popover"'))
 assert.ok(outlineSection.includes('后端连接失败，当前显示本地大纲样例。'))
 assert.ok(outlineSection.includes('class="outline-query-bar"'))
+assert.ok(outlineSection.includes('<WorkbenchSelect'))
 assert.ok(outlineSection.includes('class="outline-management__body"'))
 assert.ok(outlineSection.includes('class="outline-course-tree"'))
 assert.ok(outlineSection.includes('ref="courseTreeScrollRef"'))
@@ -153,6 +155,10 @@ assert.equal(outlineSection.includes('加载大纲数据失败'), false)
 assert.ok(outlineSection.includes('const repository = createOutlineWorkbenchRepository({'))
 assert.ok(outlineSection.includes('initialCourses: []'))
 assert.ok(outlineSection.includes('正在加载大纲数据...'))
+assert.equal(outlineSection.includes('<select v-model="queryState.semester">'), false)
+assert.equal(outlineSection.includes('<select v-model="queryState.versionStatus">'), false)
+assert.equal(outlineSection.includes('<select v-model="queryState.completionState">'), false)
+assert.equal(outlineSection.includes('<select v-model="queryState.archiveState">'), false)
 assert.ok(outlineSection.includes('@click="openBlankVersionCreator"'))
 assert.ok(outlineSection.includes('@click="openCourseCreator"'))
 assert.ok(outlineSection.includes('@click="openCopyVersionCreator"'))
@@ -248,7 +254,7 @@ assert.equal(/\.outline-management__head,\s*[\r\n]+\s*\.outline-query-bar/i.test
 assert.equal(/\.outline-query-bar,\s*[\r\n]+\s*\.outline-course-tree/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
-  /\.outline-query-bar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1\.45fr\)\s+repeat\(4,\s*minmax\(0,\s*150px\)\)\s+auto\s+auto;/i,
+  /\.outline-query-bar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*1\.35fr\)\s+minmax\(0,\s*118px\)\s+minmax\(0,\s*118px\)\s+minmax\(0,\s*156px\)\s+minmax\(0,\s*124px\)\s+minmax\(84px,\s*auto\)\s+minmax\(120px,\s*auto\);[\s\S]*?gap:\s*14px;/i,
 )
 assert.match(
   outlineStyles,

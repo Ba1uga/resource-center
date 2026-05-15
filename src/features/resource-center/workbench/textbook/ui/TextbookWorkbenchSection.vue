@@ -6,6 +6,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { createTextbook, deleteTextbook, listTextbooks, updateTextbook } from '@/api/textbook.ts'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
 import type { TextbookCreatePayload, TextbookRecord, TextbookUpdatePayload } from '@/api/textbook.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
@@ -659,24 +660,18 @@ function resetFilters() {
         </label>
 
         <label class="textbook-management__select-field">
-          <select v-model="filters.course">
-            <option v-for="option in courseOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <WorkbenchSelect v-model="filters.course" aria-label="按课程筛选教材" :options="courseOptions" />
         </label>
+
+        <button class="textbook-management__reset-button" type="button" @click="resetFilters">
+          重置筛选
+        </button>
 
         <button class="textbook-management__create-button" type="button" @click="openCreateDrawer">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path :d="iconPaths.plus"></path>
           </svg>
           <span>新建教材</span>
-        </button>
-      </section>
-
-      <section class="textbook-management__toolbar-advanced">
-        <button class="textbook-management__reset-button" type="button" @click="resetFilters">
-          重置筛选
         </button>
       </section>
     </div>

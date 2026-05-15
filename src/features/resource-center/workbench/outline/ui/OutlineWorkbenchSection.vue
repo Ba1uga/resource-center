@@ -28,6 +28,7 @@ import {
   createOutlineWorkbenchViewModel,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.view-model.ts'
 import { outlineWorkbenchCourses } from '@/features/resource-center/workbench/outline/model/outline-workbench.fixtures.ts'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
 import type {
   OutlineCompletionSummary,
@@ -878,37 +879,53 @@ function openPrintWindow(documentModel: {
       </label>
 
       <label class="outline-query-field">
-        <select v-model="queryState.semester">
-          <option value="">全部学期</option>
-          <option value="2026春">2026春</option>
-          <option value="2026秋">2026秋</option>
-          <option value="2025秋">2025秋</option>
-        </select>
+        <WorkbenchSelect
+          v-model="queryState.semester"
+          aria-label="按学期筛选"
+          :options="[
+            { value: '', label: '全部学期' },
+            { value: '2026春', label: '2026春' },
+            { value: '2026秋', label: '2026秋' },
+            { value: '2025秋', label: '2025秋' },
+          ]"
+        />
       </label>
 
       <label class="outline-query-field">
-        <select v-model="queryState.versionStatus">
-          <option value="all">全部状态</option>
-          <option value="draft">草稿</option>
-          <option value="final">定稿</option>
-        </select>
+        <WorkbenchSelect
+          v-model="queryState.versionStatus"
+          aria-label="按版本状态筛选"
+          :options="[
+            { value: 'all', label: '全部状态' },
+            { value: 'draft', label: '草稿' },
+            { value: 'final', label: '定稿' },
+          ]"
+        />
       </label>
 
       <label class="outline-query-field">
-        <select v-model="queryState.completionState">
-          <option value="all">全部完整度</option>
-          <option value="needs-completion">待补全</option>
-          <option value="nearly-complete">接近完成</option>
-          <option value="complete">已完成</option>
-        </select>
+        <WorkbenchSelect
+          v-model="queryState.completionState"
+          aria-label="按完整度筛选"
+          :options="[
+            { value: 'all', label: '全部完整度' },
+            { value: 'needs-completion', label: '待补全' },
+            { value: 'nearly-complete', label: '接近完成' },
+            { value: 'complete', label: '已完成' },
+          ]"
+        />
       </label>
 
       <label class="outline-query-field">
-        <select v-model="queryState.archiveState">
-          <option value="all">全部版本</option>
-          <option value="active">进行中</option>
-          <option value="archived">已归档</option>
-        </select>
+        <WorkbenchSelect
+          v-model="queryState.archiveState"
+          aria-label="按归档状态筛选"
+          :options="[
+            { value: 'all', label: '全部版本' },
+            { value: 'active', label: '进行中' },
+            { value: 'archived', label: '已归档' },
+          ]"
+        />
       </label>
 
       <button class="outline-toolbar-button" type="button" @click="handleResetFilters">重置</button>
@@ -1370,10 +1387,14 @@ function openPrintWindow(documentModel: {
             <div class="outline-version-creator-form">
               <label class="outline-field">
                 <span>创建方式</span>
-                <select v-model="versionCreator.mode">
-                  <option value="copy">复制当前版本</option>
-                  <option value="blank">空白版本</option>
-                </select>
+                <WorkbenchSelect
+                  v-model="versionCreator.mode"
+                  aria-label="选择创建方式"
+                  :options="[
+                    { value: 'copy', label: '复制当前版本' },
+                    { value: 'blank', label: '空白版本' },
+                  ]"
+                />
               </label>
               <label class="outline-field">
                 <span>版本名称</span>

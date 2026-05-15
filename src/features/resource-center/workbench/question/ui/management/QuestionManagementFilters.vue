@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import WorkbenchSelect from '../../../shared/ui/WorkbenchSelect.vue'
+
 import type {
   QuestionDifficultyFilter,
   QuestionFilterOption,
@@ -61,36 +63,43 @@ function handleKeywordInput(event: Event) {
     </label>
 
     <label class="question-management-filters__select-field">
-      <select :value="query.subjectId" @change="handleSubjectChange">
-        <option v-for="option in subjectOptions" :key="option.id || 'all-subject'" :value="option.id">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="query.subjectId"
+        aria-label="按学科筛选"
+        :options="subjectOptions.map((option) => ({ value: option.id, label: option.label }))"
+        @update:model-value="emit('update-subject', $event)"
+      />
     </label>
 
     <label class="question-management-filters__select-field">
-      <select :value="query.chapterId" :disabled="chapterDisabled" @change="handleChapterChange">
-        <option value="">{{ chapterDisabled ? '请先选择学科' : '全部章节' }}</option>
-        <option v-for="option in chapterOptions" :key="option.id" :value="option.id">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="query.chapterId"
+        aria-label="按章节筛选"
+        :disabled="chapterDisabled"
+        :options="[
+          { value: '', label: chapterDisabled ? '请先选择学科' : '全部章节' },
+          ...chapterOptions.map((option) => ({ value: option.id, label: option.label })),
+        ]"
+        @update:model-value="emit('update-chapter', $event)"
+      />
     </label>
 
     <label class="question-management-filters__select-field">
-      <select :value="query.type" @change="handleTypeChange">
-        <option v-for="option in typeOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="query.type"
+        aria-label="按题型筛选"
+        :options="typeOptions"
+        @update:model-value="emit('update-type', $event as QuestionTypeFilter)"
+      />
     </label>
 
     <label class="question-management-filters__select-field">
-      <select :value="query.difficulty" @change="handleDifficultyChange">
-        <option v-for="option in difficultyOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <WorkbenchSelect
+        :model-value="query.difficulty"
+        aria-label="按难度筛选"
+        :options="difficultyOptions"
+        @update:model-value="emit('update-difficulty', $event as QuestionDifficultyFilter)"
+      />
     </label>
 
     <button class="question-management-filters__query-button question-button question-button--ghost" type="submit">

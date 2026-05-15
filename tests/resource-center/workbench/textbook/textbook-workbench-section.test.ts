@@ -22,6 +22,7 @@ assert.ok(
     "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
   ),
 )
+assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
 assert.ok(sectionContent.includes('defineProps<{'))
 assert.ok(sectionContent.includes('section: WorkbenchSectionMeta'))
 assert.ok(sectionContent.includes('const currentAdminId ='))
@@ -32,8 +33,14 @@ assert.equal(sectionContent.includes('管理员可管理全部教材'), false)
 assert.ok(sectionContent.includes('class="textbook-management__status-anchor"'))
 assert.ok(sectionContent.includes('class="textbook-management__status-pill"'))
 assert.ok(sectionContent.includes('class="textbook-management__status-popover"'))
+assert.ok(sectionContent.includes('<WorkbenchSelect'))
 assert.ok(sectionContent.includes('后端连接失败'))
 assert.ok(sectionContent.includes('当前显示本地教材样例'))
+const normalizedSectionContent = sectionContent.replace(/\s+/g, ' ')
+assert.ok(normalizedSectionContent.includes('<section class="textbook-management__toolbar">'))
+assert.ok(normalizedSectionContent.indexOf('textbook-management__search-field') < normalizedSectionContent.indexOf('textbook-management__select-field'))
+assert.ok(normalizedSectionContent.indexOf('textbook-management__select-field') < normalizedSectionContent.indexOf('textbook-management__reset-button'))
+assert.ok(normalizedSectionContent.indexOf('textbook-management__reset-button') < normalizedSectionContent.indexOf('textbook-management__create-button'))
 assert.ok(sectionContent.includes('placeholder="搜索教材名称或作者..."'))
 assert.ok(sectionContent.includes('新建教材'))
 assert.ok(sectionContent.includes('教材名称'))
@@ -52,6 +59,7 @@ assert.ok(sectionContent.includes('deleteRow'))
 assert.ok(sectionContent.includes('saveDrawer'))
 assert.ok(sectionContent.includes('function showTransientStatus('))
 assert.ok(sectionContent.includes('function dismissStatus()'))
+assert.equal(sectionContent.includes('<select v-model="filters.course">'), false)
 assert.equal(sectionContent.includes('ownedRows'), false)
 assert.equal(sectionContent.includes('currentTeacherId'), false)
 assert.equal(sectionContent.includes('仅显示我上传的教材'), false)
@@ -62,7 +70,10 @@ assert.match(
   stylesContent,
   /\.textbook-management\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\);[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/i,
 )
-assert.match(stylesContent, /\.textbook-management__toolbar\s*\{[\s\S]*?display:\s*grid;/i)
+assert.match(
+  stylesContent,
+  /\.textbook-management__toolbar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+200px\s+auto\s+auto;[\s\S]*?gap:\s*12px;/i,
+)
 assert.match(
   stylesContent,
   /\.textbook-management__status-anchor\s*\{[\s\S]*?display:\s*grid;/i,
@@ -75,6 +86,7 @@ assert.match(
   stylesContent,
   /\.textbook-management__status-popover\s*\{[\s\S]*?position:\s*absolute;/i,
 )
+assert.equal(stylesContent.includes('.textbook-management__toolbar-advanced'), false)
 assert.match(
   stylesContent,
   /\.textbook-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\) auto;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/i,

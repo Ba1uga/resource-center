@@ -35,6 +35,7 @@ const stylesContent = readFileSync(stylesUrl, 'utf8')
 const normalizedSectionContent = sectionContent.replace(/\s+/g, ' ')
 
 assert.ok(sectionContent.includes("import '../styles/courseware-workbench.css'"))
+assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
 assert.ok(
   sectionContent.includes(
     "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
@@ -68,6 +69,7 @@ assert.ok(sectionContent.includes(`'is-record': item.label ===`))
 assert.ok(sectionContent.includes('class="courseware-management__toolbar"'))
 assert.ok(sectionContent.includes('class="courseware-management__search-field"'))
 assert.ok(sectionContent.includes('class="courseware-management__select-field"'))
+assert.ok(sectionContent.includes('<WorkbenchSelect'))
 assert.ok(sectionContent.includes('class="courseware-management__create-button"'))
 assert.ok(sectionContent.includes('class="courseware-management__table-shell"'))
 assert.ok(sectionContent.includes('class="courseware-management__pagination"'))
@@ -79,6 +81,10 @@ assert.ok(sectionContent.includes('handleCreate'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
 assert.ok(sectionContent.includes('saveDrawer'))
+assert.equal(sectionContent.includes('<select v-model="filters.course">'), false)
+assert.equal(sectionContent.includes('<select v-model="filters.type">'), false)
+assert.equal(sectionContent.includes('<select v-model="drawerDraft.course">'), false)
+assert.equal(sectionContent.includes('<select v-model="drawerDraft.type">'), false)
 assert.ok(
   normalizedSectionContent.includes(
     '<button type="button" class="danger" aria-label=',
@@ -106,13 +112,10 @@ assert.match(
 )
 assert.match(
   stylesContent,
-  /\.courseware-management__toolbar\s*\{[\s\S]*?grid-template-columns:[\s\S]*?align-items:\s*stretch;/i,
+  /\.courseware-management__toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*1\.1fr\)\s+160px\s+160px\s+auto;[\s\S]*?gap:\s*12px;[\s\S]*?align-items:\s*stretch;/i,
 )
 assert.match(stylesContent, /\.courseware-management__search-field\s*\{[\s\S]*?height:\s*56px;/i)
-assert.match(
-  stylesContent,
-  /\.courseware-management__toolbar\s+\.courseware-management__select-field\s+select\s*\{[\s\S]*?height:\s*56px;/i,
-)
+assert.match(stylesContent, /\.courseware-management__select-field\s*\{[\s\S]*?display:\s*grid;/i)
 assert.match(stylesContent, /\.courseware-management__create-button\s*\{[\s\S]*?height:\s*56px;/i)
 assert.equal(stylesContent.includes('.courseware-management__select-field span'), false)
 assert.match(stylesContent, /\.courseware-management\s*\{[\s\S]*?gap:\s*16px;/i)

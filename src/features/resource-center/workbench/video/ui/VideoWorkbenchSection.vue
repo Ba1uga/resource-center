@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
 import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'
 import VideoWorkbenchStatusCards from './VideoWorkbenchStatusCards.vue'
@@ -234,38 +235,42 @@ function handlePageChange(nextPage: number) {
         </label>
 
         <label class="video-management__select-field">
-          <select v-model="filters.course" aria-label="按课程筛选视频">
-            <option v-for="option in viewModel.courseOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <WorkbenchSelect v-model="filters.course" aria-label="按课程筛选视频" :options="viewModel.courseOptions" />
         </label>
 
         <label class="video-management__select-field">
-          <select v-model="filters.chapter" aria-label="按章节筛选视频">
-            <option v-for="option in viewModel.chapterOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <WorkbenchSelect
+            v-model="filters.chapter"
+            aria-label="按章节筛选视频"
+            :options="viewModel.chapterOptions"
+          />
         </label>
 
         <label class="video-management__select-field">
-          <select v-model="filters.processingStatus" aria-label="按资源状态筛选视频">
-            <option value="all">全部资源状态</option>
-            <option value="uploading">上传中</option>
-            <option value="transcoding">转码中</option>
-            <option value="ready">资源就绪</option>
-            <option value="failed">转码失败</option>
-          </select>
+          <WorkbenchSelect
+            v-model="filters.processingStatus"
+            aria-label="按资源状态筛选视频"
+            :options="[
+              { value: 'all', label: '全部资源状态' },
+              { value: 'uploading', label: '上传中' },
+              { value: 'transcoding', label: '转码中' },
+              { value: 'ready', label: '资源就绪' },
+              { value: 'failed', label: '转码失败' },
+            ]"
+          />
         </label>
 
         <label class="video-management__select-field">
-          <select v-model="filters.publishStatus" aria-label="按发布状态筛选视频">
-            <option value="all">全部发布状态</option>
-            <option value="draft">草稿</option>
-            <option value="published">已发布</option>
-            <option value="offline">已下架</option>
-          </select>
+          <WorkbenchSelect
+            v-model="filters.publishStatus"
+            aria-label="按发布状态筛选视频"
+            :options="[
+              { value: 'all', label: '全部发布状态' },
+              { value: 'draft', label: '草稿' },
+              { value: 'published', label: '已发布' },
+              { value: 'offline', label: '已下架' },
+            ]"
+          />
         </label>
 
         <button type="button" class="video-management__upload-button" @click="handleUpload">

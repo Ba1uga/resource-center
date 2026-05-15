@@ -45,6 +45,7 @@ for (const filePath of [sectionPath, statusCardsPath, filtersPath, tablePath, bu
 
 const sectionSource = fs.readFileSync(sectionPath, 'utf8')
 const statusCardsSource = fs.readFileSync(statusCardsPath, 'utf8')
+const filtersSource = fs.readFileSync(filtersPath, 'utf8')
 const tableSource = fs.readFileSync(tablePath, 'utf8')
 const reviewDrawerSource = fs.readFileSync(reviewDrawerPath, 'utf8')
 const stylesSource = fs.readFileSync(stylesPath, 'utf8')
@@ -128,6 +129,18 @@ assert.ok(sectionSource.includes('@confirm-record="handleConfirmRecord"'))
 assert.ok(sectionSource.includes('@ignore-record="handleIgnoreRecord"'))
 assert.ok(sectionSource.includes('@switch-primary="handleSwitchPrimary"'))
 assert.equal(sectionSource.includes('Task 3 的抽屉流程中接入'), false)
+
+assert.ok(filtersSource.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
+assert.ok(filtersSource.includes('<WorkbenchSelect'))
+assert.equal(filtersSource.includes('<select :value="filters.resourceType"'), false)
+assert.equal(filtersSource.includes('<select :value="filters.course"'), false)
+assert.equal(filtersSource.includes('<select :value="filters.chapter"'), false)
+assert.equal(filtersSource.includes('<select :value="filters.batchId"'), false)
+assert.equal(filtersSource.includes('<select :value="filters.reviewStatus"'), false)
+assert.equal(filtersSource.includes('<select :value="filters.confidenceLevel"'), false)
+assert.match(stylesSource, /\.mapping-management-filters__select-field\s*\{[\s\S]*?display:\s*contents;/i)
+assert.equal(/\.mapping-management-filters__select-field::after\s*\{/i.test(stylesSource), false)
+assert.equal(/\.mapping-management-filters__select-field\s+select\s*\{/i.test(stylesSource), false)
 
 for (const contract of [
   ':rows="viewModel.rows"',

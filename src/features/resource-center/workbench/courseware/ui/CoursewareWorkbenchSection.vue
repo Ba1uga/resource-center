@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import {
   coursewareRecords,
   currentCoursewareUploader,
@@ -260,19 +261,11 @@ function formatCurrentDate() {
         </label>
 
         <label class="courseware-management__select-field">
-          <select v-model="filters.course">
-            <option v-for="option in viewModel.courseOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <WorkbenchSelect v-model="filters.course" aria-label="按课程筛选课件" :options="viewModel.courseOptions" />
         </label>
 
         <label class="courseware-management__select-field">
-          <select v-model="filters.type">
-            <option v-for="option in viewModel.typeOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <WorkbenchSelect v-model="filters.type" aria-label="按类型筛选课件" :options="viewModel.typeOptions" />
         </label>
 
         <button type="button" class="courseware-management__create-button" @click="handleCreate">
@@ -376,12 +369,14 @@ function formatCurrentDate() {
 
           <label class="courseware-management__form-field">
             <span>课程</span>
-            <select v-model="drawerDraft.course">
-              <option disabled value="">请选择课程</option>
-              <option v-for="option in viewModel.courseOptions.slice(1)" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              v-model="drawerDraft.course"
+              aria-label="选择课件课程"
+              :options="[
+                { value: '', label: '请选择课程', disabled: true },
+                ...viewModel.courseOptions.slice(1),
+              ]"
+            />
             <small v-if="drawerErrors.course" class="courseware-management__field-error">{{ drawerErrors.course }}</small>
           </label>
 
@@ -393,15 +388,11 @@ function formatCurrentDate() {
 
           <label class="courseware-management__form-field">
             <span>类型</span>
-            <select v-model="drawerDraft.type">
-              <option
-                v-for="option in viewModel.typeOptions.filter((item) => item.value !== 'all')"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              v-model="drawerDraft.type"
+              aria-label="选择课件类型"
+              :options="viewModel.typeOptions.filter((item) => item.value !== 'all')"
+            />
           </label>
 
           <label class="courseware-management__form-field">
