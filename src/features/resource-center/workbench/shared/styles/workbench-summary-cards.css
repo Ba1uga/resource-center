@@ -1,0 +1,84 @@
+:root {
+  --workbench-summary-card-border: rgba(148, 163, 184, 0.24);
+  --workbench-summary-card-bg: rgba(255, 255, 255, 0.94);
+  --workbench-summary-card-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  --workbench-summary-card-active-border: rgba(14, 116, 144, 0.72);
+  --workbench-summary-card-active-shadow: 0 20px 52px rgba(14, 116, 144, 0.16);
+  --workbench-summary-card-text: #0f172a;
+  --workbench-summary-card-muted: #475569;
+}
+
+.workbench-summary-cards {
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workbench-summary-cards__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.workbench-summary-cards__card {
+  min-height: 88px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--workbench-summary-card-border);
+  background: var(--workbench-summary-card-bg);
+  box-shadow: var(--workbench-summary-card-shadow);
+  color: var(--workbench-summary-card-text);
+  display: grid;
+  gap: 6px;
+  grid-template-rows: auto auto;
+  align-content: start;
+  text-align: left;
+}
+
+.workbench-summary-cards__card.is-filter {
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.workbench-summary-cards__card.is-filter:hover {
+  transform: translateY(-1px);
+}
+
+.workbench-summary-cards__card.is-filter.is-active {
+  border-color: var(--workbench-summary-card-active-border);
+  box-shadow: var(--workbench-summary-card-active-shadow);
+}
+
+.workbench-summary-cards__card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+.workbench-summary-cards__card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.workbench-summary-cards__card-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--workbench-summary-card-muted);
+}
+
+.workbench-summary-cards__card-action {
+  font-size: 0.78rem;
+  color: #0f766e;
+}
+
+@media (max-width: 768px) {
+  .workbench-summary-cards {
+    grid-template-rows: none;
+  }
+}
