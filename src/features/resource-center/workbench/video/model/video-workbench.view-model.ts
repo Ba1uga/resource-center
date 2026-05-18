@@ -28,13 +28,14 @@ export function createVideoWorkbenchViewModel(options: {
   page: number
   pageSize: number
 }): VideoWorkbenchViewModel {
-  const filteredRecords = options.records.filter((record) => matchesVideoFilters(record, options.filters))
+  const scopedRecords = options.records.filter((record) => matchesVideoFiltersWithoutOverviewStatus(record, options.filters))
+  const filteredRecords = scopedRecords.filter((record) => matchesVideoOverviewStatus(record, options.filters))
   const pagination = createPaginationState({
     total: filteredRecords.length,
     page: options.page,
     pageSize: options.pageSize,
   })
-  const summaryCards = createSummaryCards(options.records, options.filters.overviewStatus)
+  const summaryCards = createSummaryCards(scopedRecords, options.filters.overviewStatus)
 
   return {
     rows:
@@ -60,11 +61,14 @@ export function resolveVideoPageAfterDeletion(options: {
 }
 
 export function matchesVideoFilters(record: VideoRecord, filters: VideoFilterState): boolean {
+  return matchesVideoFiltersWithoutOverviewStatus(record, filters) && matchesVideoOverviewStatus(record, filters)
+}
+
+function matchesVideoFiltersWithoutOverviewStatus(record: VideoRecord, filters: VideoFilterState): boolean {
   const normalizedKeyword = filters.keyword.trim().toLowerCase()
   const matchesKeyword = normalizedKeyword.length === 0 || record.title.toLowerCase().includes(normalizedKeyword)
   const matchesCourse = filters.course === 'all' || record.course === filters.course
   const matchesChapter = filters.chapter === 'all' || record.chapter === filters.chapter
-  const matchesOverviewStatus = filters.overviewStatus === 'all' || resolveOverviewStatus(record) === filters.overviewStatus
   const matchesProcessingStatus = filters.processingStatus === 'all' || record.processingStatus === filters.processingStatus
   const matchesPublishStatus = filters.publishStatus === 'all' || record.publishStatus === filters.publishStatus
   const matchesUploader = filters.uploadedBy === 'all' || record.uploadedBy === filters.uploadedBy
@@ -75,13 +79,16 @@ export function matchesVideoFilters(record: VideoRecord, filters: VideoFilterSta
     matchesKeyword &&
     matchesCourse &&
     matchesChapter &&
-    matchesOverviewStatus &&
     matchesProcessingStatus &&
     matchesPublishStatus &&
     matchesUploader &&
     matchesUploadedFrom &&
     matchesUploadedTo
   )
+}
+
+function matchesVideoOverviewStatus(record: VideoRecord, filters: VideoFilterState): boolean {
+  return filters.overviewStatus === 'all' || resolveOverviewStatus(record) === filters.overviewStatus
 }
 
 function createCourseOptions(records: VideoRecord[]): VideoSelectOption[] {
@@ -156,6 +163,14 @@ function createSummaryCards(records: VideoRecord[], activeStatus: VideoFilterSta
     offline: '已下架',
     failed: '转码失败',
   }
+  const hints: Record<VideoSummaryCard['key'], string> = {
+    draft: '尚未发布，通常还在补充封面、描述或章节信息。',
+    uploading: '资源文件仍在上传，暂时无法预览或发布。',
+    transcoding: '平台正在转码处理，稍后会自动更新为可播放状态。',
+    published: '已对目标可见范围发布，可直接用于教学场景。',
+    offline: '已从教学端下架，保留资源以便后续重新启用。',
+    failed: '转码或处理失败，需要人工检查原始文件。',
+  }
 
   for (const record of records) {
     const key = resolveOverviewStatus(record)
@@ -165,8 +180,11 @@ function createSummaryCards(records: VideoRecord[], activeStatus: VideoFilterSta
   return order.map((key) => ({
     key,
     label: labels[key],
-    count: counts.get(key) ?? 0,
-    isActive: activeStatus === key,
+    value: String(counts.get(key) ?? 0),
+    hint: hints[key],
+    kind: 'filter',
+    active: activeStatus === key,
+    interactive: true,
   }))
 }
 

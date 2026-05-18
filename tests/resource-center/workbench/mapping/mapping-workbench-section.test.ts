@@ -14,10 +14,6 @@ const sectionPath = path.join(
   rootDir,
   'src/features/resource-center/workbench/mapping/ui/MappingWorkbenchSection.vue',
 )
-const statusCardsPath = path.join(
-  rootDir,
-  'src/features/resource-center/workbench/mapping/ui/MappingWorkbenchStatusCards.vue',
-)
 const filtersPath = path.join(
   rootDir,
   'src/features/resource-center/workbench/mapping/ui/MappingWorkbenchFilters.vue',
@@ -39,12 +35,12 @@ const stylesPath = path.join(
   'src/features/resource-center/workbench/mapping/styles/mapping-workbench.css',
 )
 
-for (const filePath of [sectionPath, statusCardsPath, filtersPath, tablePath, bulkBarPath, reviewDrawerPath, stylesPath]) {
+for (const filePath of [sectionPath, filtersPath, tablePath, bulkBarPath, reviewDrawerPath, stylesPath]) {
   assert.equal(fs.existsSync(filePath), true, `${path.basename(filePath)} should exist`)
 }
+assert.equal(fs.existsSync(path.join(rootDir, 'src/features/resource-center/workbench/mapping/ui/MappingWorkbenchStatusCards.vue')), false)
 
 const sectionSource = fs.readFileSync(sectionPath, 'utf8')
-const statusCardsSource = fs.readFileSync(statusCardsPath, 'utf8')
 const filtersSource = fs.readFileSync(filtersPath, 'utf8')
 const tableSource = fs.readFileSync(tablePath, 'utf8')
 const reviewDrawerSource = fs.readFileSync(reviewDrawerPath, 'utf8')
@@ -77,18 +73,18 @@ const defaultViewModel = createMappingWorkbenchViewModel({
   pageSize: 8,
 })
 
-assert.equal(matchedViewModel.summaryCards.find((item) => item.key === 'matched')?.isActive, true)
+assert.equal(matchedViewModel.summaryCards.find((item) => item.key === 'matched')?.active, true)
 assert.equal(
   matchedViewModel.summaryCards
     .filter((item) => item.key !== 'matched')
-    .every((item) => item.isActive === false),
+    .every((item) => item.active === false),
   true,
 )
-assert.equal(lowConfidenceViewModel.summaryCards.find((item) => item.key === 'low-confidence')?.isActive, true)
+assert.equal(lowConfidenceViewModel.summaryCards.find((item) => item.key === 'low-confidence')?.active, true)
 assert.equal(
   lowConfidenceViewModel.summaryCards
     .filter((item) => item.key !== 'low-confidence')
-    .every((item) => item.isActive === false),
+    .every((item) => item.active === false),
   true,
 )
 assert.deepEqual(
@@ -101,7 +97,7 @@ assert.deepEqual(
 )
 
 assert.match(sectionSource, /import '\.\.\/styles\/mapping-workbench\.css'/)
-assert.match(sectionSource, /import MappingWorkbenchStatusCards from '\.\/MappingWorkbenchStatusCards\.vue'/)
+assert.match(sectionSource, /import WorkbenchSummaryCards from '\.\.\/\.\.\/shared\/ui\/WorkbenchSummaryCards\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchFilters from '\.\/MappingWorkbenchFilters\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchTable from '\.\/MappingWorkbenchTable\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchBulkBar from '\.\/MappingWorkbenchBulkBar\.vue'/)
@@ -115,10 +111,15 @@ assert.ok(sectionSource.includes('const activeRecordId = ref<string | null>(null
 assert.ok(sectionSource.includes('const activeRecord = computed('))
 assert.ok(sectionSource.includes('function handleReview(recordId: string)'))
 assert.ok(sectionSource.includes('function closeDrawer()'))
+assert.ok(sectionSource.includes('page.value = 1'))
+assert.ok(sectionSource.includes('selectedIds.value = []'))
+assert.ok(sectionSource.includes("if (status === 'low-confidence')"))
+assert.ok(sectionSource.includes("filters.confidenceLevel = filters.confidenceLevel === 'low' ? 'all' : 'low'"))
+assert.ok(sectionSource.includes("filters.overviewStatus = filters.overviewStatus === status ? 'all' : status"))
 assert.ok(sectionSource.includes('function handleSwitchPrimary(candidateId: string)'))
 assert.ok(sectionSource.includes('function handleConfirmRecord()'))
 assert.ok(sectionSource.includes('function handleIgnoreRecord()'))
-assert.ok(sectionSource.includes('<MappingWorkbenchStatusCards :items="viewModel.summaryCards" @select-status="handleStatusSelect" />'))
+assert.ok(sectionSource.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />'))
 assert.ok(sectionSource.includes('v-if="selectedIds.length > 0"'))
 assert.ok(sectionSource.includes('<MappingWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />'))
 assert.ok(sectionSource.includes('<MappingWorkbenchReviewDrawer'))
@@ -155,10 +156,6 @@ for (const contract of [
 ]) {
   assert.ok(sectionSource.includes(contract), `Section should expose table contract: ${contract}`)
 }
-
-assert.ok(statusCardsSource.includes(":class=\"{ 'is-active': item.isActive }\""))
-assert.ok(statusCardsSource.includes(':aria-pressed="item.isActive ? \'true\' : \'false\'"'))
-assert.ok(statusCardsSource.includes("@click=\"emit('select-status', item.key)\""))
 
 assert.equal(tableSource.includes('function buildRiskTags('), false)
 assert.ok(tableSource.includes('v-for="tag in row.riskTags"'))

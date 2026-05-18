@@ -5,6 +5,10 @@ const sectionUrl = new URL(
   '../../../../src/features/resource-center/workbench/video/ui/VideoWorkbenchSection.vue',
   import.meta.url,
 )
+const sharedCardsUrl = new URL(
+  '../../../../src/features/resource-center/workbench/shared/ui/WorkbenchSummaryCards.vue',
+  import.meta.url,
+)
 const stylesUrl = new URL(
   '../../../../src/features/resource-center/workbench/video/styles/video-workbench.css',
   import.meta.url,
@@ -22,16 +26,22 @@ const viewModelUrl = new URL(
   import.meta.url,
 )
 
-for (const fileUrl of [sectionUrl, stylesUrl, typesUrl, fixturesUrl, viewModelUrl]) {
+for (const fileUrl of [sectionUrl, sharedCardsUrl, stylesUrl, typesUrl, fixturesUrl, viewModelUrl]) {
   assert.equal(existsSync(fileUrl), true, `${fileUrl.pathname.split('/').at(-1)} must exist`)
 }
+assert.equal(
+  existsSync(
+    new URL('../../../../src/features/resource-center/workbench/video/ui/VideoWorkbenchStatusCards.vue', import.meta.url),
+  ),
+  false,
+)
 
 const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/video-workbench.css'"))
 assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
-assert.ok(sectionContent.includes("import VideoWorkbenchStatusCards from './VideoWorkbenchStatusCards.vue'"))
+assert.ok(sectionContent.includes("import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'"))
 assert.ok(sectionContent.includes("import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'"))
 assert.ok(sectionContent.includes("import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'"))
 assert.ok(
@@ -49,6 +59,9 @@ assert.ok(sectionContent.includes('const selectedIds = ref<string[]>([])'))
 assert.ok(sectionContent.includes("mode: 'create' as 'create' | 'edit'"))
 assert.ok(sectionContent.includes('function handlePageChange('))
 assert.ok(sectionContent.includes('function handleStatusSelect('))
+assert.ok(sectionContent.includes("filters.overviewStatus = filters.overviewStatus === status ? 'all' : status"))
+assert.ok(sectionContent.includes('page.value = 1'))
+assert.ok(sectionContent.includes('selectedIds.value = []'))
 assert.ok(sectionContent.includes('function handleBulkAction('))
 assert.ok(sectionContent.includes('function openUploadDrawer('))
 assert.ok(sectionContent.includes('function openEditDrawer('))
@@ -70,7 +83,7 @@ assert.ok(sectionContent.includes('class="video-management__selection-cell"'))
 assert.ok(sectionContent.includes('class="video-management__info-cell"'))
 assert.ok(sectionContent.includes('class="video-management__status-badge"'))
 assert.ok(sectionContent.includes('class="video-management__meta-line"'))
-assert.ok(sectionContent.includes('<VideoWorkbenchStatusCards'))
+assert.ok(sectionContent.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />'))
 assert.ok(sectionContent.includes('<VideoWorkbenchBulkBar'))
 assert.ok(sectionContent.includes('<VideoWorkbenchDrawer'))
 assert.ok(sectionContent.includes('<WorkbenchTablePagination'))
@@ -132,12 +145,6 @@ assert.match(
   stylesContent,
   /\.video-management__pagination\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;[\s\S]*?padding:\s*14px 16px;/i,
 )
-assert.match(stylesContent, /\.video-management__status-overview\s*\{[\s\S]*?display:\s*grid;/i)
-assert.match(
-  stylesContent,
-  /\.video-management__status-card\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*space-between;/i,
-)
-assert.match(stylesContent, /\.video-management__status-card\s*\{[\s\S]*?min-height:\s*64px;/i)
 assert.match(stylesContent, /\.video-management__bulk-bar\s*\{[\s\S]*?display:\s*flex;/i)
 assert.match(stylesContent, /\.video-management__table-actions\s*\{[\s\S]*?padding:\s*8px 16px 10px;/i)
 assert.match(stylesContent, /\.video-management__info-cell\s*\{[\s\S]*?display:\s*grid;/i)

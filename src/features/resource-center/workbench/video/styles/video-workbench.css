@@ -35,46 +35,6 @@
   font-size: 1rem;
 }
 
-.video-management__status-overview {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.video-management__status-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 64px;
-  padding: 0 18px;
-  border: 1px solid var(--video-line);
-  border-radius: 18px;
-  background: var(--video-surface);
-  text-align: left;
-  transition:
-    border-color 180ms var(--ease-out),
-    transform 180ms var(--ease-out),
-    box-shadow 180ms var(--ease-out);
-}
-
-.video-management__status-card.is-active {
-  border-color: oklch(0.55 0.12 245);
-  box-shadow: 0 0 0 3px oklch(0.92 0.03 245);
-}
-
-.video-management__status-label {
-  color: var(--video-soft);
-  font-size: 0.92rem;
-  white-space: nowrap;
-}
-
-.video-management__status-count {
-  color: var(--video-ink);
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1;
-}
 
 .video-management__toolbar {
   display: grid;
@@ -623,10 +583,6 @@
 }
 
 @media (max-width: 980px) {
-  .video-management__status-overview {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .video-management__toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -654,14 +610,6 @@
 @media (max-width: 760px) {
   .video-management {
     gap: 16px;
-  }
-
-  .video-management__status-overview {
-    grid-template-columns: 1fr;
-  }
-
-  .video-management__status-card {
-    min-height: 56px;
   }
 
   .video-management__toolbar {

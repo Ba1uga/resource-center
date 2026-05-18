@@ -14,6 +14,7 @@ import type {
   MappingWorkbenchRow,
   MappingWorkbenchViewModel,
 } from './mapping-workbench.types.ts'
+import type { WorkbenchSummaryCard } from '../../shared/model/workbench-summary-cards.ts'
 
 const resourceTypeLabels: Record<MappingResourceType, string> = {
   article: '图文',
@@ -195,11 +196,14 @@ function createSummaryCards(records: MappingRecord[], filters: MappingFilterStat
     key: definition.key,
     label: definition.label,
     hint: definition.hint,
-    value:
+    value: String(
       definition.key === 'low-confidence'
         ? records.filter((record) => record.confidenceLevel === 'low').length
         : records.filter((record) => resolveOverviewStatus(record) === definition.key).length,
-    isActive: isSummaryCardActive(definition.key, filters),
+    ),
+    kind: 'filter',
+    active: isSummaryCardActive(definition.key, filters),
+    interactive: true,
   }))
 }
 

@@ -4,11 +4,11 @@ import '../styles/video-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
 import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'
-import VideoWorkbenchStatusCards from './VideoWorkbenchStatusCards.vue'
 import { videoRecords } from '@/features/resource-center/workbench/video/model/video-workbench.fixtures.ts'
 import {
   createDefaultVideoFilterState,
@@ -80,7 +80,9 @@ watch(
 )
 
 function handleStatusSelect(status: VideoOverviewStatus) {
-  filters.overviewStatus = status
+  filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
+  page.value = 1
+  selectedIds.value = []
 }
 
 function openUploadDrawer() {
@@ -224,7 +226,7 @@ function handlePageChange(nextPage: number) {
         </div>
       </header>
 
-      <VideoWorkbenchStatusCards :items="viewModel.summaryCards" @select-status="handleStatusSelect" />
+      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />
 
       <section class="video-management__toolbar" aria-label="视频筛选工具栏">
         <label class="video-management__search-field">

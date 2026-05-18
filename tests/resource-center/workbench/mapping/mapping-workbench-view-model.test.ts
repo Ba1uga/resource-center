@@ -44,14 +44,14 @@ assert.equal(defaultViewModel.rows[4]?.overviewStatus, 'failed')
 assert.equal(resolveSelectedOrFirstCandidate(mappingRecords[0])?.id, 'cand-1001-a')
 assert.equal(defaultViewModel.emptyState, null)
 assert.deepEqual(
-  defaultViewModel.summaryCards.map((item) => [item.key, item.value]),
+  defaultViewModel.summaryCards.map((item) => [item.key, item.value, item.kind, item.interactive, item.active]),
   [
-    ['pending', 1],
-    ['matched', 1],
-    ['manual-review', 1],
-    ['confirmed', 1],
-    ['failed', 1],
-    ['low-confidence', 2],
+    ['pending', '1', 'filter', true, false],
+    ['matched', '1', 'filter', true, false],
+    ['manual-review', '1', 'filter', true, false],
+    ['confirmed', '1', 'filter', true, false],
+    ['failed', '1', 'filter', true, false],
+    ['low-confidence', '2', 'filter', true, false],
   ],
 )
 
@@ -67,14 +67,14 @@ const lowConfidenceViewModel = createMappingWorkbenchViewModel({
 
 assert.equal(lowConfidenceViewModel.rows.every((row) => row.confidenceLevel === 'low'), true)
 assert.deepEqual(
-  lowConfidenceViewModel.summaryCards.map((item) => [item.key, item.value]),
+  lowConfidenceViewModel.summaryCards.map((item) => [item.key, item.value, item.active]),
   [
-    ['pending', 0],
-    ['matched', 0],
-    ['manual-review', 1],
-    ['confirmed', 0],
-    ['failed', 1],
-    ['low-confidence', 2],
+    ['pending', '0', false],
+    ['matched', '0', false],
+    ['manual-review', '1', false],
+    ['confirmed', '0', false],
+    ['failed', '1', false],
+    ['low-confidence', '2', true],
   ],
 )
 
@@ -106,14 +106,14 @@ assert.equal(overviewFilteredViewModel.rows.length, 1)
 assert.equal(overviewFilteredViewModel.rows[0]?.id, 'map-1005')
 assert.equal(overviewFilteredViewModel.rows[0]?.primaryKnowledgePoint, null)
 assert.deepEqual(
-  overviewFilteredViewModel.summaryCards.map((item) => [item.key, item.value]),
+  overviewFilteredViewModel.summaryCards.map((item) => [item.key, item.value, item.active]),
   [
-    ['pending', 1],
-    ['matched', 1],
-    ['manual-review', 1],
-    ['confirmed', 1],
-    ['failed', 1],
-    ['low-confidence', 2],
+    ['pending', '1', false],
+    ['matched', '1', false],
+    ['manual-review', '1', false],
+    ['confirmed', '1', false],
+    ['failed', '1', true],
+    ['low-confidence', '2', false],
   ],
 )
 

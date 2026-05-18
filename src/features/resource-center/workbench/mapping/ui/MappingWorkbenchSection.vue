@@ -11,10 +11,10 @@ import {
   resolveMappingPageAfterMutation,
   resolveSelectedOrFirstCandidate,
 } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.view-model.ts'
+import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import MappingWorkbenchBulkBar from './MappingWorkbenchBulkBar.vue'
 import MappingWorkbenchFilters from './MappingWorkbenchFilters.vue'
 import MappingWorkbenchReviewDrawer from './MappingWorkbenchReviewDrawer.vue'
-import MappingWorkbenchStatusCards from './MappingWorkbenchStatusCards.vue'
 import MappingWorkbenchTable from './MappingWorkbenchTable.vue'
 
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
@@ -76,14 +76,17 @@ function handleLaunchBatch() {
 }
 
 function handleStatusSelect(status: MappingSummaryCardKey) {
+  page.value = 1
+  selectedIds.value = []
+
   if (status === 'low-confidence') {
     filters.overviewStatus = 'all'
-    filters.confidenceLevel = 'low'
+    filters.confidenceLevel = filters.confidenceLevel === 'low' ? 'all' : 'low'
     return
   }
 
   filters.confidenceLevel = 'all'
-  filters.overviewStatus = status
+  filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
 }
 
 function handleResetFilters() {
@@ -318,7 +321,7 @@ function createLocalRecords(): MappingRecord[] {
       </header>
 
       <div class="mapping-management__summary">
-        <MappingWorkbenchStatusCards :items="viewModel.summaryCards" @select-status="handleStatusSelect" />
+        <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />
       </div>
 
       <div

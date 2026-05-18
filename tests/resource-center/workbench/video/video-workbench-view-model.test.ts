@@ -47,14 +47,14 @@ assert.equal(defaultViewModel.pagination.to, videoRecords.length)
 assert.equal(defaultViewModel.pagination.hasPrev, false)
 assert.equal(defaultViewModel.pagination.hasNext, false)
 assert.deepEqual(
-  defaultViewModel.summaryCards.map((item) => [item.key, item.label, item.count, item.isActive]),
+  defaultViewModel.summaryCards.map((item) => [item.key, item.label, item.value, item.kind, item.interactive, item.active]),
   [
-    ['draft', '草稿', 1, false],
-    ['uploading', '上传中', 1, false],
-    ['transcoding', '转码中', 1, false],
-    ['published', '已发布', 3, false],
-    ['offline', '已下架', 1, false],
-    ['failed', '转码失败', 1, false],
+    ['draft', '草稿', '1', 'filter', true, false],
+    ['uploading', '上传中', '1', 'filter', true, false],
+    ['transcoding', '转码中', '1', 'filter', true, false],
+    ['published', '已发布', '3', 'filter', true, false],
+    ['offline', '已下架', '1', 'filter', true, false],
+    ['failed', '转码失败', '1', 'filter', true, false],
   ],
 )
 assert.equal(defaultViewModel.chapterOptions.some((option) => option.value === '第3章'), true)
@@ -195,9 +195,29 @@ const failedStatusViewModel = createVideoWorkbenchViewModel({
 
 assert.equal(failedStatusViewModel.rows.length, 1)
 assert.equal(failedStatusViewModel.rows[0]?.processingStatus, 'failed')
-assert.equal(
-  failedStatusViewModel.summaryCards.find((item) => item.key === 'failed')?.isActive,
-  true,
+assert.equal(failedStatusViewModel.summaryCards.find((item) => item.key === 'failed')?.active, true)
+
+const failedKeywordScopedViewModel = createVideoWorkbenchViewModel({
+  records: videoRecords,
+  filters: {
+    ...defaultFilters,
+    keyword: videoRecords.find((record) => record.processingStatus === 'failed')?.title ?? '',
+    overviewStatus: 'failed',
+  },
+  page: 1,
+  pageSize: 10,
+})
+
+assert.deepEqual(
+  failedKeywordScopedViewModel.summaryCards.map((item) => [item.key, item.value, item.active]),
+  [
+    ['draft', '0', false],
+    ['uploading', '0', false],
+    ['transcoding', '0', false],
+    ['published', '0', false],
+    ['offline', '0', false],
+    ['failed', '1', true],
+  ],
 )
 
 const processingStatusViewModel = createVideoWorkbenchViewModel({

@@ -49,8 +49,11 @@ export interface VideoSelectOption {
 export interface VideoSummaryCard {
   key: Exclude<VideoOverviewStatus, 'all'>
   label: string
-  count: number
-  isActive: boolean
+  value: string
+  hint: string
+  kind: 'filter' | 'info'
+  active: boolean
+  interactive: boolean
 }
 
 export interface VideoEmptyState {

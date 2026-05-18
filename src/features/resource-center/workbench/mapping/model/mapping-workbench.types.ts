@@ -18,6 +18,8 @@ export type MappingSummaryCardKey =
   | 'failed'
   | 'low-confidence'
 
+export type MappingSummaryFilterKey = MappingSummaryCardKey
+
 export interface MappingCandidate {
   id: string
   knowledgePointName: string
@@ -67,13 +69,7 @@ export interface MappingWorkbenchRow extends MappingRecord {
   riskTags: string[]
 }
 
-export interface MappingSummaryCard {
-  key: MappingSummaryCardKey
-  label: string
-  value: number
-  hint: string
-  isActive: boolean
-}
+export type MappingSummaryCard = import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard
 
 export interface MappingPaginationState {
   page: number
