@@ -76,11 +76,11 @@ assert.ok(componentContent.includes('<article'))
 
 assert.match(
   stylesContent,
-  /\.workbench-summary-cards\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/i,
+  /\.workbench-summary-cards\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(180px,\s*1fr\)\);/i,
 )
 assert.match(
   stylesContent,
-  /\.workbench-summary-cards__row\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(180px,\s*1fr\)\);/i,
+  /\.workbench-summary-cards__row\s*\{[\s\S]*?display:\s*contents;/i,
 )
 assert.match(
   stylesContent,
