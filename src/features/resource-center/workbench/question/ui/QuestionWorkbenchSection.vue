@@ -3,6 +3,7 @@ import '../styles/question-workbench.css'
 
 import { computed, ref } from 'vue'
 
+import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import {
   createQuestionEditorDraft,
   createQuestionEditorDraftFromRecord,
@@ -19,6 +20,7 @@ import {
   validateQuestionEditorDraft,
 } from '@/features/resource-center/workbench/question/model/question-workbench.validation.ts'
 import {
+  applyQuestionStatusCardSelection,
   createDefaultQuestionQueryState,
   createQuestionWorkbenchViewModel,
   getQuestionChapterOptions,
@@ -68,19 +70,31 @@ const viewModel = computed(() => {
 
 const summaryCards = computed(() => [
   {
+    key: 'matching-total',
     label: '当前结果数',
     value: String(viewModel.value.summary.matchingTotal),
     hint: viewModel.value.summary.filteredLabel,
+    kind: 'info',
+    active: false,
+    interactive: false,
   },
   {
-    label: '已发布题目',
+    key: 'draft',
+    label: '草稿',
+    value: String(viewModel.value.summary.draftTotal),
+    hint: '点击后只查看当前筛选条件下的草稿习题',
+    kind: 'filter',
+    active: activeQuery.value.status === 'draft',
+    interactive: viewModel.value.summary.draftTotal > 0 || activeQuery.value.status === 'draft',
+  },
+  {
+    key: 'published',
+    label: '已发布',
     value: String(viewModel.value.summary.publishedTotal),
-    hint: '当前筛选结果中可直接用于课堂的习题数量',
-  },
-  {
-    label: '最近更新',
-    value: viewModel.value.summary.latestUpdatedAtLabel,
-    hint: viewModel.value.summary.latestUpdatedHint,
+    hint: '点击后只查看当前筛选条件下的已发布习题',
+    kind: 'filter',
+    active: activeQuery.value.status === 'published',
+    interactive: viewModel.value.summary.publishedTotal > 0 || activeQuery.value.status === 'published',
   },
 ])
 
@@ -127,6 +141,11 @@ function handlePageChange(page: number) {
     ...activeQuery.value,
     page,
   }
+}
+
+function handleStatusSelect(status: 'draft' | 'published') {
+  queryDraft.value = applyQuestionStatusCardSelection(queryDraft.value, status)
+  activeQuery.value = applyQuestionStatusCardSelection(activeQuery.value, status)
 }
 
 function handleCreate() {
@@ -276,13 +295,7 @@ function handleEditorSave() {
         <h2>{{ props.section.title }}</h2>
       </header>
 
-      <div class="question-management__summary">
-        <article v-for="item in summaryCards" :key="item.label" class="question-management__summary-card">
-          <span>{{ item.label }}</span>
-          <strong class="question-management__summary-value">{{ item.value }}</strong>
-          <p>{{ item.hint }}</p>
-        </article>
-      </div>
+      <WorkbenchSummaryCards :items="summaryCards" @select="handleStatusSelect" />
 
       <div v-if="feedback" class="question-management__feedback" :class="`is-${feedback.tone}`" aria-live="polite">
         {{ feedback.text }}

@@ -18,6 +18,8 @@ const defaultPage = repository.listQuestions(defaultQuery)
 assert.equal(defaultPage.total, 12)
 assert.equal(defaultPage.records.length, 10)
 assert.equal(defaultPage.records[0]?.id, 'question-12')
+assert.equal(defaultPage.matchingPublishedTotal, 7)
+assert.equal(defaultPage.matchingDraftTotal, 5)
 
 const searchedPage = repository.listQuestions({
   ...defaultQuery,
@@ -26,6 +28,28 @@ const searchedPage = repository.listQuestions({
 
 assert.equal(searchedPage.total, 1)
 assert.equal(searchedPage.records[0]?.id, 'question-09')
+assert.equal(searchedPage.matchingPublishedTotal, 0)
+assert.equal(searchedPage.matchingDraftTotal, 1)
+
+const draftPage = repository.listQuestions({
+  ...defaultQuery,
+  status: 'draft',
+})
+
+assert.equal(draftPage.total, 5)
+assert.equal(draftPage.records.every((record) => record.status === 'draft'), true)
+assert.equal(draftPage.matchingPublishedTotal, 7)
+assert.equal(draftPage.matchingDraftTotal, 5)
+
+const publishedPage = repository.listQuestions({
+  ...defaultQuery,
+  status: 'published',
+})
+
+assert.equal(publishedPage.total, 7)
+assert.equal(publishedPage.records.every((record) => record.status === 'published'), true)
+assert.equal(publishedPage.matchingPublishedTotal, 7)
+assert.equal(publishedPage.matchingDraftTotal, 5)
 
 const createDraft = createQuestionEditorDraft({
   type: 'short',

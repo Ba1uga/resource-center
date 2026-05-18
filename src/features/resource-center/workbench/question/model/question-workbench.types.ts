@@ -4,6 +4,7 @@ export type QuestionTypeFilter = 'all' | QuestionType
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard'
 export type QuestionDifficultyFilter = 'all' | QuestionDifficulty
 export type QuestionStatus = 'draft' | 'published'
+export type QuestionStatusFilter = 'all' | QuestionStatus
 export type QuestionSortBy = 'updatedAt'
 export type QuestionSortOrder = 'asc' | 'desc'
 export type QuestionEditorMode = 'create' | 'edit' | 'copy'
@@ -102,6 +103,7 @@ export interface QuestionQueryState {
   chapterId: string
   type: QuestionTypeFilter
   difficulty: QuestionDifficultyFilter
+  status: QuestionStatusFilter
   keyword: string
   page: number
   pageSize: number
@@ -113,6 +115,7 @@ export interface QuestionListResult {
   records: QuestionRecord[]
   total: number
   allTotal: number
+  matchingDraftTotal: number
   matchingPublishedTotal: number
   matchingLatestUpdatedAt: string | null
   page: number
@@ -156,6 +159,7 @@ export interface QuestionWorkbenchSummary {
   filteredLabel: string
   activeFilterCount: number
   matchingTotal: number
+  draftTotal: number
   publishedTotal: number
   latestUpdatedAtLabel: string
   latestUpdatedHint: string

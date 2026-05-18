@@ -34,7 +34,13 @@ export function createQuestionWorkbenchRepository(
 
   return {
     listQuestions(query) {
-      const filteredRecords = records
+      const statusScopedQuery = {
+        ...query,
+        status: 'all',
+      } satisfies QuestionQueryState
+
+      const scopedRecords = records.filter((record) => matchesQuestionQuery(record, statusScopedQuery))
+      const filteredRecords = scopedRecords
         .filter((record) => matchesQuestionQuery(record, query))
         .sort((left, right) => compareByUpdatedAt(left.updatedAt, right.updatedAt, query.sortOrder))
 
@@ -47,7 +53,8 @@ export function createQuestionWorkbenchRepository(
         records: pagedRecords,
         total: filteredRecords.length,
         allTotal: records.length,
-        matchingPublishedTotal: filteredRecords.filter((record) => record.status === 'published').length,
+        matchingDraftTotal: scopedRecords.filter((record) => record.status === 'draft').length,
+        matchingPublishedTotal: scopedRecords.filter((record) => record.status === 'published').length,
         matchingLatestUpdatedAt: getLatestUpdatedAt(filteredRecords),
         page: query.page,
         pageSize: query.pageSize,
@@ -103,6 +110,8 @@ export function createQuestionWorkbenchRepository(
 }
 
 export function matchesQuestionQuery(record: QuestionRecord, query: QuestionQueryState): boolean {
+  const status = query.status ?? 'all'
+
   if (query.subjectId.length > 0 && record.subjectId !== query.subjectId) {
     return false
   }
@@ -116,6 +125,10 @@ export function matchesQuestionQuery(record: QuestionRecord, query: QuestionQuer
   }
 
   if (query.difficulty !== 'all' && record.difficulty !== query.difficulty) {
+    return false
+  }
+
+  if (status !== 'all' && record.status !== status) {
     return false
   }
 

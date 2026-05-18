@@ -37,6 +37,10 @@ const codingEditorUrl = new URL(
   '../../../../src/features/resource-center/workbench/question/ui/management/QuestionCodingEditor.vue',
   import.meta.url,
 )
+const summaryCardsUrl = new URL(
+  '../../../../src/features/resource-center/workbench/shared/ui/WorkbenchSummaryCards.vue',
+  import.meta.url,
+)
 
 for (const fileUrl of [
   questionSectionUrl,
@@ -48,6 +52,7 @@ for (const fileUrl of [
   choiceEditorUrl,
   shortEditorUrl,
   codingEditorUrl,
+  summaryCardsUrl,
 ]) {
   assert.equal(existsSync(fileUrl), true, `${fileUrl.pathname.split('/').at(-1)} must exist`)
 }
@@ -60,6 +65,9 @@ const paginationContent = readFileSync(paginationUrl, 'utf8')
 const questionEditor = readFileSync(editorUrl, 'utf8')
 
 assert.ok(questionSection.includes("import '../styles/question-workbench.css'"))
+assert.ok(
+  questionSection.includes("import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'"),
+)
 assert.equal(
   questionSection.includes(
     "import ModuleWorkbenchShell from '@/features/resource-center/workbench/shared/ui/ModuleWorkbenchShell.vue'",
@@ -89,16 +97,23 @@ assert.ok(questionSection.includes('createQuestionMutationInputFromDraft'))
 assert.equal(questionSection.includes('<ModuleWorkbenchShell'), false)
 assert.equal(questionSection.includes(':kicker="props.section.kicker"'), false)
 assert.equal(questionSection.includes(':description="props.section.description"'), false)
-assert.equal(questionSection.includes('status='), false)
 assert.ok(questionSection.includes('const summaryCards = computed(() => ['))
+assert.ok(questionSection.includes("key: 'matching-total'"))
+assert.ok(questionSection.includes("key: 'draft'"))
+assert.ok(questionSection.includes("key: 'published'"))
+assert.ok(questionSection.includes("label: '当前结果数'"))
+assert.ok(questionSection.includes("label: '草稿'"))
+assert.ok(questionSection.includes("label: '已发布'"))
+assert.ok(questionSection.includes("kind: 'info'"))
+assert.ok(questionSection.includes("kind: 'filter'"))
+assert.ok(questionSection.includes("value: String(viewModel.value.summary.draftTotal)"))
 assert.ok(questionSection.includes('class="question-management workbench-surface"'))
 assert.ok(questionSection.includes('class="question-management__controls"'))
 assert.ok(questionSection.includes('class="question-management__feedback"'))
-assert.ok(questionSection.includes('class="question-management__summary"'))
-assert.ok(questionSection.includes('class="question-management__summary-card"'))
 assert.ok(questionSection.includes('class="question-management__toolbar"'))
 assert.ok(questionSection.includes('class="question-management__table-shell"'))
 assert.ok(questionSection.includes('class="question-management__table-scroll"'))
+assert.ok(questionSection.includes('<WorkbenchSummaryCards :items="summaryCards" @select="handleStatusSelect" />'))
 assert.ok(questionSection.includes('<QuestionManagementFilters'))
 assert.ok(questionSection.includes('<QuestionManagementTable'))
 assert.ok(questionSection.includes('<QuestionManagementPagination'))
@@ -107,9 +122,13 @@ assert.ok(questionSection.includes('question-management__editor-shell'))
 assert.ok(questionSection.includes('handleCreate'))
 assert.ok(questionSection.includes('handleCopy'))
 assert.ok(questionSection.includes('handleDelete'))
+assert.ok(questionSection.includes('applyQuestionStatusCardSelection'))
+assert.ok(questionSection.includes('function handleStatusSelect(status: '))
+assert.ok(questionSection.includes('queryDraft.value = applyQuestionStatusCardSelection(queryDraft.value, status)'))
+assert.ok(questionSection.includes('activeQuery.value = applyQuestionStatusCardSelection(activeQuery.value, status)'))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.matchingTotal)"))
+assert.ok(questionSection.includes("value: String(viewModel.value.summary.draftTotal)"))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.publishedTotal)"))
-assert.ok(questionSection.includes('viewModel.value.summary.latestUpdatedAtLabel'))
 assert.equal(questionSection.includes('class="question-management__body"'), false)
 assert.equal(questionSection.includes('question-card'), false)
 assert.equal(questionSection.includes('question-assistant'), false)
@@ -159,10 +178,6 @@ assert.match(
 assert.match(
   questionStyles,
   /\.question-management__controls\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*16px;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management__summary-card\s*\{[\s\S]*?min-height:\s*88px;[\s\S]*?padding:\s*14px 16px;[\s\S]*?border-radius:\s*18px;/i,
 )
 assert.match(
   questionStyles,

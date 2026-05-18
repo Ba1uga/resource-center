@@ -14,6 +14,7 @@ const sourceRecord = repository.listQuestions({
   chapterId: '',
   type: 'all',
   difficulty: 'all',
+  status: 'all',
   keyword: '',
   page: 1,
   pageSize: 10,

@@ -16,6 +16,7 @@ import type {
   QuestionRecord,
   QuestionSelectOption,
   QuestionStatus,
+  QuestionStatusFilter,
   QuestionType,
   QuestionTypeFilter,
   QuestionWorkbenchViewModel,
@@ -42,6 +43,7 @@ export function createDefaultQuestionQueryState(): QuestionQueryState {
     chapterId: '',
     type: 'all',
     difficulty: 'all',
+    status: 'all',
     keyword: '',
     page: 1,
     pageSize: 10,
@@ -75,6 +77,7 @@ export function createQuestionWorkbenchViewModel(options: {
           : `筛选命中 ${result.total} 道，当前页展示 ${rows.length} 道`,
       activeFilterCount,
       matchingTotal: result.total,
+      draftTotal: result.matchingDraftTotal,
       publishedTotal: result.matchingPublishedTotal,
       latestUpdatedAtLabel: result.matchingLatestUpdatedAt
         ? formatQuestionUpdatedAt(result.matchingLatestUpdatedAt)
@@ -85,6 +88,17 @@ export function createQuestionWorkbenchViewModel(options: {
     },
     chapterDisabled: query.subjectId.length === 0,
     emptyState: createEmptyState(result, activeFilterCount),
+  }
+}
+
+export function applyQuestionStatusCardSelection(
+  query: QuestionQueryState,
+  selectedStatus: Exclude<QuestionStatusFilter, 'all'>,
+): QuestionQueryState {
+  return {
+    ...query,
+    status: query.status === selectedStatus ? 'all' : selectedStatus,
+    page: 1,
   }
 }
 
@@ -190,11 +204,14 @@ function createEmptyState(
 }
 
 function countActiveFilters(query: QuestionQueryState): number {
+  const status = query.status ?? 'all'
+
   return [
     query.subjectId.length > 0,
     query.chapterId.length > 0,
     query.type !== 'all',
     query.difficulty !== 'all',
+    status !== 'all',
     query.keyword.trim().length > 0,
   ].filter(Boolean).length
 }
