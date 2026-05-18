@@ -1,0 +1,39 @@
+.workbench-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--workbench-table-line, oklch(0.88 0.01 252));
+  background: var(--workbench-bulk-surface, oklch(0.99 0.003 252));
+}
+
+.workbench-bulk-bar__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--workbench-table-ink, oklch(0.24 0.02 252));
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.workbench-bulk-bar__clear {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--workbench-table-soft, oklch(0.5 0.02 252));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workbench-bulk-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workbench-bulk-bar.is-compact {
+  padding-block: 8px;
+}

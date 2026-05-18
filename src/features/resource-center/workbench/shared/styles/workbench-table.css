@@ -1,0 +1,116 @@
+.workbench-table-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workbench-table-shell__scroll {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workbench-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.workbench-table thead th,
+.workbench-table tbody td {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--workbench-table-line, oklch(0.88 0.01 252));
+  text-align: left;
+  vertical-align: top;
+}
+
+.workbench-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--workbench-table-surface, #fff);
+  color: var(--workbench-table-soft, oklch(0.5 0.02 252));
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workbench-table tbody td {
+  color: var(--workbench-table-ink, oklch(0.24 0.02 252));
+  font-size: 0.96rem;
+}
+
+.workbench-table__selection-column {
+  width: 56px;
+}
+
+.workbench-table__selection-column input {
+  width: 18px;
+  height: 18px;
+}
+
+.workbench-table__row {
+  transition: background-color 160ms var(--ease-out);
+}
+
+.workbench-table__row.is-clickable {
+  cursor: pointer;
+}
+
+.workbench-table__row.is-clickable:hover,
+.workbench-table__row.is-clickable:focus-visible {
+  outline: none;
+  background: var(--workbench-table-surface-soft, oklch(0.975 0.006 252));
+}
+
+.workbench-table__mobile-cards {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.workbench-table__mobile-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--workbench-table-line, oklch(0.88 0.01 252));
+  border-radius: 16px;
+  background: var(--workbench-table-surface, #fff);
+}
+
+.workbench-table__mobile-card-row {
+  display: grid;
+  gap: 6px;
+}
+
+.workbench-table__mobile-card-label {
+  color: var(--workbench-table-soft, oklch(0.5 0.02 252));
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.workbench-table__empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 44px 24px;
+}
+
+.workbench-table__empty strong {
+  color: var(--workbench-table-ink, oklch(0.24 0.02 252));
+  font-size: 1.02rem;
+}
+
+.workbench-table__empty p {
+  margin: 0;
+  color: var(--workbench-table-soft, oklch(0.5 0.02 252));
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.workbench-table-shell.is-compact .workbench-table thead th,
+.workbench-table-shell.is-compact .workbench-table tbody td {
+  padding: 14px 12px;
+}

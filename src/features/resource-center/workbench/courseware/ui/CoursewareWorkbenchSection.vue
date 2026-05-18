@@ -4,7 +4,11 @@ import '../styles/courseware-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
+import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
+import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
+import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import {
@@ -42,6 +46,7 @@ const pageSize = 8
 const records = ref<CoursewareRecord[]>([...coursewareRecords])
 const filters = reactive(createDefaultCoursewareFilterState())
 const page = ref(1)
+const selectedIds = ref<string[]>([])
 const drawerOpen = ref(false)
 const drawerMode = ref<DrawerMode>('create')
 const drawerTargetId = ref<string>()
@@ -63,6 +68,11 @@ const viewModel = computed(() =>
   }),
 )
 
+const visibleIds = computed(() => viewModel.value.rows.map((row) => row.id))
+const allVisibleSelected = computed(
+  () => visibleIds.value.length > 0 && visibleIds.value.every((id) => selectedIds.value.includes(id)),
+)
+
 const drawerTitle = computed(() => (drawerMode.value === 'create' ? '上传课件' : '编辑课件'))
 const drawerDescription = computed(() =>
   drawerMode.value === 'create'
@@ -74,6 +84,7 @@ watch(
   () => [filters.keyword, filters.course, filters.type],
   () => {
     page.value = 1
+    selectedIds.value = []
   },
 )
 
@@ -121,6 +132,7 @@ function handleDelete(id: string) {
     pageSize,
     totalAfterDeletion: records.value.length,
   })
+  selectedIds.value = selectedIds.value.filter((selectedId) => selectedId !== id)
   feedback.value = {
     tone: 'success',
     text: '课件已删除。',
@@ -144,6 +156,18 @@ function handleSummaryCardSelect(key: string) {
   filters.course = 'all'
   filters.type = 'all'
   page.value = 1
+}
+
+function toggleRowSelection(id: string) {
+  selectedIds.value = selectedIds.value.includes(id)
+    ? selectedIds.value.filter((selectedId) => selectedId !== id)
+    : [...selectedIds.value, id]
+}
+
+function toggleVisibleSelection() {
+  selectedIds.value = allVisibleSelected.value
+    ? selectedIds.value.filter((id) => !visibleIds.value.includes(id))
+    : [...new Set([...selectedIds.value, ...visibleIds.value])]
 }
 
 function closeDrawer() {
@@ -229,17 +253,37 @@ function createCoursewareId() {
 function formatCurrentDate() {
   return new Date().toISOString().slice(0, 10)
 }
+
+function handleBulkDelete() {
+  if (selectedIds.value.length === 0) {
+    return
+  }
+
+  records.value = records.value.filter((record) => !selectedIds.value.includes(record.id))
+  page.value = resolveCoursewarePageAfterDeletion({
+    currentPage: page.value,
+    pageSize,
+    totalAfterDeletion: records.value.length,
+  })
+  feedback.value = {
+    tone: 'success',
+    text: `已删除当前页选中的 ${selectedIds.value.length} 个课件。`,
+  }
+  selectedIds.value = []
+}
 </script>
 
 <template>
-  <section class="courseware-management workbench-surface" :data-section="props.section.key">
-    <div class="courseware-management__controls">
+  <WorkbenchDataView class="courseware-management" :data-section="props.section.key" :selected-count="selectedIds.length">
+    <template #summary>
       <header class="courseware-management__head">
         <h2>{{ props.section.title }}</h2>
       </header>
 
       <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleSummaryCardSelect(key)" />
+    </template>
 
+    <template #feedback>
       <div
         v-if="feedback"
         class="courseware-management__feedback"
@@ -249,7 +293,9 @@ function formatCurrentDate() {
       >
         {{ feedback.text }}
       </div>
+    </template>
 
+    <template #toolbar>
       <div class="courseware-management__toolbar">
         <label class="courseware-management__search-field">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -273,78 +319,83 @@ function formatCurrentDate() {
           上传课件
         </button>
       </div>
-    </div>
+    </template>
 
-    <div class="courseware-management__table-shell">
-      <div class="courseware-management__table-scroll">
-        <table class="courseware-management__table">
-          <thead>
-            <tr>
-              <th>课件标题</th>
-              <th>课程</th>
-              <th>章节</th>
-              <th>类型</th>
-              <th>文件大小</th>
-              <th>上传人</th>
-              <th>上传时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody v-if="viewModel.rows.length > 0">
-            <tr v-for="row in viewModel.rows" :key="row.id">
-              <td class="courseware-management__title-cell">{{ row.title }}</td>
-              <td>{{ row.course }}</td>
-              <td>{{ row.chapter }}</td>
-              <td>{{ row.type }}</td>
-              <td class="courseware-management__numeric-cell">{{ row.fileSize }}</td>
-              <td>{{ row.uploadedBy }}</td>
-              <td class="courseware-management__date-cell">{{ row.uploadedAt }}</td>
-              <td>
-                <div class="courseware-management__row-actions">
-                  <button
-                    type="button"
-                    class="courseware-management__icon-button"
-                    aria-label="编辑课件"
-                    @click="handleEdit(row.id)"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path :d="iconPaths.edit"></path>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="danger"
-                    aria-label="删除课件"
-                    @click="handleDelete(row.id)"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path :d="iconPaths.trash"></path>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-          <tbody v-else>
-            <tr class="courseware-management__empty-row">
-              <td colspan="8">
-                <div class="courseware-management__empty-state">
-                  <strong>{{ viewModel.emptyState?.title }}</strong>
-                  <p>{{ viewModel.emptyState?.description }}</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <template #bulk>
+      <WorkbenchBulkBar v-if="selectedIds.length > 0" :selected-count="selectedIds.length" @clear="selectedIds = []">
+        <button type="button" class="courseware-management__bulk-button danger" @click="handleBulkDelete()">批量删除</button>
+      </WorkbenchBulkBar>
+    </template>
 
+    <template #table>
+      <WorkbenchTable
+        :rows="viewModel.rows"
+        :columns="[
+          { key: 'title', title: '课件标题', mobileLabel: '课件标题' },
+          { key: 'course', title: '课程', mobileLabel: '课程' },
+          { key: 'chapter', title: '章节', mobileLabel: '章节' },
+          { key: 'type', title: '类型', mobileLabel: '类型' },
+          { key: 'fileSize', title: '文件大小', mobileLabel: '文件大小' },
+          { key: 'uploadedBy', title: '上传人', mobileLabel: '上传人' },
+          { key: 'uploadedAt', title: '上传时间', mobileLabel: '上传时间' },
+          { key: 'actions', title: '操作', mobileLabel: '操作' },
+        ]"
+        row-key="id"
+        selectable
+        :selected-row-keys="selectedIds"
+        :all-visible-selected="allVisibleSelected"
+        :empty-state="viewModel.emptyState"
+        @toggle-row="toggleRowSelection($event.id)"
+        @toggle-all-visible="toggleVisibleSelection"
+      >
+        <template #cell-title="{ row }">
+          <span class="courseware-management__title-cell">{{ row.title }}</span>
+        </template>
+
+        <template #cell-fileSize="{ row }">
+          <span class="courseware-management__numeric-cell">{{ row.fileSize }}</span>
+        </template>
+
+        <template #cell-uploadedAt="{ row }">
+          <span class="courseware-management__date-cell">{{ row.uploadedAt }}</span>
+        </template>
+
+        <template #cell-actions="{ row }">
+          <div class="courseware-management__row-actions">
+            <button
+              type="button"
+              class="courseware-management__icon-button"
+              aria-label="编辑课件"
+              @click.stop="handleEdit(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.edit"></path>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="danger"
+              aria-label="删除课件"
+              @click.stop="handleDelete(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.trash"></path>
+              </svg>
+            </button>
+          </div>
+        </template>
+      </WorkbenchTable>
+    </template>
+
+    <template #pagination>
       <footer class="courseware-management__pagination">
         <WorkbenchTablePagination :pagination="viewModel.pagination" show-quick-jumper @page-change="handlePageChange" />
       </footer>
-    </div>
+    </template>
 
-    <div v-if="drawerOpen" class="courseware-management__drawer-shell" @click.self="closeDrawer">
-      <aside class="courseware-management__drawer-panel" role="dialog" aria-modal="true">
+    <template #drawer>
+      <WorkbenchDrawerHost :open="drawerOpen" width="md" @close="closeDrawer">
+        <template #header>
         <header class="courseware-management__drawer-head">
           <div class="courseware-management__drawer-copy">
             <h3>{{ drawerTitle }}</h3>
@@ -357,7 +408,9 @@ function formatCurrentDate() {
             </svg>
           </button>
         </header>
+        </template>
 
+        <template #default>
         <div class="courseware-management__form">
           <label class="courseware-management__form-field">
             <span>课件标题</span>
@@ -406,14 +459,17 @@ function formatCurrentDate() {
             <p v-if="drawerErrors.uploadedBy" class="courseware-management__field-error">{{ drawerErrors.uploadedBy }}</p>
           </div>
         </div>
+        </template>
 
+        <template #footer>
         <footer class="courseware-management__drawer-actions">
           <button type="button" class="courseware-management__drawer-action" @click="closeDrawer">取消</button>
           <button type="button" class="courseware-management__drawer-action primary" @click="saveDrawer">
             保存课件
           </button>
         </footer>
-      </aside>
-    </div>
-  </section>
+        </template>
+      </WorkbenchDrawerHost>
+    </template>
+  </WorkbenchDataView>
 </template>

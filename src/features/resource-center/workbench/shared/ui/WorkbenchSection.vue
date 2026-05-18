@@ -62,7 +62,7 @@ defineProps<{
 .workbench-section-host__content {
   width: 100%;
   height: 100%;
-  min-height: 100%;
+  min-height: 0;
   display: grid;
   align-self: stretch;
 }

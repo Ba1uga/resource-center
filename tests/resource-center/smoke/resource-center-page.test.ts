@@ -98,25 +98,13 @@ async function main() {
   }
 
   if (
-    !/\.dashboard-main\s*\{[\s\S]*?padding-right:\s*0;[\s\S]*?overflow-y:\s*auto;[\s\S]*?scrollbar-gutter:\s*auto;/i.test(
+    !/\.dashboard-main\s*\{[\s\S]*?padding-right:\s*0;[\s\S]*?overflow:\s*hidden;[\s\S]*?scrollbar-gutter:\s*auto;/i.test(
       pageStyles,
     )
   ) {
     throw new Error(
-      'resource-center-page.css must not reserve a persistent right gutter inside dashboard-main',
+      'resource-center-page.css must keep dashboard-main as a fixed-height container and leave scrolling to inner workbench regions',
     )
-  }
-
-  if (!/\.dashboard-main\s*\{[\s\S]*?scrollbar-color:\s*oklch\(0\.68 0\.012 74 \/ 0\.42\)\s+transparent;/i.test(pageStyles)) {
-    throw new Error('resource-center-page.css must tone dashboard-main scrollbar-color down to a neutral warm fallback')
-  }
-
-  if (!/\.dashboard-main::-webkit-scrollbar-thumb\s*\{[\s\S]*?background:\s*oklch\(0\.68 0\.012 74 \/ 0\.42\)\s+padding-box;/i.test(pageStyles)) {
-    throw new Error('resource-center-page.css must replace the blue gradient dashboard thumb with a neutral warm fallback thumb')
-  }
-
-  if (/linear-gradient\(180deg,\s*oklch\(0\.82 0\.03 245\),\s*oklch\(0\.68 0\.04 250\)\)\s+padding-box/i.test(pageStyles)) {
-    throw new Error('resource-center-page.css must not keep the blue-purple dashboard scrollbar gradient')
   }
 
   if (pageContent.includes("@/views/resource-center/sections/")) {

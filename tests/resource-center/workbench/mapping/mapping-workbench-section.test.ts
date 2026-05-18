@@ -98,6 +98,7 @@ assert.deepEqual(
 
 assert.match(sectionSource, /import '\.\.\/styles\/mapping-workbench\.css'/)
 assert.match(sectionSource, /import WorkbenchSummaryCards from '\.\.\/\.\.\/shared\/ui\/WorkbenchSummaryCards\.vue'/)
+assert.match(sectionSource, /import WorkbenchDataView from '\.\.\/\.\.\/shared\/ui\/WorkbenchDataView\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchFilters from '\.\/MappingWorkbenchFilters\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchTable from '\.\/MappingWorkbenchTable\.vue'/)
 assert.match(sectionSource, /import MappingWorkbenchBulkBar from '\.\/MappingWorkbenchBulkBar\.vue'/)
@@ -119,9 +120,15 @@ assert.ok(sectionSource.includes("filters.overviewStatus = filters.overviewStatu
 assert.ok(sectionSource.includes('function handleSwitchPrimary(candidateId: string)'))
 assert.ok(sectionSource.includes('function handleConfirmRecord()'))
 assert.ok(sectionSource.includes('function handleIgnoreRecord()'))
+assert.ok(sectionSource.includes('<WorkbenchDataView class="mapping-management"'))
+assert.ok(sectionSource.includes('<template #summary>'))
+assert.ok(sectionSource.includes('<template #bulk>'))
+assert.ok(sectionSource.includes('<template #table>'))
+assert.ok(sectionSource.includes('<template #pagination>'))
+assert.ok(sectionSource.includes('<template #drawer>'))
 assert.ok(sectionSource.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as MappingSummaryCardKey)" />'))
-assert.ok(sectionSource.includes('v-if="selectedIds.length > 0"'))
 assert.ok(sectionSource.includes('<MappingWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />'))
+assert.ok(sectionSource.includes('<WorkbenchTablePagination :pagination="viewModel.pagination"'))
 assert.ok(sectionSource.includes('<MappingWorkbenchReviewDrawer'))
 assert.ok(sectionSource.includes(':open="drawerOpen"'))
 assert.ok(sectionSource.includes(':record="activeRecord"'))
@@ -148,27 +155,31 @@ for (const contract of [
   ':empty-state="viewModel.emptyState"',
   ':selected-ids="selectedIds"',
   ':all-visible-selected="allVisibleSelected"',
-  ':pagination="viewModel.pagination"',
   '@toggle-row="toggleRowSelection"',
   '@toggle-visible="toggleVisibleSelection"',
   '@review="handleReview"',
-  '@page-change="handlePageChange"',
 ]) {
   assert.ok(sectionSource.includes(contract), `Section should expose table contract: ${contract}`)
 }
 
+assert.ok(tableSource.includes("import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'"))
+assert.equal(tableSource.includes('WorkbenchTablePagination'), false)
 assert.equal(tableSource.includes('function buildRiskTags('), false)
+assert.ok(tableSource.includes('<WorkbenchTable'))
+assert.ok(tableSource.includes('cell-resource'))
+assert.ok(tableSource.includes('cell-risk-tags'))
 assert.ok(tableSource.includes('v-for="tag in row.riskTags"'))
 assert.ok(tableSource.includes('v-if="row.riskTags.length === 0"'))
 
 assert.ok(reviewDrawerSource.includes('open: boolean'))
 assert.ok(reviewDrawerSource.includes('record: MappingRecord | null'))
+assert.ok(reviewDrawerSource.includes("import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'"))
 assert.ok(reviewDrawerSource.includes('v-for="candidate in record.candidates"'))
 assert.ok(reviewDrawerSource.includes("emit('switch-primary', candidate.id)"))
 assert.ok(reviewDrawerSource.includes("@click=\"emit('confirm-record')\""))
 assert.ok(reviewDrawerSource.includes("@click=\"emit('ignore-record')\""))
-
-assert.match(stylesSource, /\.mapping-management__editor-shell\s*\{[\s\S]*?position:\s*fixed/i)
-assert.match(stylesSource, /\.mapping-management__editor-panel\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*0;/i)
 assert.match(stylesSource, /\.mapping-management__editor-footer\s*\{[\s\S]*?justify-content:\s*flex-end;/i)
-assert.match(stylesSource, /@media \(max-width: 760px\)\s*\{[\s\S]*?\.mapping-management__editor-panel\s*\{[\s\S]*?width:\s*100vw;/i)
+assert.match(
+  stylesSource,
+  /\.mapping-management\s*\{[\s\S]*?--workbench-table-line:\s*var\(--mapping-line\);[\s\S]*?--workbench-table-ink:\s*var\(--mapping-ink\);/i,
+)

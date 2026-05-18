@@ -12,17 +12,11 @@
   --mapping-action: oklch(0.18 0.01 252);
   --mapping-info-soft: oklch(0.965 0.012 245);
   --mapping-success-soft: oklch(0.968 0.03 155);
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 16px;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-.mapping-management__controls {
-  display: grid;
-  gap: 16px;
+  --workbench-table-line: var(--mapping-line);
+  --workbench-table-ink: var(--mapping-ink);
+  --workbench-table-soft: var(--mapping-soft);
+  --workbench-table-surface: #fff;
+  --workbench-table-surface-soft: var(--mapping-surface-soft);
 }
 
 .mapping-management__head {
@@ -213,25 +207,6 @@
   color: var(--mapping-ink);
 }
 
-.mapping-management__table-actions {
-  display: grid;
-}
-
-.mapping-management__bulk-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--mapping-line);
-  border-radius: 18px;
-  background: #fff;
-}
-
-.mapping-management__bulk-bar strong {
-  color: var(--mapping-ink);
-}
-
 .mapping-management__bulk-actions {
   display: flex;
   align-items: center;
@@ -253,64 +228,6 @@
   border-color: var(--mapping-action);
   background: var(--mapping-action);
   color: #fff;
-}
-
-.mapping-management__table-shell {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  min-height: 0;
-  border: 1px solid var(--mapping-line);
-  border-radius: 18px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.mapping-management__table-scroll {
-  min-height: 0;
-  overflow: auto;
-}
-
-.mapping-management-table {
-  width: 100%;
-  min-width: 1180px;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.mapping-management-table thead th,
-.mapping-management-table tbody td {
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--mapping-line);
-  text-align: left;
-  vertical-align: top;
-}
-
-.mapping-management-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #fff;
-  color: var(--mapping-soft);
-  font-size: 0.92rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.mapping-management-table tbody tr {
-  transition: background-color 160ms var(--ease-out);
-}
-
-.mapping-management-table tbody tr:hover {
-  background: var(--mapping-surface-soft);
-}
-
-.mapping-management-table tbody td {
-  color: var(--mapping-ink);
-  font-size: 0.95rem;
-}
-
-.mapping-management-table__selection-column {
-  width: 52px;
 }
 
 .mapping-management-table__resource,
@@ -392,18 +309,6 @@
   color: var(--mapping-soft);
 }
 
-.mapping-management-table__empty {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-  padding: 44px 24px;
-}
-
-.mapping-management-table__empty strong {
-  color: var(--mapping-ink);
-  font-size: 1.04rem;
-}
-
 .mapping-management__pagination {
   display: flex;
   align-items: center;
@@ -412,36 +317,6 @@
   padding: 14px 16px;
   border-top: 1px solid var(--mapping-line);
   background: var(--mapping-surface);
-}
-
-.mapping-management__editor-shell {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-}
-
-.mapping-management__editor-backdrop {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: oklch(0.18 0.01 252 / 0.28);
-  backdrop-filter: blur(6px);
-  cursor: pointer;
-}
-
-.mapping-management__editor-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: min(560px, 100vw);
-  height: 100vh;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  padding: 28px 24px 24px;
-  border-left: 1px solid var(--mapping-line);
-  background: #fff;
-  overflow: hidden;
-  box-shadow: -24px 0 48px oklch(0.18 0.01 252 / 0.18);
 }
 
 .mapping-management__editor-head {
@@ -556,7 +431,6 @@
 
 @media (max-width: 980px) {
   .mapping-management__head,
-  .mapping-management__bulk-bar,
   .mapping-management__pagination {
     align-items: stretch;
     flex-direction: column;
@@ -579,10 +453,6 @@
   .mapping-management-filters__reset-button {
     width: 100%;
   }
-
-  .mapping-management__editor-panel {
-    width: 100vw;
-  }
 }
 
 @media (max-width: 760px) {
@@ -590,43 +460,6 @@
   .mapping-management__toolbar,
   .mapping-management-filters {
     grid-template-columns: 1fr;
-  }
-
-  .mapping-management-table thead {
-    display: none;
-  }
-
-  .mapping-management-table,
-  .mapping-management-table tbody,
-  .mapping-management-table tr,
-  .mapping-management-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .mapping-management-table {
-    min-width: 0;
-  }
-
-  .mapping-management-table tbody tr {
-    display: grid;
-    gap: 4px;
-    padding: 10px 0 14px;
-    border-bottom: 1px solid var(--mapping-line);
-  }
-
-  .mapping-management-table tbody td {
-    padding: 10px 16px;
-    border-bottom: 0;
-  }
-
-  .mapping-management-table tbody td::before {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--mapping-soft);
-    font-size: 0.78rem;
-    font-weight: 700;
-    content: attr(data-label);
   }
 
   .mapping-management__bulk-actions {
@@ -637,9 +470,5 @@
   .mapping-management__bulk-button,
   .mapping-management-table__review-button {
     width: 100%;
-  }
-
-  .mapping-management__editor-panel {
-    width: 100vw;
   }
 }

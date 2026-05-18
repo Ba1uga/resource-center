@@ -10,17 +10,11 @@
   --surface-strong: oklch(0.99 0.002 250);
   --accent: oklch(0.25 0.03 255);
   --danger: oklch(0.63 0.22 27);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  gap: 16px;
-  overflow: hidden;
-}
-
-.textbook-management__controls {
-  display: grid;
-  gap: 16px;
+  --workbench-table-line: var(--line);
+  --workbench-table-ink: var(--ink);
+  --workbench-table-soft: var(--soft);
+  --workbench-table-surface: var(--surface-strong);
+  --workbench-table-surface-soft: var(--surface);
 }
 
 .textbook-management__status-anchor {
@@ -176,53 +170,19 @@
   font-weight: 600;
 }
 
-.textbook-management__table-shell {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  min-height: 0;
-  min-width: 0;
-  align-self: stretch;
-  overflow: hidden;
+.textbook-management__bulk-button {
+  min-height: 40px;
+  padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-strong);
-}
-
-.textbook-management__table-scroll {
-  min-height: 0;
-  min-width: 0;
-  height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
-.textbook-management__table {
-  width: 100%;
-  min-width: 100%;
-  border-collapse: collapse;
-}
-
-.textbook-management__table th,
-.textbook-management__table td {
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-  vertical-align: top;
-}
-
-.textbook-management__table th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  color: var(--soft);
-  font-size: 0.9rem;
-  font-weight: 700;
-  background: var(--surface-strong);
-}
-
-.textbook-management__table td {
+  border-radius: 12px;
+  background: #fff;
   color: var(--ink);
-  font-size: 1rem;
+  font: inherit;
+  font-weight: 600;
+}
+
+.textbook-management__bulk-button.danger {
+  color: var(--danger);
 }
 
 .textbook-management__name-cell {
@@ -273,12 +233,45 @@
   text-align: center;
 }
 
+.textbook-management__loading-state {
+  min-height: 100%;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  padding: 56px 24px;
+  text-align: center;
+}
+
+.textbook-management__loading-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  font-size: 2rem;
+}
+
+.textbook-management__loading-state h3,
+.textbook-management__loading-state p {
+  margin: 0;
+}
+
+.textbook-management__loading-state p {
+  max-width: 360px;
+  color: var(--soft);
+  line-height: 1.65;
+}
+
 .textbook-management__pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   padding: 14px 16px;
+  border-top: 1px solid var(--line);
 }
 
 .textbook-management__pagination-summary {

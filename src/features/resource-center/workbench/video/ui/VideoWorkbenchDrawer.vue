@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import type { VideoRecord } from '@/features/resource-center/workbench/video/model/video-workbench.types.ts'
+import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
 
 defineProps<{
   open: boolean
@@ -17,11 +18,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <teleport to="body">
-    <div v-if="open" class="video-management__drawer-shell">
-      <button type="button" class="video-management__drawer-backdrop" aria-label="关闭抽屉" @click="emit('close')" />
-
-      <aside class="video-management__drawer" aria-label="视频编辑抽屉">
+  <WorkbenchDrawerHost :open="open" @close="emit('close')">
+    <template #header>
+      <div class="video-management__drawer" aria-label="视频编辑抽屉">
         <header class="video-management__drawer-head">
           <div>
             <h3>{{ mode === 'create' ? '上传视频' : '编辑视频' }}</h3>
@@ -34,7 +33,11 @@ const emit = defineEmits<{
             </svg>
           </button>
         </header>
+      </div>
+    </template>
 
+    <template #default>
+      <div class="video-management__drawer">
         <div class="video-management__drawer-body">
           <section class="video-management__drawer-section">
             <h4>资源文件</h4>
@@ -88,7 +91,11 @@ const emit = defineEmits<{
             </div>
           </section>
         </div>
+      </div>
+    </template>
 
+    <template #footer>
+      <div class="video-management__drawer">
         <footer class="video-management__drawer-footer">
           <button type="button" @click="emit('close')">取消</button>
           <button type="button" @click="emit('save-draft')">
@@ -106,7 +113,7 @@ const emit = defineEmits<{
             重新上传视频
           </button>
         </footer>
-      </aside>
-    </div>
-  </teleport>
+      </div>
+    </template>
+  </WorkbenchDrawerHost>
 </template>

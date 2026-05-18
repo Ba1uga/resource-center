@@ -49,5 +49,5 @@ assert.match(
 )
 assert.match(
   genericSection,
-  /\.workbench-section-host__content\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*100%;[\s\S]*?display:\s*grid;[\s\S]*?align-self:\s*stretch;/i,
+  /\.workbench-section-host__content\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;[\s\S]*?display:\s*grid;[\s\S]*?align-self:\s*stretch;/i,
 )
