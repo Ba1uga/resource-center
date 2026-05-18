@@ -43,12 +43,6 @@ export interface CoursewareSelectOption<TValue extends string = string> {
   label: string
 }
 
-export interface CoursewareSummaryItem {
-  label: string
-  value: string
-  hint: string
-}
-
 export interface CoursewareEmptyState {
   title: string
   description: string
@@ -59,7 +53,7 @@ export interface CoursewareWorkbenchViewModel {
   courseOptions: CoursewareSelectOption[]
   typeOptions: CoursewareSelectOption<CoursewareTypeFilter>[]
   pagination: CoursewarePaginationState
-  summaryItems: CoursewareSummaryItem[]
+  summaryCards: import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard[]
   emptyState: CoursewareEmptyState | null
 }
 

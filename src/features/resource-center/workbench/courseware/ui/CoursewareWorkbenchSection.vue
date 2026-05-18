@@ -4,6 +4,7 @@ import '../styles/courseware-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import {
@@ -14,6 +15,7 @@ import {
   createCoursewareWorkbenchViewModel,
   createDefaultCoursewareDraft,
   createDefaultCoursewareFilterState,
+  isDefaultCoursewareFilterState,
   matchesCoursewareFilters,
   resolveCoursewarePageAfterDeletion,
 } from '@/features/resource-center/workbench/courseware/model/courseware-workbench.view-model.ts'
@@ -133,6 +135,17 @@ function handlePageChange(nextPage: number) {
   page.value = nextPage
 }
 
+function handleSummaryCardSelect(key: string) {
+  if (key !== 'all' || isDefaultCoursewareFilterState(filters)) {
+    return
+  }
+
+  filters.keyword = ''
+  filters.course = 'all'
+  filters.type = 'all'
+  page.value = 1
+}
+
 function closeDrawer() {
   drawerOpen.value = false
   clearDrawerErrors()
@@ -225,22 +238,7 @@ function formatCurrentDate() {
         <h2>{{ props.section.title }}</h2>
       </header>
 
-      <div class="courseware-management__summary">
-        <article
-          v-for="item in viewModel.summaryItems"
-          :key="item.label"
-          class="courseware-management__summary-card"
-        >
-          <span>{{ item.label }}</span>
-          <strong
-            class="courseware-management__summary-value"
-            :class="{ 'is-record': item.label === '最近上传' }"
-          >
-            {{ item.value }}
-          </strong>
-          <p>{{ item.hint }}</p>
-        </article>
-      </div>
+      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleSummaryCardSelect" />
 
       <div
         v-if="feedback"

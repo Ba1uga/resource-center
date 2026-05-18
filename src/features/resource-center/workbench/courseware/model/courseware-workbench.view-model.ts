@@ -1,4 +1,5 @@
 import { coursewareTypeOptions, currentCoursewareUploader } from './courseware-workbench.fixtures.ts'
+import type { WorkbenchSummaryCard } from '../../shared/model/workbench-summary-cards.ts'
 
 import type {
   CoursewareDraft,
@@ -36,6 +37,7 @@ export function createCoursewareWorkbenchViewModel(options: {
 }): CoursewareWorkbenchViewModel {
   const sortedRecords = sortCoursewareRecords(options.records)
   const filteredRecords = sortedRecords.filter((record) => matchesCoursewareFilters(record, options.filters))
+  const hasDefaultFilters = isDefaultCoursewareFilterState(options.filters)
   const pagination = createPaginationState({
     total: filteredRecords.length,
     page: options.page,
@@ -45,30 +47,17 @@ export function createCoursewareWorkbenchViewModel(options: {
     filteredRecords.length > 0
       ? filteredRecords.slice(pagination.from - 1, pagination.to)
       : []
-  const latestRecord = sortedRecords[0]
 
   return {
     rows: rows.map((record) => ({ ...record })),
     courseOptions: createCourseOptions(sortedRecords),
     typeOptions: coursewareTypeOptions,
     pagination,
-    summaryItems: [
-      {
-        label: '总课件数',
-        value: String(sortedRecords.length),
-        hint: '当前工作台内的全部课件资源',
-      },
-      {
-        label: '当前结果数',
-        value: String(filteredRecords.length),
-        hint: '已按搜索与筛选条件联动更新',
-      },
-      {
-        label: '最近上传',
-        value: latestRecord?.title ?? '暂无课件',
-        hint: latestRecord ? `${latestRecord.uploadedBy} · ${latestRecord.uploadedAt}` : '上传后会显示在这里',
-      },
-    ],
+    summaryCards: createSummaryCards({
+      totalCount: sortedRecords.length,
+      currentCount: filteredRecords.length,
+      hasDefaultFilters,
+    }),
     emptyState: createEmptyState(sortedRecords.length, filteredRecords.length),
   }
 }
@@ -89,6 +78,10 @@ export function matchesCoursewareFilters(record: CoursewareRecord, filters: Cour
   const matchesType = filters.type === 'all' || record.type === filters.type
 
   return matchesKeyword && matchesCourse && matchesType
+}
+
+export function isDefaultCoursewareFilterState(filters: CoursewareFilterState): boolean {
+  return filters.keyword === '' && filters.course === 'all' && filters.type === 'all'
 }
 
 function createCourseOptions(records: CoursewareRecord[]): CoursewareSelectOption[] {
@@ -147,6 +140,33 @@ function createEmptyState(totalRecords: number, filteredRecords: number) {
   }
 
   return null
+}
+
+function createSummaryCards(options: {
+  totalCount: number
+  currentCount: number
+  hasDefaultFilters: boolean
+}): WorkbenchSummaryCard[] {
+  return [
+    {
+      key: 'all',
+      label: '总课件数',
+      value: String(options.totalCount),
+      hint: '点击恢复全部课件并重置当前筛选',
+      kind: 'filter',
+      active: options.hasDefaultFilters,
+      interactive: true,
+    },
+    {
+      key: 'current-results',
+      label: '当前结果数',
+      value: String(options.currentCount),
+      hint: '仅统计当前筛选条件下命中的课件数量',
+      kind: 'info',
+      active: false,
+      interactive: false,
+    },
+  ]
 }
 
 function sortCoursewareRecords(records: CoursewareRecord[]): CoursewareRecord[] {

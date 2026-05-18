@@ -13,6 +13,10 @@ const typesUrl = new URL(
   '../../../../src/features/resource-center/workbench/courseware/model/courseware-workbench.types.ts',
   import.meta.url,
 )
+const summaryCardsUrl = new URL(
+  '../../../../src/features/resource-center/workbench/shared/ui/WorkbenchSummaryCards.vue',
+  import.meta.url,
+)
 const fixturesUrl = new URL(
   '../../../../src/features/resource-center/workbench/courseware/model/courseware-workbench.fixtures.ts',
   import.meta.url,
@@ -26,7 +30,7 @@ const validationUrl = new URL(
   import.meta.url,
 )
 
-for (const fileUrl of [sectionUrl, stylesUrl, typesUrl, fixturesUrl, viewModelUrl, validationUrl]) {
+for (const fileUrl of [sectionUrl, stylesUrl, typesUrl, summaryCardsUrl, fixturesUrl, viewModelUrl, validationUrl]) {
   assert.equal(existsSync(fileUrl), true, `${fileUrl.pathname.split('/').at(-1)} must exist`)
 }
 
@@ -35,6 +39,7 @@ const stylesContent = readFileSync(stylesUrl, 'utf8')
 const normalizedSectionContent = sectionContent.replace(/\s+/g, ' ')
 
 assert.ok(sectionContent.includes("import '../styles/courseware-workbench.css'"))
+assert.ok(sectionContent.includes("import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'"))
 assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
 assert.ok(
   sectionContent.includes(
@@ -62,10 +67,7 @@ assert.equal(sectionContent.includes(':status="props.section.status"'), false)
 
 assert.ok(sectionContent.includes('class="courseware-management workbench-surface"'))
 assert.ok(sectionContent.includes('class="courseware-management__controls"'))
-assert.ok(sectionContent.includes('class="courseware-management__summary"'))
-assert.ok(sectionContent.includes('class="courseware-management__summary-card"'))
-assert.ok(sectionContent.includes('class="courseware-management__summary-value"'))
-assert.ok(sectionContent.includes(`'is-record': item.label ===`))
+assert.ok(sectionContent.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleSummaryCardSelect" />'))
 assert.ok(sectionContent.includes('class="courseware-management__toolbar"'))
 assert.ok(sectionContent.includes('class="courseware-management__search-field"'))
 assert.ok(sectionContent.includes('class="courseware-management__select-field"'))
@@ -80,6 +82,7 @@ assert.ok(sectionContent.includes('placeholder='))
 assert.ok(sectionContent.includes('handleCreate'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
+assert.ok(sectionContent.includes('handleSummaryCardSelect'))
 assert.ok(sectionContent.includes('saveDrawer'))
 assert.equal(sectionContent.includes('<select v-model="filters.course">'), false)
 assert.equal(sectionContent.includes('<select v-model="filters.type">'), false)
@@ -101,15 +104,6 @@ assert.equal(
 )
 
 assert.match(stylesContent, /\.courseware-management\s*\{[\s\S]*?display:\s*grid;/i)
-assert.match(stylesContent, /\.courseware-management__summary\s*\{[\s\S]*?grid-template-columns:/i)
-assert.match(
-  stylesContent,
-  /\.courseware-management__summary-card\s*\{[\s\S]*?min-height:\s*88px;[\s\S]*?padding:\s*14px 16px;/i,
-)
-assert.match(
-  stylesContent,
-  /\.courseware-management__summary-value\.is-record\s*\{[\s\S]*?font-size:\s*1\.15rem;/i,
-)
 assert.match(
   stylesContent,
   /\.courseware-management__toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*1\.1fr\)\s+160px\s+160px\s+auto;[\s\S]*?gap:\s*12px;[\s\S]*?align-items:\s*stretch;/i,
