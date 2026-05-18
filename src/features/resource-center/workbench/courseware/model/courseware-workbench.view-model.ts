@@ -2,6 +2,7 @@ import { coursewareTypeOptions, currentCoursewareUploader } from './courseware-w
 import type { WorkbenchSummaryCard } from '../../shared/model/workbench-summary-cards.ts'
 
 import type {
+  CoursewareSummaryCardKey,
   CoursewareDraft,
   CoursewareFilterState,
   CoursewarePaginationState,
@@ -146,7 +147,7 @@ function createSummaryCards(options: {
   totalCount: number
   currentCount: number
   hasDefaultFilters: boolean
-}): WorkbenchSummaryCard[] {
+}): WorkbenchSummaryCard<CoursewareSummaryCardKey>[] {
   return [
     {
       key: 'all',

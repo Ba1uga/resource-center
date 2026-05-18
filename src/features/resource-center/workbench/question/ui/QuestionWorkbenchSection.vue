@@ -34,10 +34,12 @@ import QuestionManagementTable from './management/QuestionManagementTable.vue'
 import type {
   QuestionEditorDraft,
   QuestionEditorMode,
+  QuestionStatus,
   QuestionType,
   QuestionValidationErrors,
 } from '@/features/resource-center/workbench/question/model/question-workbench.types.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
+import type { WorkbenchSummaryCard } from '@/features/resource-center/workbench/shared/model/workbench-summary-cards.ts'
 
 interface QuestionFeedbackState {
   tone: 'success' | 'info' | 'danger'
@@ -68,7 +70,7 @@ const viewModel = computed(() => {
   })
 })
 
-const summaryCards = computed(() => [
+const summaryCards = computed<WorkbenchSummaryCard<'matching-total' | QuestionStatus>[]>(() => [
   {
     key: 'matching-total',
     label: '当前结果数',
@@ -143,7 +145,7 @@ function handlePageChange(page: number) {
   }
 }
 
-function handleStatusSelect(status: 'draft' | 'published') {
+function handleStatusSelect(status: QuestionStatus) {
   queryDraft.value = applyQuestionStatusCardSelection(queryDraft.value, status)
   activeQuery.value = applyQuestionStatusCardSelection(activeQuery.value, status)
 }
@@ -295,7 +297,7 @@ function handleEditorSave() {
         <h2>{{ props.section.title }}</h2>
       </header>
 
-      <WorkbenchSummaryCards :items="summaryCards" @select="handleStatusSelect" />
+      <WorkbenchSummaryCards :items="summaryCards" @select="(key) => handleStatusSelect(key as QuestionStatus)" />
 
       <div v-if="feedback" class="question-management__feedback" :class="`is-${feedback.tone}`" aria-live="polite">
         {{ feedback.text }}

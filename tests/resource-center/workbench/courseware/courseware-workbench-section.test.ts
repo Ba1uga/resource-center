@@ -67,7 +67,7 @@ assert.equal(sectionContent.includes(':status="props.section.status"'), false)
 
 assert.ok(sectionContent.includes('class="courseware-management workbench-surface"'))
 assert.ok(sectionContent.includes('class="courseware-management__controls"'))
-assert.ok(sectionContent.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleSummaryCardSelect" />'))
+assert.ok(sectionContent.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleSummaryCardSelect(key)" />'))
 assert.ok(sectionContent.includes('class="courseware-management__toolbar"'))
 assert.ok(sectionContent.includes('class="courseware-management__search-field"'))
 assert.ok(sectionContent.includes('class="courseware-management__select-field"'))

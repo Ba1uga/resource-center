@@ -1,5 +1,5 @@
-export interface WorkbenchSummaryCard {
-  key: string
+export interface WorkbenchSummaryCard<TKey extends string = string> {
+  key: TKey
   label: string
   value: string
   hint: string
@@ -8,11 +8,13 @@ export interface WorkbenchSummaryCard {
   interactive: boolean
 }
 
-export function isWorkbenchSummaryFilterCard(item: WorkbenchSummaryCard): boolean {
+export function isWorkbenchSummaryFilterCard<TKey extends string>(item: WorkbenchSummaryCard<TKey>): boolean {
   return item.kind === 'filter'
 }
 
-export function createWorkbenchSummaryCardRows(items: WorkbenchSummaryCard[]): WorkbenchSummaryCard[][] {
+export function createWorkbenchSummaryCardRows<TKey extends string>(
+  items: WorkbenchSummaryCard<TKey>[],
+): WorkbenchSummaryCard<TKey>[][] {
   const filterCards = items.filter(isWorkbenchSummaryFilterCard)
   const infoCards = items.filter((item) => item.kind === 'info')
 

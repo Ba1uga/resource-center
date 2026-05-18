@@ -226,7 +226,7 @@ function handlePageChange(nextPage: number) {
         </div>
       </header>
 
-      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />
+      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as VideoOverviewStatus)" />
 
       <section class="video-management__toolbar" aria-label="视频筛选工具栏">
         <label class="video-management__search-field">

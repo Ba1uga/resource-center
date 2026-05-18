@@ -46,15 +46,8 @@ export interface VideoSelectOption {
   label: string
 }
 
-export interface VideoSummaryCard {
-  key: Exclude<VideoOverviewStatus, 'all'>
-  label: string
-  value: string
-  hint: string
-  kind: 'filter' | 'info'
-  active: boolean
-  interactive: boolean
-}
+export type VideoSummaryCard =
+  import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard<Exclude<VideoOverviewStatus, 'all'>>
 
 export interface VideoEmptyState {
   kind: 'initial' | 'filtered' | 'status'

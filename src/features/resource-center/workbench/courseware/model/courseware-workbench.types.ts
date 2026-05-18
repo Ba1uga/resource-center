@@ -48,12 +48,14 @@ export interface CoursewareEmptyState {
   description: string
 }
 
+export type CoursewareSummaryCardKey = 'all' | 'current-results'
+
 export interface CoursewareWorkbenchViewModel {
   rows: CoursewareRecord[]
   courseOptions: CoursewareSelectOption[]
   typeOptions: CoursewareSelectOption<CoursewareTypeFilter>[]
   pagination: CoursewarePaginationState
-  summaryCards: import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard[]
+  summaryCards: import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard<CoursewareSummaryCardKey>[]
   emptyState: CoursewareEmptyState | null
 }
 

@@ -321,7 +321,7 @@ function createLocalRecords(): MappingRecord[] {
       </header>
 
       <div class="mapping-management__summary">
-        <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />
+        <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as MappingSummaryCardKey)" />
       </div>
 
       <div

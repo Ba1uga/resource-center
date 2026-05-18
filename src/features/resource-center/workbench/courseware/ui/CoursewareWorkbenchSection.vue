@@ -238,7 +238,7 @@ function formatCurrentDate() {
         <h2>{{ props.section.title }}</h2>
       </header>
 
-      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleSummaryCardSelect" />
+      <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleSummaryCardSelect(key)" />
 
       <div
         v-if="feedback"

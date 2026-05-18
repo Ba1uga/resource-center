@@ -69,7 +69,8 @@ export interface MappingWorkbenchRow extends MappingRecord {
   riskTags: string[]
 }
 
-export type MappingSummaryCard = import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard
+export type MappingSummaryCard =
+  import('../../shared/model/workbench-summary-cards.ts').WorkbenchSummaryCard<MappingSummaryCardKey>
 
 export interface MappingPaginationState {
   page: number

@@ -119,7 +119,7 @@ assert.ok(sectionSource.includes("filters.overviewStatus = filters.overviewStatu
 assert.ok(sectionSource.includes('function handleSwitchPrimary(candidateId: string)'))
 assert.ok(sectionSource.includes('function handleConfirmRecord()'))
 assert.ok(sectionSource.includes('function handleIgnoreRecord()'))
-assert.ok(sectionSource.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="handleStatusSelect" />'))
+assert.ok(sectionSource.includes('<WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as MappingSummaryCardKey)" />'))
 assert.ok(sectionSource.includes('v-if="selectedIds.length > 0"'))
 assert.ok(sectionSource.includes('<MappingWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />'))
 assert.ok(sectionSource.includes('<MappingWorkbenchReviewDrawer'))
