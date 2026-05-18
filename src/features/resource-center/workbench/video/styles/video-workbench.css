@@ -10,17 +10,11 @@
   --video-surface-soft: oklch(0.985 0.005 252);
   --video-action: oklch(0.18 0.01 252);
   --video-danger: oklch(0.62 0.22 28);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 16px;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-.video-management__controls {
-  display: grid;
-  gap: 16px;
+  --workbench-table-line: var(--video-line);
+  --workbench-table-ink: var(--video-ink);
+  --workbench-table-soft: var(--video-soft);
+  --workbench-table-surface: var(--video-surface);
+  --workbench-table-surface-soft: var(--video-surface-soft);
 }
 
 .video-management__heading {
@@ -154,71 +148,12 @@
   transform: translateY(1px);
 }
 
-.video-management__table-shell {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  min-height: 0;
-  border: 1px solid var(--video-line);
-  border-radius: 18px;
-  background: var(--video-surface);
-  overflow: hidden;
-}
-
-.video-management__table-actions {
-  padding: 8px 16px 10px;
-  border-bottom: 1px solid var(--video-line);
-}
-
 .video-management__bulk-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 0;
-}
-
-.video-management__table-scroll {
-  min-height: 0;
-  height: 100%;
-  overflow: auto;
-}
-
-.video-management__table {
-  width: 100%;
-  min-width: 940px;
-  border-collapse: collapse;
-  color: var(--video-ink);
-}
-
-.video-management__table th,
-.video-management__table td {
-  padding: 18px 16px;
-  text-align: left;
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-.video-management__table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  border-bottom: 1px solid var(--video-line);
-  background: var(--video-surface);
-  color: oklch(0.32 0.02 252);
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.video-management__table tbody tr + tr td {
-  border-top: 1px solid oklch(0.94 0.01 252);
-}
-
-.video-management__table tbody tr {
-  transition: background-color 180ms var(--ease-out);
-}
-
-.video-management__table tbody tr:hover {
-  background: var(--video-surface-soft);
 }
 
 .video-management__selection-cell {
@@ -510,25 +445,6 @@
 
 .video-management__icon-button.danger {
   color: var(--video-danger);
-}
-
-.video-management__empty-row td {
-  padding: 42px 24px;
-}
-
-.video-management__empty-state {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-}
-
-.video-management__empty-state strong {
-  font-size: 1rem;
-}
-
-.video-management__empty-state p {
-  margin: 0;
-  color: var(--video-soft);
 }
 
 .video-management__pagination {

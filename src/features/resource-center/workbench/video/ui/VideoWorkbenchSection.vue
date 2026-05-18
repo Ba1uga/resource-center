@@ -4,7 +4,9 @@ import '../styles/video-workbench.css'
 import { computed, reactive, ref, watch } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
+import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
+import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
@@ -218,8 +220,8 @@ function handlePageChange(nextPage: number) {
 </script>
 
 <template>
-  <section class="video-management workbench-surface" :data-section="props.section.key">
-    <div class="video-management__controls">
+  <WorkbenchDataView class="video-management" :data-section="props.section.key" :selected-count="selectedIds.length">
+    <template #summary>
       <header class="video-management__heading">
         <div class="video-management__copy">
           <h2>{{ props.section.title }}</h2>
@@ -227,7 +229,9 @@ function handlePageChange(nextPage: number) {
       </header>
 
       <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as VideoOverviewStatus)" />
+    </template>
 
+    <template #toolbar>
       <section class="video-management__toolbar" aria-label="视频筛选工具栏">
         <label class="video-management__search-field">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -282,130 +286,125 @@ function handlePageChange(nextPage: number) {
           <span>上传视频</span>
         </button>
       </section>
-    </div>
+    </template>
 
-    <section class="video-management__table-shell">
-      <div v-if="selectedIds.length > 0" class="video-management__table-actions">
-        <VideoWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />
-      </div>
+    <template #bulk>
+      <VideoWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />
+    </template>
 
-      <div class="video-management__table-scroll">
-        <table class="video-management__table">
-          <thead>
-            <tr>
-              <th class="video-management__selection-cell">
-                <input
-                  :checked="allVisibleSelected"
-                  type="checkbox"
-                  aria-label="选择当前页所有视频"
-                  @change="toggleVisibleSelection"
-                />
-              </th>
-              <th>视频信息</th>
-              <th>课程 / 章节</th>
-              <th>资源状态</th>
-              <th>发布状态</th>
-              <th>时长</th>
-              <th>分辨率</th>
-              <th>上传人</th>
-              <th>上传时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody v-if="viewModel.rows.length > 0">
-            <tr v-for="row in viewModel.rows" :key="row.id">
-              <td class="video-management__selection-cell">
-                <input
-                  :checked="selectedIds.includes(row.id)"
-                  type="checkbox"
-                  :aria-label="`选择${row.title}`"
-                  @change="toggleRecordSelection(row.id)"
-                />
-              </td>
-              <td class="video-management__info-cell">
-                <div class="video-management__cover">{{ row.coverLabel }}</div>
-                <div class="video-management__info-copy">
-                  <strong>{{ row.title }}</strong>
-                  <div class="video-management__meta-line">
-                    <span>{{ row.id }}</span>
-                    <span>{{ row.knowledgePoint }}</span>
-                  </div>
-                  <div class="video-management__tag-list">
-                    <span v-for="tag in row.tags" :key="tag">{{ tag }}</span>
-                  </div>
-                  <p v-if="row.resourceAlert" class="video-management__resource-alert">{{ row.resourceAlert }}</p>
-                </div>
-              </td>
-              <td>
-                <strong>{{ row.course }}</strong>
-                <span class="video-management__subtle-line">{{ row.chapter }}</span>
-              </td>
-              <td>
-                <span class="video-management__status-badge" :class="`is-${row.processingStatus}`">
-                  {{ row.processingStatus }}
-                </span>
-              </td>
-              <td>
-                <span class="video-management__status-badge" :class="`is-${row.publishStatus}`">
-                  {{ row.publishStatus }}
-                </span>
-              </td>
-              <td class="video-management__numeric-cell">{{ row.duration }}</td>
-              <td class="video-management__numeric-cell">{{ row.resolution }}</td>
-              <td>{{ row.uploadedBy }}</td>
-              <td class="video-management__date-cell">{{ row.uploadedAt }}</td>
-              <td>
-                <div class="video-management__row-actions">
-                  <button
-                    type="button"
-                    class="video-management__icon-button"
-                    aria-label="编辑视频"
-                    @click="handleEdit(row.id)"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path :d="iconPaths.edit"></path>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="video-management__icon-button danger"
-                    aria-label="删除视频"
-                    @click="handleDelete(row.id)"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path :d="iconPaths.trash"></path>
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-          <tbody v-else>
-            <tr class="video-management__empty-row">
-              <td colspan="10">
-                <div class="video-management__empty-state">
-                  <strong>{{ viewModel.emptyState?.title }}</strong>
-                  <p>{{ viewModel.emptyState?.description }}</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <template #table>
+      <WorkbenchTable
+        :rows="viewModel.rows"
+        :columns="[
+          { key: 'resource', title: '视频信息', mobileLabel: '视频信息' },
+          { key: 'courseChapter', title: '课程 / 章节', mobileLabel: '课程 / 章节' },
+          { key: 'processingStatus', title: '资源状态', mobileLabel: '资源状态' },
+          { key: 'publishStatus', title: '发布状态', mobileLabel: '发布状态' },
+          { key: 'duration', title: '时长', mobileLabel: '时长' },
+          { key: 'resolution', title: '分辨率', mobileLabel: '分辨率' },
+          { key: 'uploadedBy', title: '上传人', mobileLabel: '上传人' },
+          { key: 'uploadedAt', title: '上传时间', mobileLabel: '上传时间' },
+          { key: 'actions', title: '操作', mobileLabel: '操作' },
+        ]"
+        row-key="id"
+        selectable
+        :selected-row-keys="selectedIds"
+        :all-visible-selected="allVisibleSelected"
+        :empty-state="viewModel.emptyState"
+        @toggle-row="toggleRecordSelection($event.id)"
+        @toggle-all-visible="toggleVisibleSelection"
+      >
+        <template #cell-resource="{ row }">
+          <div class="video-management__info-cell">
+            <div class="video-management__cover">{{ row.coverLabel }}</div>
+            <div class="video-management__info-copy">
+              <strong>{{ row.title }}</strong>
+              <div class="video-management__meta-line">
+                <span>{{ row.id }}</span>
+                <span>{{ row.knowledgePoint }}</span>
+              </div>
+              <div class="video-management__tag-list">
+                <span v-for="tag in row.tags" :key="tag">{{ tag }}</span>
+              </div>
+              <p v-if="row.resourceAlert" class="video-management__resource-alert">{{ row.resourceAlert }}</p>
+            </div>
+          </div>
+        </template>
 
+        <template #cell-courseChapter="{ row }">
+          <div>
+            <strong>{{ row.course }}</strong>
+            <span class="video-management__subtle-line">{{ row.chapter }}</span>
+          </div>
+        </template>
+
+        <template #cell-processingStatus="{ row }">
+          <span class="video-management__status-badge" :class="`is-${row.processingStatus}`">
+            {{ row.processingStatus }}
+          </span>
+        </template>
+
+        <template #cell-publishStatus="{ row }">
+          <span class="video-management__status-badge" :class="`is-${row.publishStatus}`">
+            {{ row.publishStatus }}
+          </span>
+        </template>
+
+        <template #cell-duration="{ row }">
+          <span class="video-management__numeric-cell">{{ row.duration }}</span>
+        </template>
+
+        <template #cell-resolution="{ row }">
+          <span class="video-management__numeric-cell">{{ row.resolution }}</span>
+        </template>
+
+        <template #cell-uploadedAt="{ row }">
+          <span class="video-management__date-cell">{{ row.uploadedAt }}</span>
+        </template>
+
+        <template #cell-actions="{ row }">
+          <div class="video-management__row-actions">
+            <button
+              type="button"
+              class="video-management__icon-button"
+              aria-label="编辑视频"
+              @click.stop="handleEdit(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.edit"></path>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="video-management__icon-button danger"
+              aria-label="删除视频"
+              @click.stop="handleDelete(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.trash"></path>
+              </svg>
+            </button>
+          </div>
+        </template>
+      </WorkbenchTable>
+    </template>
+
+    <template #pagination>
       <footer class="video-management__pagination">
         <WorkbenchTablePagination :pagination="viewModel.pagination" show-quick-jumper @page-change="handlePageChange" />
       </footer>
-    </section>
+    </template>
 
-    <VideoWorkbenchDrawer
-      :open="drawerState.open"
-      :mode="drawerState.mode"
-      :record="activeRecord"
-      @close="closeDrawer"
-      @save-draft="handleDrawerSaveDraft"
-      @save-publish="handleDrawerSavePublish"
-      @retry-upload="handleRetryUpload"
-    />
-  </section>
+    <template #drawer>
+      <VideoWorkbenchDrawer
+        :open="drawerState.open"
+        :mode="drawerState.mode"
+        :record="activeRecord"
+        @close="closeDrawer"
+        @save-draft="handleDrawerSaveDraft"
+        @save-publish="handleDrawerSavePublish"
+        @retry-upload="handleRetryUpload"
+      />
+    </template>
+  </WorkbenchDataView>
 </template>

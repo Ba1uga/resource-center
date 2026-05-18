@@ -3,6 +3,7 @@ import '../styles/question-workbench.css'
 
 import { computed, ref } from 'vue'
 
+import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import {
   createQuestionEditorDraft,
@@ -291,18 +292,22 @@ function handleEditorSave() {
 </script>
 
 <template>
-  <section class="question-management workbench-surface" :data-section="props.section.key">
-    <div class="question-management__controls">
+  <WorkbenchDataView class="question-management" :data-section="props.section.key">
+    <template #summary>
       <header class="question-management__head">
         <h2>{{ props.section.title }}</h2>
       </header>
 
       <WorkbenchSummaryCards :items="summaryCards" @select="(key) => handleStatusSelect(key as QuestionStatus)" />
+    </template>
 
+    <template #feedback>
       <div v-if="feedback" class="question-management__feedback" :class="`is-${feedback.tone}`" aria-live="polite">
         {{ feedback.text }}
       </div>
+    </template>
 
+    <template #toolbar>
       <QuestionManagementFilters
         class="question-management__toolbar"
         :query="queryDraft"
@@ -320,35 +325,38 @@ function handleEditorSave() {
         @reset="handleReset"
         @create="handleCreate"
       />
-    </div>
+    </template>
 
-    <div class="question-management__table-shell">
-      <div class="question-management__table-scroll">
-        <QuestionManagementTable
-          :rows="viewModel.rows"
-          :empty-state="viewModel.emptyState"
-          @edit="handleEdit"
-          @copy="handleCopy"
-          @delete="handleDelete"
-        />
-      </div>
+    <template #table>
+      <QuestionManagementTable
+        :rows="viewModel.rows"
+        :empty-state="viewModel.emptyState"
+        @row-click="handleEdit"
+        @edit="handleEdit"
+        @copy="handleCopy"
+        @delete="handleDelete"
+      />
+    </template>
 
+    <template #pagination>
       <QuestionManagementPagination :pagination="viewModel.pagination" @page-change="handlePageChange" />
-    </div>
-  </section>
+    </template>
 
-  <QuestionManagementEditor
-    class="question-management__editor-shell"
-    :open="editorOpen"
-    :mode="editorMode"
-    :draft="editorDraft"
-    :errors="validationErrors"
-    :subject-options="editorSubjectOptions"
-    :chapter-options="editorChapterOptions"
-    :type-locked="typeLocked"
-    @close="handleEditorClose"
-    @save="handleEditorSave"
-    @patch="handleEditorPatch"
-    @set-type="handleEditorTypeChange"
-  />
+    <template #drawer>
+      <QuestionManagementEditor
+        class="question-management__editor-shell"
+        :open="editorOpen"
+        :mode="editorMode"
+        :draft="editorDraft"
+        :errors="validationErrors"
+        :subject-options="editorSubjectOptions"
+        :chapter-options="editorChapterOptions"
+        :type-locked="typeLocked"
+        @close="handleEditorClose"
+        @save="handleEditorSave"
+        @patch="handleEditorPatch"
+        @set-type="handleEditorTypeChange"
+      />
+    </template>
+  </WorkbenchDataView>
 </template>

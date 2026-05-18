@@ -1,0 +1,56 @@
+.workbench-drawer-host {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.workbench-drawer-host__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: oklch(0.18 0.01 252 / 0.12);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.workbench-drawer-host__panel {
+  position: relative;
+  width: min(720px, calc(100vw - 32px));
+  height: 100vh;
+  padding: 28px 24px 24px;
+  background: #fff;
+  box-shadow: -24px 0 48px oklch(0.17 0.01 252 / 0.14);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+}
+
+.workbench-drawer-host__panel.is-md {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.workbench-drawer-host__panel.is-lg {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.workbench-drawer-host__panel.is-xl {
+  width: min(920px, calc(100vw - 32px));
+}
+
+.workbench-drawer-host__body {
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-width: 760px) {
+  .workbench-drawer-host__panel,
+  .workbench-drawer-host__panel.is-md,
+  .workbench-drawer-host__panel.is-lg,
+  .workbench-drawer-host__panel.is-xl {
+    width: 100vw;
+    max-width: 100vw;
+    padding-inline: 16px;
+  }
+}

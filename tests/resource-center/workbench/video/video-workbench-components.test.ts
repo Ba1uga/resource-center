@@ -35,6 +35,7 @@ assert.ok(sharedCardsContent.includes("isWorkbenchSummaryFilterCard(item)"))
 assert.ok(bulkBarContent.includes('class="video-management__bulk-bar"'))
 assert.ok(bulkBarContent.includes('批量发布'))
 
+assert.ok(drawerContent.includes("import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'"))
 assert.ok(drawerContent.includes('class="video-management__drawer"'))
 assert.ok(drawerContent.includes('资源文件'))
 assert.ok(drawerContent.includes('视频信息'))

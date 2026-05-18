@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
+
 defineProps<{
   selectedCount: number
 }>()
@@ -9,10 +11,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="mapping-management__bulk-bar" role="region" aria-label="批量操作栏">
-    <strong>已选中 {{ selectedCount }} 条记录</strong>
-
-    <div class="mapping-management__bulk-actions">
+  <WorkbenchBulkBar :selected-count="selectedCount">
+    <template #default>
       <button type="button" class="mapping-management__bulk-button is-primary" @click="emit('apply-action', 'confirm')">
         批量确认
       </button>
@@ -25,6 +25,6 @@ const emit = defineEmits<{
       <button type="button" class="mapping-management__bulk-button" @click="emit('apply-action', 'rerun')">
         重新运行
       </button>
-    </div>
-  </div>
+    </template>
+  </WorkbenchBulkBar>
 </template>

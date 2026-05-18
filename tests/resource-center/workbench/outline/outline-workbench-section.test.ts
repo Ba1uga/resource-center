@@ -174,7 +174,7 @@ assert.equal(
   false,
 )
 assert.ok(normalizedOutlineSection.includes('class="outline-course-create-button" type="button" @click="openCourseCreator"'))
-assert.ok(normalizedOutlineSection.includes('v-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
+assert.ok(normalizedOutlineSection.includes('v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
 assert.ok(normalizedOutlineSection.includes('此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。'))
 assert.ok(normalizedOutlineSection.includes('v-if="showCourseCreator" class="outline-version-creator-mode"'))
 assert.ok(normalizedOutlineSection.includes('创建新课程'))

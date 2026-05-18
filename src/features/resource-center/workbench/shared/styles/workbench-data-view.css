@@ -1,0 +1,72 @@
+@import './workbench-surface.css';
+
+.workbench-data-view {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.workbench-data-view__controls {
+  display: grid;
+  gap: 16px;
+}
+
+.workbench-data-view__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0;
+}
+
+.workbench-data-view__bulk {
+  min-width: 0;
+}
+
+.workbench-data-view__drawer {
+  min-width: 0;
+}
+
+.workbench-data-view__table-frame {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--workbench-table-line, oklch(0.88 0.01 252));
+  border-radius: 18px;
+  background: var(--workbench-table-surface, #fff);
+  overflow: hidden;
+}
+
+.workbench-data-view__table {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workbench-data-view__table > * {
+  min-height: 0;
+  height: 100%;
+}
+
+.workbench-data-view__pagination {
+  min-width: 0;
+}
+
+.workbench-data-view.is-compact {
+  gap: 12px;
+}
+
+.workbench-data-view.is-compact .workbench-data-view__controls {
+  gap: 12px;
+}
+
+.workbench-data-view.is-loading {
+  pointer-events: none;
+}

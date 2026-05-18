@@ -1098,7 +1098,7 @@ function openPrintWindow(documentModel: {
               <p>正在尝试连接后端服务，请稍候。</p>
             </div>
 
-            <div v-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state">
+            <div v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state">
               <div class="outline-empty-state__icon">📋</div>
               <h3>暂无大纲版本</h3>
               <p>此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。</p>

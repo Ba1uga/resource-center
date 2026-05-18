@@ -10,17 +10,11 @@
   --courseware-surface-soft: oklch(0.975 0.006 252);
   --courseware-strong: oklch(0.18 0.01 252);
   --courseware-danger: oklch(0.63 0.22 28);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
-  height: 100%;
-  gap: 16px;
-  overflow: hidden;
-}
-
-.courseware-management__controls {
-  display: grid;
-  gap: 16px;
+  --workbench-table-line: var(--courseware-line);
+  --workbench-table-ink: var(--courseware-ink);
+  --workbench-table-soft: var(--courseware-soft);
+  --workbench-table-surface: #fff;
+  --workbench-table-surface-soft: var(--courseware-surface-soft);
 }
 
 .courseware-management__head {

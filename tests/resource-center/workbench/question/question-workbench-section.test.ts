@@ -68,6 +68,7 @@ assert.ok(questionSection.includes("import '../styles/question-workbench.css'"))
 assert.ok(
   questionSection.includes("import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'"),
 )
+assert.ok(questionSection.includes("import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'"))
 assert.equal(
   questionSection.includes(
     "import ModuleWorkbenchShell from '@/features/resource-center/workbench/shared/ui/ModuleWorkbenchShell.vue'",
@@ -107,12 +108,14 @@ assert.ok(questionSection.includes("label: '已发布'"))
 assert.ok(questionSection.includes("kind: 'info'"))
 assert.ok(questionSection.includes("kind: 'filter'"))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.draftTotal)"))
-assert.ok(questionSection.includes('class="question-management workbench-surface"'))
-assert.ok(questionSection.includes('class="question-management__controls"'))
+assert.ok(questionSection.includes('<WorkbenchDataView class="question-management"'))
+assert.ok(questionSection.includes('<template #summary>'))
+assert.ok(questionSection.includes('<template #toolbar>'))
+assert.ok(questionSection.includes('<template #table>'))
+assert.ok(questionSection.includes('<template #pagination>'))
+assert.ok(questionSection.includes('<template #drawer>'))
 assert.ok(questionSection.includes('class="question-management__feedback"'))
 assert.ok(questionSection.includes('class="question-management__toolbar"'))
-assert.ok(questionSection.includes('class="question-management__table-shell"'))
-assert.ok(questionSection.includes('class="question-management__table-scroll"'))
 assert.ok(questionSection.includes('<WorkbenchSummaryCards :items="summaryCards" @select="(key) => handleStatusSelect(key as QuestionStatus)" />'))
 assert.ok(questionSection.includes('<QuestionManagementFilters'))
 assert.ok(questionSection.includes('<QuestionManagementTable'))
@@ -147,8 +150,12 @@ assert.ok(filtersContent.includes('question-management-filters__query-button'))
 assert.ok(filtersContent.includes('question-management-filters__create-button'))
 assert.equal(filtersContent.includes('question-management-filters__grid'), false)
 
-assert.equal(tableContent.includes('class="question-management-table-shell"'), false)
-assert.ok(tableContent.includes('<table v-if="rows.length > 0" class="question-management-table">'))
+assert.ok(tableContent.includes("import WorkbenchTable from '../../../shared/ui/WorkbenchTable.vue'"))
+assert.ok(tableContent.includes('<WorkbenchTable'))
+assert.ok(tableContent.includes("event: 'row-click'"))
+assert.ok(tableContent.includes('cell-stem'))
+assert.ok(tableContent.includes('cell-status'))
+assert.ok(tableContent.includes('cell-actions'))
 
 assert.ok(paginationContent.includes('question-management__pagination'))
 assert.ok(
@@ -173,23 +180,7 @@ assert.match(
 )
 assert.match(
   questionStyles,
-  /\.question-management\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\);[\s\S]*?height:\s*100%;[\s\S]*?gap:\s*16px;[\s\S]*?overflow:\s*hidden;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management__controls\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*16px;/i,
-)
-assert.match(
-  questionStyles,
   /\.question-management__toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(260px,\s*1\.2fr\)\s+repeat\(4,\s*minmax\(0,\s*156px\)\)\s+auto\s+auto\s+minmax\(140px,\s*auto\);[\s\S]*?gap:\s*12px;[\s\S]*?align-items:\s*stretch;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management__table-shell\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\)\s*auto;[\s\S]*?border-radius:\s*18px;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management__table-scroll\s*\{[\s\S]*?overflow:\s*auto;/i,
 )
 assert.match(
   questionStyles,
@@ -205,15 +196,7 @@ assert.match(
 )
 assert.match(
   questionStyles,
-  /\.question-management-table\s*\{[\s\S]*?width:\s*100%;[\s\S]*?border-collapse:\s*separate;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management-table\s+thead\s+th,\s*[\s\S]*?\.question-management-table\s+tbody\s+td\s*\{[\s\S]*?padding:\s*18px 16px;/i,
-)
-assert.match(
-  questionStyles,
-  /\.question-management-table\s+thead\s+th\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*0;/i,
+  /\.question-management\s*\{[\s\S]*?--workbench-table-line:\s*var\(--question-line\);[\s\S]*?--workbench-table-ink:\s*var\(--question-ink\);[\s\S]*?--workbench-table-soft:\s*var\(--question-soft\);/i,
 )
 assert.match(
   questionStyles,

@@ -17,6 +17,10 @@ const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/textbook-workbench.css'"))
+assert.ok(sectionContent.includes("import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'"))
+assert.ok(sectionContent.includes("import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'"))
+assert.ok(sectionContent.includes("import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'"))
+assert.ok(sectionContent.includes("import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'"))
 assert.ok(
   sectionContent.includes(
     "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
@@ -27,6 +31,12 @@ assert.ok(sectionContent.includes('defineProps<{'))
 assert.ok(sectionContent.includes('section: WorkbenchSectionMeta'))
 assert.ok(sectionContent.includes('const currentAdminId ='))
 assert.ok(sectionContent.includes('const statusVisible = ref(false)'))
+assert.ok(sectionContent.includes('const selectedIds = ref<string[]>([])'))
+assert.ok(sectionContent.includes('const visibleIds = computed(() => pageRows.value.map((row) => row.id))'))
+assert.ok(sectionContent.includes('const allVisibleSelected = computed('))
+assert.ok(sectionContent.includes('function toggleRowSelection('))
+assert.ok(sectionContent.includes('function toggleVisibleSelection('))
+assert.ok(sectionContent.includes('async function handleBulkDelete()'))
 assert.ok(sectionContent.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
 assert.ok(sectionContent.includes('textbook-management'))
 assert.equal(sectionContent.includes('管理员可管理全部教材'), false)
@@ -37,6 +47,13 @@ assert.ok(sectionContent.includes('<WorkbenchSelect'))
 assert.ok(sectionContent.includes('后端连接失败'))
 assert.ok(sectionContent.includes('当前显示本地教材样例'))
 const normalizedSectionContent = sectionContent.replace(/\s+/g, ' ')
+assert.ok(sectionContent.includes('<WorkbenchDataView class="textbook-management"'))
+assert.ok(sectionContent.includes('<template #summary>'))
+assert.ok(sectionContent.includes('<template #toolbar>'))
+assert.ok(sectionContent.includes('<template #bulk>'))
+assert.ok(sectionContent.includes('<template #table>'))
+assert.ok(sectionContent.includes('<template #pagination>'))
+assert.ok(sectionContent.includes('<template #drawer>'))
 assert.ok(normalizedSectionContent.includes('<section class="textbook-management__toolbar">'))
 assert.ok(normalizedSectionContent.indexOf('textbook-management__search-field') < normalizedSectionContent.indexOf('textbook-management__select-field'))
 assert.ok(normalizedSectionContent.indexOf('textbook-management__select-field') < normalizedSectionContent.indexOf('textbook-management__reset-button'))
@@ -50,6 +67,8 @@ assert.ok(sectionContent.includes('版本'))
 assert.ok(sectionContent.includes('ISBN'))
 assert.ok(sectionContent.includes('关联课程'))
 assert.ok(sectionContent.includes('操作'))
+assert.ok(sectionContent.includes('<WorkbenchTable'))
+assert.ok(sectionContent.includes('<WorkbenchBulkBar'))
 assert.ok(sectionContent.includes('<WorkbenchTablePagination'))
 assert.ok(sectionContent.includes(':page-size="pageSize"'))
 assert.ok(sectionContent.includes(':page-size-options="pageSizeOptions"'))
@@ -59,16 +78,22 @@ assert.ok(sectionContent.includes('deleteRow'))
 assert.ok(sectionContent.includes('saveDrawer'))
 assert.ok(sectionContent.includes('function showTransientStatus('))
 assert.ok(sectionContent.includes('function dismissStatus()'))
+assert.ok(sectionContent.includes('批量删除'))
+assert.ok(sectionContent.includes('class="textbook-management__loading-state"'))
+assert.ok(sectionContent.includes('class="textbook-management__loading-icon"'))
+assert.ok(sectionContent.includes('正在加载教材数据...'))
+assert.ok(sectionContent.includes('正在尝试连接后端服务，请稍候。'))
+assert.ok(sectionContent.includes('v-if="isLoading" class="textbook-management__loading-state"'))
+assert.ok(sectionContent.includes('v-else'))
 assert.equal(sectionContent.includes('<select v-model="filters.course">'), false)
 assert.equal(sectionContent.includes('ownedRows'), false)
 assert.equal(sectionContent.includes('currentTeacherId'), false)
 assert.equal(sectionContent.includes('仅显示我上传的教材'), false)
 assert.equal(sectionContent.includes('textbook-management__scope-pill'), false)
 
-assert.match(stylesContent, /\.textbook-management\s*\{[\s\S]*?display:\s*grid;/i)
 assert.match(
   stylesContent,
-  /\.textbook-management\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\);[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/i,
+  /\.textbook-management\s*\{[\s\S]*?--workbench-table-line:\s*var\(--line\);[\s\S]*?--workbench-table-ink:\s*var\(--ink\);/i,
 )
 assert.match(
   stylesContent,
@@ -87,23 +112,19 @@ assert.match(
   /\.textbook-management__status-popover\s*\{[\s\S]*?position:\s*absolute;/i,
 )
 assert.equal(stylesContent.includes('.textbook-management__toolbar-advanced'), false)
-assert.match(
-  stylesContent,
-  /\.textbook-management__table-shell\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*minmax\(0,\s*1fr\) auto;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*hidden;/i,
-)
-assert.ok(!/\.textbook-management__table-shell\s*\{[^}]*height:\s*100%;/i.test(stylesContent))
-assert.match(
-  stylesContent,
-  /\.textbook-management__table-scroll\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?height:\s*100%;[\s\S]*?overflow:\s*auto;/i,
-)
 assert.equal(stylesContent.includes('.textbook-management__scope-pill'), false)
-assert.match(stylesContent, /\.textbook-management__table\s*\{[\s\S]*?width:\s*100%;/i)
 assert.match(
   stylesContent,
-  /\.textbook-management__table\s+th\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?top:\s*0;/i,
+  /\.textbook-management__pagination\s*\{[\s\S]*?display:\s*flex;[\s\S]*?border-top:\s*1px solid var\(--line\);/i,
 )
-assert.match(stylesContent, /\.textbook-management__table\s+th\s*\{[\s\S]*?z-index:\s*1;/i)
-assert.match(stylesContent, /\.textbook-management__pagination\s*\{[\s\S]*?display:\s*flex;/i)
+assert.match(
+  stylesContent,
+  /\.textbook-management__loading-state\s*\{[\s\S]*?display:\s*grid;[\s\S]*?justify-items:\s*center;[\s\S]*?align-content:\s*center;/i,
+)
+assert.match(
+  stylesContent,
+  /\.textbook-management__loading-icon\s*\{[\s\S]*?width:\s*72px;[\s\S]*?height:\s*72px;[\s\S]*?border-radius:\s*24px;/i,
+)
 assert.match(
   stylesContent,
   /@media \(max-width: 760px\)\s*\{[\s\S]*?\.textbook-management__status-anchor[\s\S]*?\.textbook-management__status-popover/i,

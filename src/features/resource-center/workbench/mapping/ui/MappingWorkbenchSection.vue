@@ -11,6 +11,8 @@ import {
   resolveMappingPageAfterMutation,
   resolveSelectedOrFirstCandidate,
 } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.view-model.ts'
+import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
+import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import MappingWorkbenchBulkBar from './MappingWorkbenchBulkBar.vue'
 import MappingWorkbenchFilters from './MappingWorkbenchFilters.vue'
@@ -307,8 +309,8 @@ function createLocalRecords(): MappingRecord[] {
 </script>
 
 <template>
-  <section class="mapping-management workbench-surface" :data-section="props.section.key">
-    <div class="mapping-management__controls">
+  <WorkbenchDataView class="mapping-management" :data-section="props.section.key" :selected-count="selectedIds.length">
+    <template #summary>
       <header class="mapping-management__head">
         <div class="mapping-management__copy">
           <h2>{{ props.section.title }}</h2>
@@ -323,7 +325,9 @@ function createLocalRecords(): MappingRecord[] {
       <div class="mapping-management__summary">
         <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as MappingSummaryCardKey)" />
       </div>
+    </template>
 
+    <template #feedback>
       <div
         v-if="feedback"
         class="mapping-management__feedback"
@@ -333,7 +337,9 @@ function createLocalRecords(): MappingRecord[] {
       >
         {{ feedback.text }}
       </div>
+    </template>
 
+    <template #toolbar>
       <MappingWorkbenchFilters
         class="mapping-management__toolbar"
         :filters="filters"
@@ -352,13 +358,13 @@ function createLocalRecords(): MappingRecord[] {
         @update-confidence-level="filters.confidenceLevel = $event"
         @reset="handleResetFilters"
       />
-    </div>
+    </template>
 
-    <div v-if="selectedIds.length > 0" class="mapping-management__table-actions">
+    <template #bulk>
       <MappingWorkbenchBulkBar :selected-count="selectedIds.length" @apply-action="handleBulkAction" />
-    </div>
+    </template>
 
-    <section class="mapping-management__table-shell">
+    <template #table>
       <MappingWorkbenchTable
         :rows="viewModel.rows"
         :empty-state="viewModel.emptyState"
@@ -370,15 +376,23 @@ function createLocalRecords(): MappingRecord[] {
         @review="handleReview"
         @page-change="handlePageChange"
       />
-    </section>
+    </template>
 
-    <MappingWorkbenchReviewDrawer
-      :open="drawerOpen"
-      :record="activeRecord"
-      @close="closeDrawer"
-      @confirm-record="handleConfirmRecord"
-      @ignore-record="handleIgnoreRecord"
-      @switch-primary="handleSwitchPrimary"
-    />
-  </section>
+    <template #pagination>
+      <footer class="mapping-management__pagination">
+        <WorkbenchTablePagination :pagination="viewModel.pagination" show-quick-jumper @page-change="handlePageChange" />
+      </footer>
+    </template>
+
+    <template #drawer>
+      <MappingWorkbenchReviewDrawer
+        :open="drawerOpen"
+        :record="activeRecord"
+        @close="closeDrawer"
+        @confirm-record="handleConfirmRecord"
+        @ignore-record="handleIgnoreRecord"
+        @switch-primary="handleSwitchPrimary"
+      />
+    </template>
+  </WorkbenchDataView>
 </template>

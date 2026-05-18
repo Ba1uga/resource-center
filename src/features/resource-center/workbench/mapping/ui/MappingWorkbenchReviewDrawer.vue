@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
 
 import type {
   MappingCandidate,
@@ -61,26 +62,21 @@ function buildCandidateMeta(candidate: MappingCandidate): string {
 </script>
 
 <template>
-  <div v-if="open && record" class="mapping-management__editor-shell" role="dialog" aria-modal="true" aria-label="映射审核抽屉">
-    <button
-      type="button"
-      class="mapping-management__editor-backdrop"
-      aria-label="关闭映射审核抽屉"
-      @click="emit('close')"
-    ></button>
-
-    <aside class="mapping-management__editor-panel">
+  <WorkbenchDrawerHost :open="open && !!record" @close="emit('close')">
+    <template #header>
       <header class="mapping-management__editor-head">
         <div class="mapping-management__editor-copy">
           <p>单条审核</p>
-          <h3>{{ record.resourceTitle }}</h3>
+          <h3>{{ record?.resourceTitle }}</h3>
           <p>核对当前资源上下文，并确认最终知识点挂载结果。</p>
         </div>
 
         <button type="button" class="mapping-management__bulk-button" @click="emit('close')">关闭</button>
       </header>
+    </template>
 
-      <div class="mapping-management__editor-body">
+    <template #default>
+      <div v-if="record" class="mapping-management__editor-body">
         <section class="mapping-management__editor-group">
           <span class="mapping-management__editor-label">资源上下文</span>
           <strong>{{ record.resourceTitle }}</strong>
@@ -113,13 +109,15 @@ function buildCandidateMeta(candidate: MappingCandidate): string {
           </div>
         </section>
       </div>
+    </template>
 
+    <template #footer>
       <footer class="mapping-management__editor-footer">
         <button type="button" class="mapping-management__bulk-button" @click="emit('ignore-record')">忽略本条</button>
         <button type="button" class="mapping-management__bulk-button is-primary" @click="emit('confirm-record')">
           确认挂载
         </button>
       </footer>
-    </aside>
-  </div>
+    </template>
+  </WorkbenchDrawerHost>
 </template>
