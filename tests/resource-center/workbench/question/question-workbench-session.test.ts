@@ -7,8 +7,18 @@ import { useQuestionWorkbenchSessionStore } from '../../../../src/features/resou
 setActivePinia(createPinia())
 
 const store = useQuestionWorkbenchSessionStore()
+const defaultQueryState = createDefaultQuestionQueryState()
 
-assert.deepEqual(store.activeQuery, createDefaultQuestionQueryState())
+assert.deepEqual(store.queryDraft, defaultQueryState)
+assert.deepEqual(store.activeQuery, defaultQueryState)
+
+store.patchQueryDraft({
+  subjectId: 'network',
+  keyword: 'tcp',
+})
+
+assert.equal(store.queryDraft.subjectId, 'network')
+assert.equal(store.queryDraft.keyword, 'tcp')
 
 store.patchQuery({
   subjectId: 'network',
@@ -20,4 +30,5 @@ assert.equal(store.activeQuery.page, 3)
 
 store.reset()
 
-assert.deepEqual(store.activeQuery, createDefaultQuestionQueryState())
+assert.deepEqual(store.queryDraft, defaultQueryState)
+assert.deepEqual(store.activeQuery, defaultQueryState)
