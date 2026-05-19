@@ -7,8 +7,9 @@ import {
 
 export const defaultWorkbenchSectionKey: WorkbenchSectionKey = 'outline'
 export const resourceCenterSectionRouteName = 'resource-center-section'
+export const resourceCenterRootPath = '/resource-center'
 export const resourceCenterRootRedirectPath = `/resource-center/${defaultWorkbenchSectionKey}`
-export const resourceCenterSectionRoutePath = '/resource-center/:section'
+export const resourceCenterSectionRoutePath = `${resourceCenterRootPath}/:section`
 
 export function isWorkbenchSectionKey(section: string): section is WorkbenchSectionKey {
   return (workbenchSectionKeys as readonly string[]).includes(section)
@@ -39,6 +40,10 @@ export function createResourceCenterRouteRecords(
   return [
     {
       path: '/',
+      redirect: resourceCenterRootRedirectPath,
+    },
+    {
+      path: resourceCenterRootPath,
       redirect: resourceCenterRootRedirectPath,
     },
     {

@@ -53,6 +53,10 @@ assert.deepEqual(createResourceCenterRouteRecords(componentStub), [
     redirect: '/resource-center/outline',
   },
   {
+    path: '/resource-center',
+    redirect: '/resource-center/outline',
+  },
+  {
     path: '/resource-center/:section',
     name: 'resource-center-section',
     component: componentStub,
