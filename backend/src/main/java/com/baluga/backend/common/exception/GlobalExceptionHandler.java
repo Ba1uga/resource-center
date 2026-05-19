@@ -26,6 +26,12 @@ public class GlobalExceptionHandler {
                 .body(new R<>(400, extractFirstErrorMessage(ex.getBindingResult()), null));
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<R<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new R<>(404, ex.getMessage(), null));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<R<Void>> handleException(Exception ex) {
         String message = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : "服务器内部异常";
