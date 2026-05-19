@@ -1,3 +1,5 @@
+import type { RouteComponent, RouteRecordRaw } from 'vue-router'
+
 import {
   workbenchSectionKeys,
   type WorkbenchSectionKey,
@@ -31,7 +33,9 @@ export function toResourceCenterSectionRoute(section: WorkbenchSectionKey) {
   }
 }
 
-export function createResourceCenterRouteRecords(component: unknown) {
+export function createResourceCenterRouteRecords(
+  component: RouteComponent,
+): readonly RouteRecordRaw[] {
   return [
     {
       path: '/',
