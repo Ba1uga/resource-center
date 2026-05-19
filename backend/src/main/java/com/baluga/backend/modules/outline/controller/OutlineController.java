@@ -1,6 +1,7 @@
 package com.baluga.backend.modules.outline.controller;
 
 import com.baluga.backend.common.api.R;
+import com.baluga.backend.common.exception.ResourceNotFoundException;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
@@ -50,7 +51,7 @@ public class OutlineController {
     public R<?> getVersion(@PathVariable Long id) {
         OutlineVersion version = outlineService.getVersion(id);
         if (version == null) {
-            return R.fail("大纲版本不存在");
+            throw new ResourceNotFoundException("大纲版本不存在");
         }
         return R.ok(OutlineVersionVO.fromEntity(version, version.getCourseTitle(), objectMapper));
     }

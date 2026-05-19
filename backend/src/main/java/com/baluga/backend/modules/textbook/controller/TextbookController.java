@@ -2,6 +2,7 @@ package com.baluga.backend.modules.textbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baluga.backend.common.api.R;
+import com.baluga.backend.common.exception.ResourceNotFoundException;
 import com.baluga.backend.modules.textbook.dto.request.TextbookCreateRequest;
 import com.baluga.backend.modules.textbook.dto.request.TextbookPageRequest;
 import com.baluga.backend.modules.textbook.dto.request.TextbookUpdateRequest;
@@ -47,7 +48,7 @@ public class TextbookController {
     public R<?> getTextbook(@PathVariable Long id) {
         Textbook textbook = textbookService.getById(id);
         if (textbook == null) {
-            return R.fail("教材不存在");
+            throw new ResourceNotFoundException("教材不存在");
         }
         return R.ok(TextbookVO.fromEntity(textbook));
     }
@@ -73,7 +74,7 @@ public class TextbookController {
     public R<?> updateTextbook(@PathVariable Long id, @Valid @RequestBody TextbookUpdateRequest request) {
         Textbook textbook = textbookService.getById(id);
         if (textbook == null) {
-            return R.fail("教材不存在");
+            throw new ResourceNotFoundException("教材不存在");
         }
 
         textbook.setName(request.getName().trim());
@@ -91,7 +92,7 @@ public class TextbookController {
     public R<?> deleteTextbook(@PathVariable Long id) {
         Textbook textbook = textbookService.getById(id);
         if (textbook == null) {
-            return R.fail("教材不存在");
+            throw new ResourceNotFoundException("教材不存在");
         }
 
         textbookService.removeById(id);
