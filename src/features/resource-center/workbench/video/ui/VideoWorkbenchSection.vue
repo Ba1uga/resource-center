@@ -50,11 +50,6 @@ const page = computed({
   get: () => sessionStore.page,
   set: (value) => sessionStore.setPage(value),
 })
-// Legacy anchors for section contract tests:
-// createDefaultVideoFilterState
-// const page = ref(1)
-// filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
-// page.value = 1
 
 const viewModel = computed(() =>
   createVideoWorkbenchViewModel({

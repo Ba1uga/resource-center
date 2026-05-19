@@ -51,13 +51,6 @@ const page = computed({
   get: () => sessionStore.page,
   set: (value) => sessionStore.setPage(value),
 })
-// Legacy anchors for section contract tests:
-// createDefaultMappingFilterState
-// const page = ref(1)
-// () => ({ ...filters })
-// filters.confidenceLevel = filters.confidenceLevel === 'low' ? 'all' : 'low'
-// filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
-// page.value = 1
 
 const viewModel = computed(() =>
   createMappingWorkbenchViewModel({

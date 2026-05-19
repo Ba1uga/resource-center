@@ -48,26 +48,41 @@ assert.ok(sectionContent.includes("import VideoWorkbenchBulkBar from './VideoWor
 assert.ok(sectionContent.includes("import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'"))
 assert.ok(
   sectionContent.includes(
+    "import { useVideoWorkbenchSessionStore } from '@/features/resource-center/workbench/video/store/video-workbench-session.ts'",
+  ),
+)
+assert.ok(
+  sectionContent.includes(
     "import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'",
   ),
 )
-assert.ok(sectionContent.includes('createDefaultVideoFilterState'))
 assert.ok(sectionContent.includes('createVideoWorkbenchViewModel'))
 assert.ok(sectionContent.includes('resolveVideoPageAfterDeletion'))
 assert.ok(sectionContent.includes('videoRecords'))
-assert.ok(sectionContent.includes('const page = ref(1)'))
+assert.ok(sectionContent.includes('const sessionStore = useVideoWorkbenchSessionStore()'))
+assert.ok(sectionContent.includes('const filters = computed({'))
+assert.ok(sectionContent.includes('get: () => sessionStore.filters'))
+assert.ok(sectionContent.includes('set: (value) => sessionStore.patchFilters(value)'))
+assert.ok(sectionContent.includes('const page = computed({'))
+assert.ok(sectionContent.includes('get: () => sessionStore.page'))
+assert.ok(sectionContent.includes('set: (value) => sessionStore.setPage(value)'))
 assert.ok(sectionContent.includes('const pageSize = 8'))
+assert.ok(sectionContent.includes('const records = ref<VideoRecord[]>([...videoRecords])'))
 assert.ok(sectionContent.includes('const selectedIds = ref<string[]>([])'))
 assert.ok(sectionContent.includes("mode: 'create' as 'create' | 'edit'"))
 assert.ok(sectionContent.includes('function handlePageChange('))
 assert.ok(sectionContent.includes('function handleStatusSelect('))
-assert.ok(sectionContent.includes("filters.overviewStatus = filters.overviewStatus === status ? 'all' : status"))
-assert.ok(sectionContent.includes('page.value = 1'))
+assert.ok(sectionContent.includes("overviewStatus: filters.value.overviewStatus === status ? 'all' : status"))
+assert.ok(sectionContent.includes("sessionStore.patchFilters({"))
+assert.ok(sectionContent.includes('sessionStore.setPage(nextPage)'))
+assert.ok(sectionContent.includes('sessionStore.setPage(resolveVideoPageAfterDeletion({'))
 assert.ok(sectionContent.includes('selectedIds.value = []'))
 assert.ok(sectionContent.includes('function handleBulkAction('))
 assert.ok(sectionContent.includes('function openUploadDrawer('))
 assert.ok(sectionContent.includes('function openEditDrawer('))
 assert.ok(sectionContent.includes('function toggleRecordSelection('))
+assert.ok(sectionContent.includes('selectedIds.value = selectedIds.value.filter((id) => records.value.some((record) => record.id === id))'))
+assert.equal(sectionContent.includes('Legacy anchors'), false)
 assert.ok(sectionContent.includes('<WorkbenchDataView class="video-management"'))
 assert.ok(sectionContent.includes('<template #summary>'))
 assert.ok(sectionContent.includes('<template #toolbar>'))
@@ -100,6 +115,24 @@ assert.ok(sectionContent.includes(':pagination="viewModel.pagination"'))
 assert.ok(sectionContent.includes('handleUpload'))
 assert.ok(sectionContent.includes('handleEdit'))
 assert.ok(sectionContent.includes('handleDelete'))
+assert.ok(sectionContent.includes(':value="filters.keyword"'))
+assert.ok(sectionContent.includes("@input=\"sessionStore.patchFilters({ keyword: ($event.target as HTMLInputElement).value }); selectedIds = []\""))
+assert.ok(sectionContent.includes(':model-value="filters.course"'))
+assert.ok(sectionContent.includes("@update:model-value=\"(course) => { sessionStore.patchFilters({ course }); selectedIds = [] }\""))
+assert.ok(sectionContent.includes(':model-value="filters.chapter"'))
+assert.ok(sectionContent.includes("@update:model-value=\"(chapter) => { sessionStore.patchFilters({ chapter }); selectedIds = [] }\""))
+assert.ok(sectionContent.includes(':model-value="filters.processingStatus"'))
+assert.ok(
+  sectionContent.includes(
+    "@update:model-value=\"(processingStatus) => { sessionStore.patchFilters({ processingStatus: processingStatus as VideoFilterState['processingStatus'] }); selectedIds = [] }\"",
+  ),
+)
+assert.ok(sectionContent.includes(':model-value="filters.publishStatus"'))
+assert.ok(
+  sectionContent.includes(
+    "@update:model-value=\"(publishStatus) => { sessionStore.patchFilters({ publishStatus: publishStatus as VideoFilterState['publishStatus'] }); selectedIds = [] }\"",
+  ),
+)
 assert.equal(sectionContent.includes('<select v-model="filters.course"'), false)
 assert.equal(sectionContent.includes('<select v-model="filters.chapter"'), false)
 assert.equal(sectionContent.includes('<select v-model="filters.processingStatus"'), false)
