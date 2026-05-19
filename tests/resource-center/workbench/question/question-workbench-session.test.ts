@@ -65,13 +65,15 @@ window.localStorage.setItem(
   JSON.stringify({
     subjectId: 'network',
     keyword: 'tcp',
-    page: 'bad-page',
+    page: 0,
+    pageSize: 0,
   }),
 )
 window.localStorage.setItem(
   `${storageKeyPrefix}question-session:active`,
   JSON.stringify({
-    page: 4,
+    page: -1,
+    pageSize: 20,
     sortOrder: 'asc',
     status: null,
   }),
@@ -85,10 +87,12 @@ assert.deepEqual(rehydratedStore.queryDraft, {
   subjectId: 'network',
   keyword: 'tcp',
   page: 1,
+  pageSize: 10,
 })
 assert.deepEqual(rehydratedStore.activeQuery, {
   ...defaultQueryState,
-  page: 4,
+  page: 1,
+  pageSize: 20,
   sortOrder: 'asc',
   status: 'all',
 })

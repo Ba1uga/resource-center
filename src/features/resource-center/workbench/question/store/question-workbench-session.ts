@@ -26,6 +26,9 @@ const sanitizeString = (value: unknown, fallback: string): string =>
 const sanitizeNumber = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
+const sanitizePositiveInteger = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : fallback
+
 const sanitizeEnum = <TValue extends string>(
   value: unknown,
   allowedValues: Set<TValue>,
@@ -48,8 +51,8 @@ const sanitizeQuestionState = (value: unknown): QuestionQueryState => {
     difficulty: sanitizeEnum(candidate.difficulty, questionDifficultyFilters, fallback.difficulty),
     status: sanitizeEnum(candidate.status, questionStatusFilters, fallback.status),
     keyword: sanitizeString(candidate.keyword, fallback.keyword),
-    page: sanitizeNumber(candidate.page, fallback.page),
-    pageSize: sanitizeNumber(candidate.pageSize, fallback.pageSize),
+    page: sanitizePositiveInteger(candidate.page, fallback.page),
+    pageSize: sanitizePositiveInteger(candidate.pageSize, fallback.pageSize),
     sortBy: sanitizeEnum(candidate.sortBy, questionSortByValues, fallback.sortBy),
     sortOrder: sanitizeEnum(candidate.sortOrder, questionSortOrderValues, fallback.sortOrder),
   }
