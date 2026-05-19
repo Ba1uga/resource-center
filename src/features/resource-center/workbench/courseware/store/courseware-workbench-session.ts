@@ -25,8 +25,8 @@ const createDefaultState = (): CoursewareWorkbenchSessionState => ({
 const sanitizeString = (value: unknown, fallback: string): string =>
   typeof value === 'string' ? value : fallback
 
-const sanitizeNumber = (value: unknown, fallback: number): number =>
-  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+const sanitizePageNumber = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : fallback
 
 const sanitizeCoursewareFilterState = (value: unknown): CoursewareFilterState => {
   const fallback = createDefaultCoursewareFilterState()
@@ -58,7 +58,7 @@ const sanitizeSessionState = (value: unknown): CoursewareWorkbenchSessionState =
 
   return {
     filters: sanitizeCoursewareFilterState(candidate.filters),
-    page: sanitizeNumber(candidate.page, fallback.page),
+    page: sanitizePageNumber(candidate.page, fallback.page),
   }
 }
 

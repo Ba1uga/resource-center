@@ -72,3 +72,24 @@ assert.deepEqual(rehydratedStore.filters, {
   keyword: 'ppt',
 })
 assert.equal(rehydratedStore.page, 3)
+
+for (const invalidPage of [0, -1, 1.5]) {
+  window.localStorage.setItem(
+    storageKey,
+    JSON.stringify({
+      filters: {
+        keyword: 'pdf',
+      },
+      page: invalidPage,
+    }),
+  )
+
+  setActivePinia(createPinia())
+  const invalidPageStore = useCoursewareWorkbenchSessionStore()
+
+  assert.deepEqual(invalidPageStore.filters, {
+    ...defaultFilters,
+    keyword: 'pdf',
+  })
+  assert.equal(invalidPageStore.page, 1)
+}
