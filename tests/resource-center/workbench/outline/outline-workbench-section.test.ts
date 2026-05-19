@@ -132,6 +132,8 @@ assert.ok(outlineSection.includes('const pageSize = ref(10)'))
 assert.ok(outlineSection.includes('const pageSizeOptions = [10, 20, 50]'))
 assert.ok(outlineSection.includes('const coursePageState = ref<'))
 assert.ok(outlineSection.includes('const courseVersionPages = reactive<Record<string,'))
+assert.ok(outlineSection.includes('function handleCourseVersionPageChange(courseId: string, nextPage: number)'))
+assert.ok(outlineSection.includes('function handleCourseVersionPageSizeChange(courseId: string, nextPageSize: number)'))
 assert.ok(outlineSection.includes('const currentVersionPageHint = computed(() =>'))
 assert.ok(outlineSection.includes('const statusVisible = ref(false)'))
 assert.ok(outlineSection.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
@@ -188,6 +190,9 @@ assert.ok(normalizedOutlineSection.includes('class="outline-course-create-button
 assert.ok(normalizedOutlineSection.includes('<WorkbenchTablePagination'))
 assert.ok(normalizedOutlineSection.includes('@page-change="handleCoursePageChange"'))
 assert.ok(normalizedOutlineSection.includes('@page-size-change="handleCoursePageSizeChange"'))
+assert.ok(normalizedOutlineSection.includes('class="outline-course-group__pagination"'))
+assert.ok(normalizedOutlineSection.includes('@page-change="handleCourseVersionPageChange(course.id, $event)"'))
+assert.ok(normalizedOutlineSection.includes('@page-size-change="handleCourseVersionPageSizeChange(course.id, $event)"'))
 assert.ok(normalizedOutlineSection.includes('当前查看版本不在本页列表中。'))
 assert.ok(normalizedOutlineSection.includes('v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
 assert.ok(normalizedOutlineSection.includes('此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。'))
@@ -280,6 +285,7 @@ assert.match(
   /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
 )
 assert.ok(outlineStyles.includes('.outline-course-tree__pagination'))
+assert.ok(outlineStyles.includes('.outline-course-group__pagination'))
 assert.match(
   outlineStyles,
   /\.outline-course-create-button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-height:\s*48px;/i,

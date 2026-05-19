@@ -276,6 +276,10 @@
   color: oklch(0.56 0.18 28);
 }
 
+.outline-course-group__pagination {
+  padding-top: 10px;
+}
+
 .outline-course-tree:hover {
   scrollbar-color: var(--outline-scroll-tree-thumb-hover) var(--outline-scroll-track);
 }

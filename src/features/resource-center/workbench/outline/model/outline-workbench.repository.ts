@@ -63,6 +63,9 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
     replaceVersionSummaries(courseId: string, summaries: OutlineVersionSummaryRecord[]) {
       versionSummariesByCourseId.set(courseId, summaries.map(cloneVersionSummary))
     },
+    clearVersionSummaries() {
+      versionSummariesByCourseId = new Map<string, OutlineVersionSummaryRecord[]>()
+    },
     listVersionSummaries(courseId: string): OutlineVersionSummaryRecord[] {
       return (versionSummariesByCourseId.get(courseId) ?? []).map(cloneVersionSummary)
     },

@@ -115,6 +115,7 @@ let localIdSeed = 0
 let courseTreeScrollbar: PerfectScrollbar | null = null
 let workspaceBodyScrollbar: PerfectScrollbar | null = null
 let statusTimer: ReturnType<typeof setTimeout> | undefined
+let searchRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
 const outlineScrollbarOptions: PerfectScrollbar.Options = {
   minScrollbarLength: 28,
@@ -193,9 +194,36 @@ watch(hasActiveCourseFilters, (isActive, wasActive) => {
 watch(
   () => [queryState.semester, queryState.versionStatus, queryState.archiveState].join('|'),
   () => {
+    page.value = 1
+    resetCourseVersionCaches()
     loadOutlineCoursePage()
   },
   { flush: 'post' },
+)
+
+watch(
+  () => queryState.completionState,
+  () => {
+    page.value = 1
+    resetCourseVersionCaches()
+    loadOutlineCoursePage()
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => queryState.searchText,
+  () => {
+    if (searchRefreshTimer) {
+      clearTimeout(searchRefreshTimer)
+    }
+    searchRefreshTimer = setTimeout(() => {
+      page.value = 1
+      resetCourseVersionCaches()
+      loadOutlineCoursePage()
+      searchRefreshTimer = undefined
+    }, 280)
+  },
 )
 
 watch(
@@ -208,6 +236,18 @@ watch(
   ],
   () => {
     updateOutlineScrollbars()
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => expandedCourseIds.value.join('|'),
+  () => {
+    for (const courseId of expandedCourseIds.value) {
+      if (!courseVersionPages[courseId] && !loadingCourseIds.value.includes(courseId)) {
+        loadOutlineCourseVersions(courseId, courseVersionPageNumbers[courseId] ?? 1)
+      }
+    }
   },
   { flush: 'post' },
 )
@@ -367,6 +407,7 @@ async function loadOutlineCourseVersions(courseId: string, requestedPage = 1) {
     })
     courseVersionPages[courseId] = response
     courseVersionPageNumbers[courseId] = response.current
+    courseVersionPageSizes[courseId] = response.size
   } catch (error) {
     console.error(error)
     courseVersionErrors[courseId] = error instanceof Error ? error.message : '加载版本失败'
@@ -384,6 +425,34 @@ function handleCoursePageSizeChange(nextPageSize: number) {
   pageSize.value = nextPageSize
   page.value = 1
   loadOutlineCoursePage()
+}
+
+function handleCourseVersionPageChange(courseId: string, nextPage: number) {
+  courseVersionPageNumbers[courseId] = nextPage
+  loadOutlineCourseVersions(courseId, nextPage)
+}
+
+function handleCourseVersionPageSizeChange(courseId: string, nextPageSize: number) {
+  courseVersionPageSizes[courseId] = nextPageSize
+  courseVersionPageNumbers[courseId] = 1
+  loadOutlineCourseVersions(courseId, 1)
+}
+
+function getCourseVersionPagination(courseId: string) {
+  const pageResult = courseVersionPages[courseId]
+  if (!pageResult) {
+    return null
+  }
+
+  return {
+    pageResult,
+    pagination: createOutlinePaginationState(pageResult),
+  }
+}
+
+function hasCourseVersionPagination(courseId: string) {
+  const pagination = getCourseVersionPagination(courseId)
+  return !!pagination && pagination.pageResult.total > pagination.pageResult.size
 }
 
 function isCourseExpanded(courseId: string) {
@@ -544,6 +613,8 @@ function handleResetFilters() {
   queryState.sortBy = defaults.sortBy
   manualExpandedCourseIds.value = []
   page.value = 1
+  resetCourseVersionCaches()
+  loadOutlineCoursePage()
 }
 
 async function handleSaveDraft() {
@@ -917,6 +988,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   dismissStatus()
+  if (searchRefreshTimer) {
+    clearTimeout(searchRefreshTimer)
+    searchRefreshTimer = undefined
+  }
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', handleWindowKeydown)
   }
@@ -1005,15 +1080,35 @@ function syncCurrentCourseVersionPage(courseId: string) {
     return
   }
 
-  const currentPage = courseVersionPages[courseId]?.current ?? 1
-  const currentSize = courseVersionPages[courseId]?.size ?? 20
+  const currentPage = courseVersionPageNumbers[courseId] ?? courseVersionPages[courseId]?.current ?? 1
+  const currentSize = courseVersionPageSizes[courseId] ?? courseVersionPages[courseId]?.size ?? 20
+  const total = Math.max(summaries.length, courseVersionPages[courseId]?.total ?? 0)
+  const pageCount = Math.max(1, Math.ceil(Math.max(total, 1) / currentSize))
+  const safePage = Math.min(currentPage, pageCount)
+  const fromIndex = (safePage - 1) * currentSize
+
   courseVersionPages[courseId] = {
-    records: summaries.slice(0, currentSize),
-    total: Math.max(summaries.length, courseVersionPages[courseId]?.total ?? 0),
+    records: summaries.slice(fromIndex, fromIndex + currentSize),
+    total,
     size: currentSize,
-    current: currentPage,
-    pages: Math.max(1, Math.ceil(Math.max(summaries.length, 1) / currentSize)),
+    current: safePage,
+    pages: pageCount,
   }
+  courseVersionPageNumbers[courseId] = safePage
+  courseVersionPageSizes[courseId] = currentSize
+}
+
+function resetCourseVersionCaches() {
+  for (const key of Object.keys(courseVersionPages)) {
+    delete courseVersionPages[key]
+  }
+  for (const key of Object.keys(courseVersionPageNumbers)) {
+    delete courseVersionPageNumbers[key]
+  }
+  for (const key of Object.keys(courseVersionPageSizes)) {
+    delete courseVersionPageSizes[key]
+  }
+  repository.clearVersionSummaries()
 }
 </script>
 
@@ -1187,6 +1282,19 @@ function syncCurrentCourseVersionPage(courseId: string) {
                   </div>
 
                 </article>
+              </div>
+              <div
+                v-if="hasCourseVersionPagination(course.id)"
+                class="outline-course-group__pagination"
+              >
+                <WorkbenchTablePagination
+                  :pagination="getCourseVersionPagination(course.id)!.pagination"
+                  :page-size="getCourseVersionPagination(course.id)!.pageResult.size"
+                  :page-size-options="[10, 20, 50]"
+                  show-quick-jumper
+                  @page-change="handleCourseVersionPageChange(course.id, $event)"
+                  @page-size-change="handleCourseVersionPageSizeChange(course.id, $event)"
+                />
               </div>
             </div>
           </div>
