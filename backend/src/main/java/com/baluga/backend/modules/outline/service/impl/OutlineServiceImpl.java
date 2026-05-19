@@ -2,11 +2,15 @@ package com.baluga.backend.modules.outline.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
+import com.baluga.backend.modules.outline.dto.request.OutlineListRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
 import com.baluga.backend.modules.outline.dto.response.OutlineCourseVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineCourseSummaryVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineVersionSummaryVO;
 import com.baluga.backend.modules.outline.dto.response.OutlineVersionVO;
 import com.baluga.backend.modules.outline.entity.OutlineCourse;
 import com.baluga.backend.modules.outline.entity.OutlineVersion;
@@ -85,6 +89,36 @@ public class OutlineServiceImpl implements OutlineService {
                     return OutlineCourseVO.fromEntity(course, versionVos);
                 })
                 .toList();
+    }
+
+    @Override
+    public Page<OutlineCourseSummaryVO> pageCourseSummaries(OutlineListRequest request) {
+        return outlineCourseMapper.selectCourseSummaryPage(
+                new Page<>(request.safePage(), request.safePageSize()),
+                request,
+                request.isVersionFilterActive()
+        );
+    }
+
+    @Override
+    public Page<OutlineVersionSummaryVO> pageCourseVersions(Long courseId, OutlineListRequest request) {
+        OutlineCourse course = outlineCourseMapper.selectById(courseId);
+        if (course == null || course.getDeleted() != null && course.getDeleted() == 1) {
+            throw new IllegalArgumentException("课程不存在");
+        }
+
+        String keyword = normalize(request.getKeyword());
+        String courseHaystack = String.join(" ", course.getTitle(), course.getInstructor(), course.getDepartment()).toLowerCase();
+        if (StringUtils.hasText(keyword) && courseHaystack.contains(keyword.toLowerCase())) {
+            keyword = "";
+        }
+
+        return outlineVersionMapper.selectCourseVersionSummaryPage(
+                new Page<>(request.safePage(), request.safePageSize()),
+                courseId,
+                keyword,
+                request
+        );
     }
 
     @Override

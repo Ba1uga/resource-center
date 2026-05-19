@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baluga.backend.modules.outline.mapper.OutlineCourseMapper">
+
+    <select id="selectCourseSummaryPage" resultType="com.baluga.backend.modules.outline.dto.response.OutlineCourseSummaryVO">
+        SELECT
+            c.id,
+            c.title,
+            c.instructor,
+            c.department,
+            COALESCE(total_versions.total_version_count, 0) AS totalVersionCount,
+            CASE
+                WHEN #{request.keyword} IS NOT NULL
+                    AND #{request.keyword} != ''
+                    AND LOWER(CONCAT(c.title, ' ', c.instructor, ' ', c.department)) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+                    THEN COALESCE(total_versions.total_version_count, 0)
+                ELSE COALESCE(filtered_versions.matched_version_count, 0)
+            END AS matchedVersionCount,
+            COALESCE(filtered_versions.latest_matched_version_updated_at, c.updated_at) AS latestMatchedVersionUpdatedAt
+        FROM outline_course c
+        LEFT JOIN (
+            SELECT
+                ov.course_id,
+                COUNT(*) AS total_version_count
+            FROM outline_version ov
+            WHERE ov.deleted = 0
+            GROUP BY ov.course_id
+        ) total_versions ON total_versions.course_id = c.id
+        LEFT JOIN (
+            SELECT
+                ov.course_id,
+                COUNT(*) AS matched_version_count,
+                MAX(ov.updated_at) AS latest_matched_version_updated_at
+            FROM outline_version ov
+            WHERE ov.deleted = 0
+              <if test="request.semester != null and request.semester != ''">
+                  AND ov.semester = #{request.semester}
+              </if>
+              <if test="request.versionStatus != null and request.versionStatus != '' and request.versionStatus != 'all'">
+                  AND ov.status = #{request.versionStatus}
+              </if>
+              <if test="request.completionState != null and request.completionState != '' and request.completionState != 'all'">
+                  AND ov.completion_state = #{request.completionState}
+              </if>
+              <if test="request.archiveState != null and request.archiveState != '' and request.archiveState != 'all'">
+                  AND ov.archive_state = #{request.archiveState}
+              </if>
+              <if test="request.keyword != null and request.keyword != ''">
+                  AND LOWER(CONCAT(ov.version_name, ' ', ov.note, ' ', ov.updated_by)) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+              </if>
+            GROUP BY ov.course_id
+        ) filtered_versions ON filtered_versions.course_id = c.id
+        WHERE c.deleted = 0
+          <choose>
+              <when test="versionFilterActive">
+                  AND filtered_versions.course_id IS NOT NULL
+              </when>
+              <otherwise>
+                  AND (
+                      #{request.keyword} IS NULL
+                      OR #{request.keyword} = ''
+                      OR LOWER(CONCAT(c.title, ' ', c.instructor, ' ', c.department)) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+                      OR filtered_versions.course_id IS NOT NULL
+                      OR COALESCE(total_versions.total_version_count, 0) = 0
+                  )
+              </otherwise>
+          </choose>
+        ORDER BY latestMatchedVersionUpdatedAt DESC, c.updated_at DESC, c.id DESC
+    </select>
+</mapper>
