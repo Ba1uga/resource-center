@@ -29,6 +29,7 @@ assert.ok(
 assert.ok(outlineSection.includes("import PerfectScrollbar from 'perfect-scrollbar'"))
 assert.ok(outlineSection.includes("import 'perfect-scrollbar/css/perfect-scrollbar.css'"))
 assert.ok(outlineSection.includes("import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'"))
+assert.ok(outlineSection.includes("import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'"))
 assert.ok(outlineSection.includes('nextTick'))
 assert.ok(outlineSection.includes('const props = defineProps<{'))
 assert.ok(outlineSection.includes('currentAdminName: string'))
@@ -58,7 +59,7 @@ assert.ok(outlineSection.includes('function updateOutlineScrollbars()'))
 assert.ok(outlineSection.includes('function destroyOutlineScrollbars()'))
 assert.match(
   normalizedOutlineSection,
-  /watch\(\s*\(\) => \[[\s\S]*?expandedCourseIds\.value\.join\('\|'\)[\s\S]*?activeEditorSection\.value[\s\S]*?dataVersion\.value[\s\S]*?\][\s\S]*?updateOutlineScrollbars/i,
+  /watch\(\s*\(\) => \[[\s\S]*?expandedCourseIds\.value\.join\('\|'\)[\s\S]*?activeEditorSection\.value[\s\S]*?createDraftSnapshot\(draft\.value\)[\s\S]*?\][\s\S]*?updateOutlineScrollbars/i,
 )
 assert.ok(outlineSection.includes('class="outline-workspace__top"'))
 assert.ok(outlineSection.includes('class="outline-workspace__feedback"'))
@@ -75,7 +76,7 @@ assert.ok(outlineSection.includes('class="outline-editor-panel"'))
 assert.ok(outlineSection.includes("const activeEditorSection = ref<OutlineSectionId>('basic-info')"))
 assert.ok(
   outlineSection.includes(
-    'const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))',
+    'const queryState = reactive(createDefaultOutlineWorkbenchQueryState(coursePageState.value, courseVersionPages))',
   ),
 )
 assert.equal(outlineSection.includes('currentAdminName: props.currentAdminName'), false)
@@ -126,6 +127,12 @@ assert.ok(outlineSection.includes('const pendingArchive = ref<'))
 assert.ok(outlineSection.includes('const isEditing = ref(false)'))
 assert.ok(outlineSection.includes('const showCourseCreator = ref(false)'))
 assert.ok(outlineSection.includes('const connectionStatus = ref<'))
+assert.ok(outlineSection.includes('const page = ref(1)'))
+assert.ok(outlineSection.includes('const pageSize = ref(10)'))
+assert.ok(outlineSection.includes('const pageSizeOptions = [10, 20, 50]'))
+assert.ok(outlineSection.includes('const coursePageState = ref<'))
+assert.ok(outlineSection.includes('const courseVersionPages = reactive<Record<string,'))
+assert.ok(outlineSection.includes('const currentVersionPageHint = computed(() =>'))
 assert.ok(outlineSection.includes('const statusVisible = ref(false)'))
 assert.ok(outlineSection.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
 assert.ok(outlineSection.includes('const hasUnsavedChanges = computed(() =>'))
@@ -135,6 +142,8 @@ assert.ok(outlineSection.includes('function discardPendingSelection()'))
 assert.ok(outlineSection.includes('function openCourseCreator()'))
 assert.ok(outlineSection.includes('function closeCourseCreator()'))
 assert.ok(outlineSection.includes('function handleCreateCourse()'))
+assert.ok(outlineSection.includes('function handleCoursePageChange(nextPage: number)'))
+assert.ok(outlineSection.includes('function handleCoursePageSizeChange(nextPageSize: number)'))
 assert.ok(outlineSection.includes('function openBlankVersionCreator()'))
 assert.ok(outlineSection.includes('function openCopyVersionCreator()'))
 assert.ok(outlineSection.includes('function closeVersionCreator()'))
@@ -155,6 +164,8 @@ assert.equal(outlineSection.includes('加载大纲数据失败'), false)
 assert.ok(outlineSection.includes('const repository = createOutlineWorkbenchRepository({'))
 assert.ok(outlineSection.includes('initialCourses: []'))
 assert.ok(outlineSection.includes('正在加载大纲数据...'))
+assert.ok(outlineSection.includes('async function loadOutlineCoursePage('))
+assert.ok(outlineSection.includes('async function loadOutlineCourseVersions('))
 assert.equal(outlineSection.includes('<select v-model="queryState.semester">'), false)
 assert.equal(outlineSection.includes('<select v-model="queryState.versionStatus">'), false)
 assert.equal(outlineSection.includes('<select v-model="queryState.completionState">'), false)
@@ -174,6 +185,10 @@ assert.equal(
   false,
 )
 assert.ok(normalizedOutlineSection.includes('class="outline-course-create-button" type="button" @click="openCourseCreator"'))
+assert.ok(normalizedOutlineSection.includes('<WorkbenchTablePagination'))
+assert.ok(normalizedOutlineSection.includes('@page-change="handleCoursePageChange"'))
+assert.ok(normalizedOutlineSection.includes('@page-size-change="handleCoursePageSizeChange"'))
+assert.ok(normalizedOutlineSection.includes('当前查看版本不在本页列表中。'))
 assert.ok(normalizedOutlineSection.includes('v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
 assert.ok(normalizedOutlineSection.includes('此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。'))
 assert.ok(normalizedOutlineSection.includes('v-if="showCourseCreator" class="outline-version-creator-mode"'))
@@ -264,6 +279,7 @@ assert.match(
   outlineStyles,
   /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
 )
+assert.ok(outlineStyles.includes('.outline-course-tree__pagination'))
 assert.match(
   outlineStyles,
   /\.outline-course-create-button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-height:\s*48px;/i,

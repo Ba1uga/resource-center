@@ -44,6 +44,12 @@ public class OutlineVersion {
 
     private String sections;
 
+    private Integer completionPercent;
+
+    private Integer completionIssueCount;
+
+    private String completionState;
+
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

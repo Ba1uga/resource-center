@@ -2,11 +2,15 @@ package com.baluga.backend.modules.outline.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionRequest;
+import com.baluga.backend.modules.outline.dto.request.OutlineListRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
 import com.baluga.backend.modules.outline.dto.response.OutlineCourseVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineCourseSummaryVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineVersionSummaryVO;
 import com.baluga.backend.modules.outline.dto.response.OutlineVersionVO;
 import com.baluga.backend.modules.outline.entity.OutlineCourse;
 import com.baluga.backend.modules.outline.entity.OutlineVersion;
@@ -35,6 +39,7 @@ public class OutlineServiceImpl implements OutlineService {
     private final OutlineCourseMapper outlineCourseMapper;
     private final OutlineVersionMapper outlineVersionMapper;
     private final ObjectMapper objectMapper;
+    private final OutlineCompletionSnapshotCalculator completionSnapshotCalculator;
 
     @Override
     public List<OutlineCourseVO> listCoursesWithVersions(String keyword, String semester, String versionStatus, String archiveState) {
@@ -87,6 +92,36 @@ public class OutlineServiceImpl implements OutlineService {
     }
 
     @Override
+    public Page<OutlineCourseSummaryVO> pageCourseSummaries(OutlineListRequest request) {
+        return outlineCourseMapper.selectCourseSummaryPage(
+                new Page<>(request.safePage(), request.safePageSize()),
+                request,
+                request.isVersionFilterActive()
+        );
+    }
+
+    @Override
+    public Page<OutlineVersionSummaryVO> pageCourseVersions(Long courseId, OutlineListRequest request) {
+        OutlineCourse course = outlineCourseMapper.selectById(courseId);
+        if (course == null || course.getDeleted() != null && course.getDeleted() == 1) {
+            throw new IllegalArgumentException("课程不存在");
+        }
+
+        String keyword = normalize(request.getKeyword());
+        String courseHaystack = String.join(" ", course.getTitle(), course.getInstructor(), course.getDepartment()).toLowerCase();
+        if (StringUtils.hasText(keyword) && courseHaystack.contains(keyword.toLowerCase())) {
+            keyword = "";
+        }
+
+        return outlineVersionMapper.selectCourseVersionSummaryPage(
+                new Page<>(request.safePage(), request.safePageSize()),
+                courseId,
+                keyword,
+                request
+        );
+    }
+
+    @Override
     public OutlineVersion getVersion(Long versionId) {
         return fillCourseTitle(outlineVersionMapper.selectById(versionId));
     }
@@ -131,6 +166,7 @@ public class OutlineServiceImpl implements OutlineService {
                 .deleted(0)
                 .build();
 
+        applyCompletionSnapshot(version);
         outlineVersionMapper.insert(version);
         return fillCourseTitle(outlineVersionMapper.selectById(version.getId()));
     }
@@ -147,6 +183,7 @@ public class OutlineServiceImpl implements OutlineService {
         version.setUpdatedBy(normalize(request.getUpdatedBy()));
         version.setSections(writeJson(request.getSections()));
 
+        applyCompletionSnapshot(version);
         outlineVersionMapper.updateById(version);
         return fillCourseTitle(outlineVersionMapper.selectById(versionId));
     }
@@ -182,6 +219,7 @@ public class OutlineServiceImpl implements OutlineService {
                 .deleted(0)
                 .build();
 
+        applyCompletionSnapshot(duplicatedVersion);
         outlineVersionMapper.insert(duplicatedVersion);
         return fillCourseTitle(outlineVersionMapper.selectById(duplicatedVersion.getId()));
     }
@@ -210,6 +248,13 @@ public class OutlineServiceImpl implements OutlineService {
             throw new IllegalArgumentException("大纲版本不存在");
         }
         return version;
+    }
+
+    private void applyCompletionSnapshot(OutlineVersion version) {
+        OutlineCompletionSnapshot snapshot = completionSnapshotCalculator.calculate(version.getSections());
+        version.setCompletionPercent(snapshot.completionPercent());
+        version.setCompletionIssueCount(snapshot.completionIssueCount());
+        version.setCompletionState(snapshot.completionState());
     }
 
     private OutlineVersion fillCourseTitle(OutlineVersion version) {

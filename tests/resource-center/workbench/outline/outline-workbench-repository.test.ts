@@ -92,3 +92,38 @@ assert.equal(savedVersion.updatedAt, '2026-04-11T09:30:00.000Z')
 assert.equal(savedVersion.archiveState, 'active')
 assert.equal(savedVersion.createdBy, currentVersion.createdBy)
 assert.equal(savedVersion.sections.basicInfo.credits, 6)
+
+repository.replaceVersionDetail({
+  ...outlineWorkbenchCourses[0].versions[0],
+  id: 'outline-version-fd-2026-spring',
+})
+
+assert.equal(repository.getVersionDetail('outline-version-fd-2026-spring')?.versionName, '2026 春版')
+
+repository.upsertVersionSummary('course-functions-and-derivatives', {
+  id: 'outline-version-fd-2026-spring',
+  courseId: 'course-functions-and-derivatives',
+  versionName: '2026 春版',
+  semester: '2026春',
+  status: 'draft',
+  archiveState: 'active',
+  archivedAt: null,
+  note: '测试',
+  updatedBy: '林知夏',
+  updatedAt: '2026-04-10 09:30:00',
+  completionPercent: 83,
+  completionIssueCount: 1,
+  completionState: 'nearly-complete',
+})
+
+assert.equal(repository.listVersionSummaries('course-functions-and-derivatives')[0]?.completionPercent, 83)
+
+repository.archiveVersionSummary(
+  'course-functions-and-derivatives',
+  'outline-version-fd-2026-spring',
+  '2026-04-11T09:30:00.000Z',
+)
+assert.equal(repository.listVersionSummaries('course-functions-and-derivatives')[0]?.archiveState, 'archived')
+
+repository.restoreVersionSummary('course-functions-and-derivatives', 'outline-version-fd-2026-spring')
+assert.equal(repository.listVersionSummaries('course-functions-and-derivatives')[0]?.archiveState, 'active')

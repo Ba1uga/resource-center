@@ -1,28 +1,41 @@
-import { outlineTeachingMethodOptions, outlineWorkbenchCourses } from './outline-workbench.fixtures.ts'
+import { outlineTeachingMethodOptions } from './outline-workbench.fixtures.ts'
 import { createOutlineDirectoryItems, validateOutlineVersionForExport } from './outline-workbench.validation.ts'
 
 import type {
   OutlineCompletionSummary,
-  OutlineCourseNavItem,
   OutlineCourseRecord,
+  OutlineCourseSummaryRecord,
+  OutlinePageResult,
+  OutlinePaginationState,
   OutlineToolbarViewModel,
-  OutlineVersionNavItem,
   OutlineVersionRecord,
-  OutlineVersionSort,
+  OutlineVersionSummaryRecord,
   OutlineWorkbenchQueryState,
   OutlineWorkbenchViewModel,
 } from './outline-workbench.types.ts'
 
 export interface CreateOutlineWorkbenchViewModelOptions {
-  courses?: OutlineCourseRecord[]
-  queryState?: Partial<OutlineWorkbenchQueryState>
+  coursePage: OutlinePageResult<OutlineCourseSummaryRecord>
+  versionPagesByCourseId: Record<string, OutlinePageResult<OutlineVersionSummaryRecord>>
+  selectedCourseId: string
+  selectedVersionId: string
+  currentCourse?: OutlineCourseRecord
+  currentVersion?: OutlineVersionRecord
+  queryState: OutlineWorkbenchQueryState
 }
 
 export function createDefaultOutlineWorkbenchQueryState(
-  courses: OutlineCourseRecord[] = outlineWorkbenchCourses,
+  coursePage: OutlinePageResult<OutlineCourseSummaryRecord> = {
+    records: [],
+    total: 0,
+    size: 10,
+    current: 1,
+    pages: 1,
+  },
+  versionPagesByCourseId: Record<string, OutlinePageResult<OutlineVersionSummaryRecord>> = {},
 ): OutlineWorkbenchQueryState {
-  const firstCourse = courses[0]
-  const firstVersion = firstCourse?.versions.find((version) => version.archiveState === 'active') ?? firstCourse?.versions[0]
+  const firstCourse = coursePage.records[0]
+  const firstVersion = firstCourse ? versionPagesByCourseId[firstCourse.id]?.records[0] : undefined
 
   return {
     selectedCourseId: firstCourse?.id ?? '',
@@ -36,28 +49,73 @@ export function createDefaultOutlineWorkbenchQueryState(
   }
 }
 
-export function createOutlineWorkbenchViewModel(
-  options: CreateOutlineWorkbenchViewModelOptions = {},
-): OutlineWorkbenchViewModel {
-  const courses = options.courses ?? outlineWorkbenchCourses
-  const queryState = {
-    ...createDefaultOutlineWorkbenchQueryState(courses),
-    ...options.queryState,
-  }
-  const currentCourse = resolveCurrentCourse(courses, queryState.selectedCourseId)
-  const currentVersion = resolveCurrentVersion(currentCourse, queryState.selectedVersionId)
-  const completion = currentVersion ? validateOutlineVersionForExport(currentVersion) : createEmptyCompletion()
-  const visibleCourses = createVisibleCourses(courses, queryState, currentCourse?.id, currentVersion?.id)
+export function createOutlinePaginationState(result: OutlinePageResult<unknown>): OutlinePaginationState {
+  const pageCount = Math.max(1, result.pages || Math.ceil(result.total / Math.max(result.size, 1)) || 1)
+  const page = Math.min(Math.max(result.current, 1), pageCount)
+  const hasRecords = result.total > 0
 
   return {
-    courses: visibleCourses,
+    page,
+    pageSize: result.size,
+    total: result.total,
+    pageCount,
+    from: hasRecords ? (page - 1) * result.size + 1 : 0,
+    to: hasRecords ? Math.min(page * result.size, result.total) : 0,
+    hasPrev: page > 1,
+    hasNext: page < pageCount,
+  }
+}
+
+export function createOutlineWorkbenchViewModel(
+  options: CreateOutlineWorkbenchViewModelOptions,
+): OutlineWorkbenchViewModel {
+  const selectedCourse = options.coursePage.records.find((course) => course.id === options.selectedCourseId)
+  const selectedVersionPage = selectedCourse ? options.versionPagesByCourseId[selectedCourse.id] : undefined
+  const currentVersionSummary = selectedVersionPage?.records.find((version) => version.id === options.selectedVersionId)
+  const completion = options.currentVersion ? validateOutlineVersionForExport(options.currentVersion) : createEmptyCompletion()
+  const currentCourse = options.currentCourse ?? (selectedCourse ? toCurrentCourse(selectedCourse) : undefined)
+
+  return {
+    courses: options.coursePage.records.map((course) => ({
+      id: course.id,
+      title: course.title,
+      instructor: course.instructor,
+      versionCount: course.matchedVersionCount,
+      matchedVersionCount: course.matchedVersionCount,
+      totalVersionCount: course.totalVersionCount,
+      current: course.id === options.selectedCourseId,
+      versions: (options.versionPagesByCourseId[course.id]?.records ?? []).map((version) => ({
+        id: version.id,
+        versionName: version.versionName,
+        semester: version.semester,
+        status: version.status,
+        archiveState: version.archiveState,
+        archivedAt: version.archivedAt,
+        completionPercent: version.completionPercent,
+        issueCount: version.completionIssueCount,
+        current: course.id === options.selectedCourseId && version.id === options.selectedVersionId,
+        updatedAt: version.updatedAt,
+        updatedBy: version.updatedBy,
+      })),
+    })),
     currentCourse,
-    currentVersion,
-    toolbar: createToolbarViewModel(currentCourse, currentVersion),
+    currentVersion: options.currentVersion,
+    toolbar: createToolbarViewModel(currentCourse, options.currentVersion),
     directory: createOutlineDirectoryItems(completion),
     completion,
     teachingMethodOptions: [...outlineTeachingMethodOptions],
-    currentVersionMatchesFilters: currentVersion ? matchesVersionFilters(currentVersion, queryState, currentCourse) : true,
+    currentVersionMatchesFilters: !!currentVersionSummary || !options.currentVersion,
+    pagination: createOutlinePaginationState(options.coursePage),
+  }
+}
+
+function toCurrentCourse(course: OutlineCourseSummaryRecord): OutlineCourseRecord {
+  return {
+    id: course.id,
+    title: course.title,
+    instructor: course.instructor,
+    department: course.department,
+    versions: [],
   }
 }
 
@@ -78,164 +136,6 @@ function createEmptyCompletion(): OutlineCompletionSummary {
   }
 }
 
-function resolveCurrentCourse(courses: OutlineCourseRecord[], selectedCourseId: string): OutlineCourseRecord | undefined {
-  return courses.find((course) => course.id === selectedCourseId) ?? courses[0]
-}
-
-function resolveCurrentVersion(
-  course: OutlineCourseRecord | undefined,
-  selectedVersionId: string,
-): OutlineVersionRecord | undefined {
-  if (!course) {
-    return undefined
-  }
-
-  return course.versions.find((version) => version.id === selectedVersionId) ?? course.versions[0]
-}
-
-function createVisibleCourses(
-  courses: OutlineCourseRecord[],
-  queryState: OutlineWorkbenchQueryState,
-  currentCourseId?: string,
-  currentVersionId?: string,
-): OutlineCourseNavItem[] {
-  return courses
-    .map((course) => {
-      if (course.versions.length === 0) {
-        if (!matchesCourseWithoutVersions(course, queryState)) {
-          return null
-        }
-
-        return {
-          id: course.id,
-          title: course.title,
-          instructor: course.instructor,
-          versionCount: 0,
-          current: course.id === currentCourseId,
-          versions: [],
-        }
-      }
-
-      const visibleVersions = course.versions
-        .filter((version) => matchesVersionFilters(version, queryState, course))
-        .sort((left, right) => compareVersions(left, right, queryState.sortBy))
-        .map((version) => createVersionNavItem(version, currentVersionId, course.id === currentCourseId))
-
-      if (visibleVersions.length === 0) {
-        return null
-      }
-
-      return {
-        id: course.id,
-        title: course.title,
-        instructor: course.instructor,
-        versionCount: visibleVersions.length,
-        current: course.id === currentCourseId,
-        versions: visibleVersions,
-      }
-    })
-    .filter((course): course is OutlineCourseNavItem => course !== null)
-}
-
-function matchesCourseWithoutVersions(course: OutlineCourseRecord, queryState: OutlineWorkbenchQueryState): boolean {
-  const keyword = queryState.searchText.trim().toLowerCase()
-  const haystack = [course.title, course.instructor, course.department].join(' ').toLowerCase()
-
-  if (keyword.length > 0 && !haystack.includes(keyword)) {
-    return false
-  }
-
-  if (queryState.semester.length > 0) {
-    return false
-  }
-
-  if (queryState.versionStatus !== 'all') {
-    return false
-  }
-
-  if (queryState.completionState !== 'all') {
-    return false
-  }
-
-  return queryState.archiveState !== 'archived'
-}
-
-function matchesVersionFilters(
-  version: OutlineVersionRecord,
-  queryState: OutlineWorkbenchQueryState,
-  course?: OutlineCourseRecord,
-): boolean {
-  const completion = validateOutlineVersionForExport(version)
-  const keyword = queryState.searchText.trim().toLowerCase()
-  const haystack = [course?.title ?? '', version.versionName, version.semester, version.note, version.updatedBy]
-    .join(' ')
-    .toLowerCase()
-
-  if (keyword.length > 0 && !haystack.includes(keyword)) {
-    return false
-  }
-
-  if (queryState.semester.length > 0 && version.semester !== queryState.semester) {
-    return false
-  }
-
-  if (queryState.versionStatus !== 'all' && version.status !== queryState.versionStatus) {
-    return false
-  }
-
-  if (queryState.archiveState !== 'all' && version.archiveState !== queryState.archiveState) {
-    return false
-  }
-
-  if (queryState.completionState === 'complete') {
-    return completion.issues.length === 0
-  }
-
-  if (queryState.completionState === 'needs-completion') {
-    return completion.percent < 80
-  }
-
-  if (queryState.completionState === 'nearly-complete') {
-    return completion.percent >= 80 && completion.issues.length > 0
-  }
-
-  return true
-}
-
-function compareVersions(left: OutlineVersionRecord, right: OutlineVersionRecord, sortBy: OutlineVersionSort): number {
-  if (sortBy === 'semester-desc') {
-    return right.semester.localeCompare(left.semester, 'zh-CN')
-  }
-
-  if (sortBy === 'course-name-asc') {
-    return left.versionName.localeCompare(right.versionName, 'zh-CN')
-  }
-
-  return right.updatedAt.localeCompare(left.updatedAt)
-}
-
-function createVersionNavItem(
-  version: OutlineVersionRecord,
-  currentVersionId: string | undefined,
-  showCurrent: boolean,
-): OutlineVersionNavItem {
-  const completion = validateOutlineVersionForExport(version)
-
-  return {
-    id: version.id,
-    versionName: version.versionName,
-    semester: version.semester,
-    status: version.status,
-    archiveState: version.archiveState,
-    archivedAt: version.archivedAt,
-    completionPercent: completion.percent,
-    issueCount: completion.issues.length,
-    current: showCurrent && version.id === currentVersionId,
-    updatedAt: version.updatedAt,
-    updatedBy: version.updatedBy,
-  }
-}
-
 function createToolbarViewModel(
   course: OutlineCourseRecord | undefined,
   version: OutlineVersionRecord | undefined,
@@ -247,4 +147,3 @@ function createToolbarViewModel(
     updatedLabel: version ? `${version.updatedAt.slice(0, 10)} · ${version.updatedBy}` : '暂无修改记录',
   }
 }
-
