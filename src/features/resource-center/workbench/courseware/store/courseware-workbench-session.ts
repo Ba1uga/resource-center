@@ -9,6 +9,7 @@ import {
 import type { CoursewareFilterState } from '../model/courseware-workbench.types.ts'
 
 const COURSEWARE_SESSION_STORAGE_KEY = 'courseware-session:list'
+const coursewareTypeFilters = new Set<CoursewareFilterState['type']>(['all', 'PPT', 'PDF', 'DOC'])
 
 interface CoursewareWorkbenchSessionState {
   filters: CoursewareFilterState
@@ -21,10 +22,52 @@ const createDefaultState = (): CoursewareWorkbenchSessionState => ({
   page: 1,
 })
 
-const loadState = () =>
-  loadWorkbenchSessionState<PersistedCoursewareWorkbenchSessionState>(
-    COURSEWARE_SESSION_STORAGE_KEY,
-    createDefaultState() as PersistedCoursewareWorkbenchSessionState,
+const sanitizeString = (value: unknown, fallback: string): string =>
+  typeof value === 'string' ? value : fallback
+
+const sanitizeNumber = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+const sanitizeCoursewareFilterState = (value: unknown): CoursewareFilterState => {
+  const fallback = createDefaultCoursewareFilterState()
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return fallback
+  }
+
+  const candidate = value as Partial<CoursewareFilterState>
+
+  return {
+    keyword: sanitizeString(candidate.keyword, fallback.keyword),
+    course: sanitizeString(candidate.course, fallback.course),
+    type:
+      typeof candidate.type === 'string' && coursewareTypeFilters.has(candidate.type)
+        ? candidate.type
+        : fallback.type,
+  }
+}
+
+const sanitizeSessionState = (value: unknown): CoursewareWorkbenchSessionState => {
+  const fallback = createDefaultState()
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return fallback
+  }
+
+  const candidate = value as Partial<PersistedCoursewareWorkbenchSessionState>
+
+  return {
+    filters: sanitizeCoursewareFilterState(candidate.filters),
+    page: sanitizeNumber(candidate.page, fallback.page),
+  }
+}
+
+const loadState = (): CoursewareWorkbenchSessionState =>
+  sanitizeSessionState(
+    loadWorkbenchSessionState<PersistedCoursewareWorkbenchSessionState>(
+      COURSEWARE_SESSION_STORAGE_KEY,
+      createDefaultState() as PersistedCoursewareWorkbenchSessionState,
+    ),
   )
 
 export const useCoursewareWorkbenchSessionStore = defineStore('courseware-workbench-session', {
