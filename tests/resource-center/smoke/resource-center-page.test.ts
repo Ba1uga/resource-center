@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 
 const runningDir = process.cwd()
 const appPath = path.join(runningDir, 'src/app/App.vue')
+const mainPath = path.join(runningDir, 'src/app/main.ts')
 const pagePath = path.join(runningDir, 'src/views/resource-center/ResourceCenterPage.vue')
 const pageStylesPath = path.join(runningDir, 'src/views/resource-center/resource-center-page.css')
 const shellPath = path.join(runningDir, 'src/features/resource-center/workbench/shared/ui/ModuleWorkbenchShell.vue')
@@ -22,14 +23,32 @@ async function readFile(p: string) {
 
 async function main() {
   await assertFileExists(pagePath, 'ResourceCenterPage.vue')
+  await assertFileExists(mainPath, 'main.ts')
   await assertFileExists(pageStylesPath, 'resource-center-page.css')
   await assertFileExists(shellPath, 'ModuleWorkbenchShell.vue')
   await assertFileExists(workbenchSectionPath, 'WorkbenchSection.vue')
 
   const pageContent = await readFile(pagePath)
+  const mainContent = await readFile(mainPath)
   const pageStyles = await readFile(pageStylesPath)
-  if (!/const activeSection = ref(?:<[^>]+>)?\('outline'\)/.test(pageContent)) {
-    throw new Error("ResourceCenterPage.vue must define const activeSection = ref('outline') style initializer")
+  if (!pageContent.includes("import { computed } from 'vue'")) {
+    throw new Error("ResourceCenterPage.vue must import computed from 'vue'")
+  }
+
+  if (!pageContent.includes("import { useRoute, useRouter } from 'vue-router'")) {
+    throw new Error("ResourceCenterPage.vue must import useRoute and useRouter from 'vue-router'")
+  }
+
+  if (/const activeSection = ref(?:<[^>]+>)?\('outline'\)/.test(pageContent)) {
+    throw new Error("ResourceCenterPage.vue must not define const activeSection = ref('outline')")
+  }
+
+  if (!pageContent.includes('resolveWorkbenchSectionFromRouteParam(route.params.section)')) {
+    throw new Error('ResourceCenterPage.vue must derive activeSection from route params')
+  }
+
+  if (!pageContent.includes('router.push(toResourceCenterSectionRoute(item.key))')) {
+    throw new Error('ResourceCenterPage.vue must navigate by router.push(toResourceCenterSectionRoute(item.key))')
   }
 
   if (!pageContent.includes('class="dashboard-frame"')) {
@@ -73,6 +92,10 @@ async function main() {
     if (!pageContent.includes(directImport)) {
       throw new Error(`ResourceCenterPage.vue must import directly from ${directImport}`)
     }
+  }
+
+  if (!pageContent.includes("@/features/resource-center/navigation/model/navigation.routes.ts")) {
+    throw new Error('ResourceCenterPage.vue must import navigation.routes helpers directly')
   }
 
   if (pageContent.includes("@/features/resource-center/index.ts")) {
@@ -151,8 +174,24 @@ async function main() {
   }
 
   const appContent = await readFile(appPath)
-  if (!appContent.includes('ResourceCenterPage')) {
-    throw new Error('src/app/App.vue must reference ResourceCenterPage')
+  if (!appContent.includes('RouterView')) {
+    throw new Error('src/app/App.vue must render RouterView')
+  }
+
+  if (!mainContent.includes("import { createPinia } from 'pinia'")) {
+    throw new Error("src/app/main.ts must import createPinia from 'pinia'")
+  }
+
+  if (!mainContent.includes("import router from '@/app/router.ts'")) {
+    throw new Error("src/app/main.ts must import router from src/app/router.ts")
+  }
+
+  if (!mainContent.includes('app.use(createPinia())')) {
+    throw new Error('src/app/main.ts must register createPinia()')
+  }
+
+  if (!mainContent.includes('app.use(router)')) {
+    throw new Error('src/app/main.ts must register router')
   }
 }
 
