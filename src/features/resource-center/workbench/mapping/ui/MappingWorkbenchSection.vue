@@ -5,12 +5,12 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { mappingRecords } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.fixtures.ts'
 import {
-  createDefaultMappingFilterState,
   createMappingWorkbenchViewModel,
   matchesMappingFilters,
   resolveMappingPageAfterMutation,
   resolveSelectedOrFirstCandidate,
 } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.view-model.ts'
+import { useMappingWorkbenchSessionStore } from '@/features/resource-center/workbench/mapping/store/mapping-workbench-session.ts'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
@@ -34,9 +34,8 @@ const props = defineProps<{
 
 const pageSize = 8
 
+const sessionStore = useMappingWorkbenchSessionStore()
 const records = ref<MappingRecord[]>(createLocalRecords())
-const filters = reactive(createDefaultMappingFilterState())
-const page = ref(1)
 const selectedIds = ref<string[]>([])
 const drawerOpen = ref(false)
 const activeRecordId = ref<string | null>(null)
@@ -44,12 +43,20 @@ const feedback = ref<{
   tone: FeedbackTone
   text: string
 } | null>(null)
+const filters = computed({
+  get: () => sessionStore.filters,
+  set: (value) => sessionStore.patchFilters(value),
+})
+const page = computed({
+  get: () => sessionStore.page,
+  set: (value) => sessionStore.setPage(value),
+})
 
 const viewModel = computed(() =>
   createMappingWorkbenchViewModel({
     records: records.value,
     filters: {
-      ...filters,
+      ...filters.value,
     },
     page: page.value,
     pageSize,
@@ -63,9 +70,8 @@ const allVisibleSelected = computed(
 const activeRecord = computed(() => records.value.find((record) => record.id === activeRecordId.value) ?? null)
 
 watch(
-  () => ({ ...filters }),
+  () => ({ ...filters.value }),
   () => {
-    page.value = 1
     selectedIds.value = []
   },
 )
@@ -78,29 +84,33 @@ function handleLaunchBatch() {
 }
 
 function handleStatusSelect(status: MappingSummaryCardKey) {
-  page.value = 1
   selectedIds.value = []
 
   if (status === 'low-confidence') {
-    filters.overviewStatus = 'all'
-    filters.confidenceLevel = filters.confidenceLevel === 'low' ? 'all' : 'low'
+    sessionStore.patchFilters({
+      overviewStatus: 'all',
+      confidenceLevel: filters.value.confidenceLevel === 'low' ? 'all' : 'low',
+    })
     return
   }
 
-  filters.confidenceLevel = 'all'
-  filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
+  sessionStore.patchFilters({
+    confidenceLevel: 'all',
+    overviewStatus: filters.value.overviewStatus === status ? 'all' : status,
+  })
 }
 
 function handleResetFilters() {
-  Object.assign(filters, createDefaultMappingFilterState())
-  page.value = 1
+  sessionStore.reset()
   selectedIds.value = []
   feedback.value = null
 }
 
 function handleCourseUpdate(course: string) {
-  filters.course = course
-  filters.chapter = 'all'
+  sessionStore.patchFilters({
+    course,
+    chapter: 'all',
+  })
 }
 
 function toggleRowSelection(id: string) {
@@ -194,7 +204,7 @@ function handlePageChange(nextPage: number) {
     return
   }
 
-  page.value = nextPage
+  sessionStore.setPage(nextPage)
 }
 
 function handleReview(recordId: string) {
@@ -289,15 +299,15 @@ function handleIgnoreRecord() {
 }
 
 function syncPageAfterMutation() {
-  page.value = resolveMappingPageAfterMutation({
+  sessionStore.setPage(resolveMappingPageAfterMutation({
     currentPage: page.value,
     pageSize,
     totalAfterMutation: records.value.filter((record) =>
       matchesMappingFilters(record, {
-        ...filters,
+        ...filters.value,
       }),
     ).length,
-  })
+  }))
 }
 
 function createLocalRecords(): MappingRecord[] {
@@ -349,13 +359,13 @@ function createLocalRecords(): MappingRecord[] {
         :batch-options="viewModel.batchOptions"
         :review-status-options="viewModel.reviewStatusOptions"
         :confidence-level-options="viewModel.confidenceLevelOptions"
-        @update-keyword="filters.keyword = $event"
-        @update-resource-type="filters.resourceType = $event"
+        @update-keyword="sessionStore.patchFilters({ keyword: $event })"
+        @update-resource-type="sessionStore.patchFilters({ resourceType: $event })"
         @update-course="handleCourseUpdate"
-        @update-chapter="filters.chapter = $event"
-        @update-batch="filters.batchId = $event"
-        @update-review-status="filters.reviewStatus = $event"
-        @update-confidence-level="filters.confidenceLevel = $event"
+        @update-chapter="sessionStore.patchFilters({ chapter: $event })"
+        @update-batch="sessionStore.patchFilters({ batchId: $event })"
+        @update-review-status="sessionStore.patchFilters({ reviewStatus: $event })"
+        @update-confidence-level="sessionStore.patchFilters({ confidenceLevel: $event })"
         @reset="handleResetFilters"
       />
     </template>

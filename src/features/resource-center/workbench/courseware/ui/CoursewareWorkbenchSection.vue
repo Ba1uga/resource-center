@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../styles/courseware-workbench.css'
 
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
@@ -23,6 +23,7 @@ import {
   matchesCoursewareFilters,
   resolveCoursewarePageAfterDeletion,
 } from '@/features/resource-center/workbench/courseware/model/courseware-workbench.view-model.ts'
+import { useCoursewareWorkbenchSessionStore } from '@/features/resource-center/workbench/courseware/store/courseware-workbench-session.ts'
 import {
   hasCoursewareValidationErrors,
   validateCoursewareDraft,
@@ -31,6 +32,7 @@ import {
 import type {
   CoursewareDraft,
   CoursewareRecord,
+  CoursewareTypeFilter,
   CoursewareValidationErrors,
 } from '@/features/resource-center/workbench/courseware/model/courseware-workbench.types.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
@@ -43,9 +45,8 @@ const props = defineProps<{
 }>()
 
 const pageSize = 8
+const sessionStore = useCoursewareWorkbenchSessionStore()
 const records = ref<CoursewareRecord[]>([...coursewareRecords])
-const filters = reactive(createDefaultCoursewareFilterState())
-const page = ref(1)
 const selectedIds = ref<string[]>([])
 const drawerOpen = ref(false)
 const drawerMode = ref<DrawerMode>('create')
@@ -57,11 +58,21 @@ const feedback = ref<{
   text: string
 } | null>(null)
 
+const filters = computed({
+  get: () => sessionStore.filters,
+  set: (value) => sessionStore.patchFilters(value),
+})
+
+const page = computed({
+  get: () => sessionStore.page,
+  set: (value) => sessionStore.setPage(value),
+})
+
 const viewModel = computed(() =>
   createCoursewareWorkbenchViewModel({
     records: records.value,
     filters: {
-      ...filters,
+      ...filters.value,
     },
     page: page.value,
     pageSize,
@@ -78,14 +89,6 @@ const drawerDescription = computed(() =>
   drawerMode.value === 'create'
     ? '补充课件基础信息，保存后会自动归入当前课件台。'
     : '更新课件信息后，上传时间会自动刷新为最新保存时间。',
-)
-
-watch(
-  () => [filters.keyword, filters.course, filters.type],
-  () => {
-    page.value = 1
-    selectedIds.value = []
-  },
 )
 
 function handleCreate() {
@@ -127,11 +130,11 @@ function handleDelete(id: string) {
   }
 
   records.value = records.value.filter((record) => record.id !== id)
-  page.value = resolveCoursewarePageAfterDeletion({
+  sessionStore.setPage(resolveCoursewarePageAfterDeletion({
     currentPage: page.value,
     pageSize,
     totalAfterDeletion: records.value.length,
-  })
+  }))
   selectedIds.value = selectedIds.value.filter((selectedId) => selectedId !== id)
   feedback.value = {
     tone: 'success',
@@ -144,18 +147,16 @@ function handlePageChange(nextPage: number) {
     return
   }
 
-  page.value = nextPage
+  sessionStore.setPage(nextPage)
 }
 
 function handleSummaryCardSelect(key: string) {
-  if (key !== 'all' || isDefaultCoursewareFilterState(filters)) {
+  if (key !== 'all' || isDefaultCoursewareFilterState(filters.value)) {
     return
   }
 
-  filters.keyword = ''
-  filters.course = 'all'
-  filters.type = 'all'
-  page.value = 1
+  sessionStore.reset()
+  selectedIds.value = []
 }
 
 function toggleRowSelection(id: string) {
@@ -198,11 +199,11 @@ function saveDrawer() {
     records.value = records.value.map((record) => (record.id === drawerTargetId.value ? nextRecord : record))
   } else {
     records.value = [nextRecord, ...records.value]
-    page.value = 1
+    sessionStore.setPage(1)
   }
 
   const visibleUnderFilters = matchesCoursewareFilters(nextRecord, {
-    ...filters,
+    ...filters.value,
   })
   feedback.value = {
     tone: visibleUnderFilters ? 'success' : 'info',
@@ -260,11 +261,11 @@ function handleBulkDelete() {
   }
 
   records.value = records.value.filter((record) => !selectedIds.value.includes(record.id))
-  page.value = resolveCoursewarePageAfterDeletion({
+  sessionStore.setPage(resolveCoursewarePageAfterDeletion({
     currentPage: page.value,
     pageSize,
     totalAfterDeletion: records.value.length,
-  })
+  }))
   feedback.value = {
     tone: 'success',
     text: `已删除当前页选中的 ${selectedIds.value.length} 个课件。`,
@@ -301,15 +302,30 @@ function handleBulkDelete() {
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path :d="iconPaths.search"></path>
           </svg>
-          <input v-model="filters.keyword" type="text" placeholder="搜索课件标题..." />
+          <input
+            :value="filters.keyword"
+            type="text"
+            placeholder="搜索课件标题..."
+            @input="sessionStore.patchFilters({ keyword: ($event.target as HTMLInputElement).value }); selectedIds = []"
+          />
         </label>
 
         <label class="courseware-management__select-field">
-          <WorkbenchSelect v-model="filters.course" aria-label="按课程筛选课件" :options="viewModel.courseOptions" />
+          <WorkbenchSelect
+            :model-value="filters.course"
+            aria-label="按课程筛选课件"
+            :options="viewModel.courseOptions"
+            @update:model-value="(course) => { sessionStore.patchFilters({ course }); selectedIds = [] }"
+          />
         </label>
 
         <label class="courseware-management__select-field">
-          <WorkbenchSelect v-model="filters.type" aria-label="按类型筛选课件" :options="viewModel.typeOptions" />
+          <WorkbenchSelect
+            :model-value="filters.type"
+            aria-label="按类型筛选课件"
+            :options="viewModel.typeOptions"
+            @update:model-value="(type) => { sessionStore.patchFilters({ type: type as CoursewareTypeFilter }); selectedIds = [] }"
+          />
         </label>
 
         <button type="button" class="courseware-management__create-button" @click="handleCreate">

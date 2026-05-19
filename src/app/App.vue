@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ResourceCenterPage from '@/views/resource-center/ResourceCenterPage.vue'
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <ResourceCenterPage />
+  <RouterView />
 </template>

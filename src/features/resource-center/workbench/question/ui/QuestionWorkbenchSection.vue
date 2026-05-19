@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../styles/question-workbench.css'
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
@@ -27,6 +27,7 @@ import {
   getQuestionChapterOptions,
   resolveQuestionPageAfterDeletion,
 } from '@/features/resource-center/workbench/question/model/question-workbench.view-model.ts'
+import { useQuestionWorkbenchSessionStore } from '@/features/resource-center/workbench/question/store/question-workbench-session.ts'
 import QuestionManagementEditor from './management/QuestionManagementEditor.vue'
 import QuestionManagementFilters from './management/QuestionManagementFilters.vue'
 import QuestionManagementPagination from './management/QuestionManagementPagination.vue'
@@ -35,6 +36,7 @@ import QuestionManagementTable from './management/QuestionManagementTable.vue'
 import type {
   QuestionEditorDraft,
   QuestionEditorMode,
+  QuestionQueryState,
   QuestionStatus,
   QuestionType,
   QuestionValidationErrors,
@@ -52,15 +54,24 @@ const props = defineProps<{
 }>()
 
 const repository = createQuestionWorkbenchRepository()
-const queryDraft = ref(createDefaultQuestionQueryState())
-const activeQuery = ref(createDefaultQuestionQueryState())
+const sessionStore = useQuestionWorkbenchSessionStore()
 const repositoryVersion = ref(0)
 const feedback = ref<QuestionFeedbackState | null>(null)
 const editorOpen = ref(false)
 const editorMode = ref<QuestionEditorMode>('create')
 const editingQuestionId = ref<string>()
-const editorDraft = ref(createDraftFromQuery(queryDraft.value))
+const editorDraft = ref(createDraftFromQuery(sessionStore.queryDraft))
 const validationErrors = ref<QuestionValidationErrors>({})
+
+const queryDraft = computed<QuestionQueryState>({
+  get: () => sessionStore.queryDraft,
+  set: (value) => sessionStore.patchQueryDraft(value),
+})
+
+const activeQuery = computed<QuestionQueryState>({
+  get: () => sessionStore.activeQuery,
+  set: (value) => sessionStore.patchQuery(value),
+})
 
 const viewModel = computed(() => {
   repositoryVersion.value
@@ -70,6 +81,23 @@ const viewModel = computed(() => {
     result: repository.listQuestions(activeQuery.value),
   })
 })
+
+watch(
+  () => ({
+    page: activeQuery.value.page,
+    pageCount: viewModel.value.pagination.pageCount,
+  }),
+  ({ page, pageCount }) => {
+    if (page <= pageCount) {
+      return
+    }
+
+    sessionStore.patchQuery({
+      page: pageCount,
+    })
+  },
+  { immediate: true },
+)
 
 const summaryCards = computed<WorkbenchSummaryCard<'matching-total' | QuestionStatus>[]>(() => [
   {
@@ -116,34 +144,29 @@ function createDraftFromQuery(query = createDefaultQuestionQueryState()): Questi
 }
 
 function handleSubjectFilterUpdate(subjectId: string) {
-  queryDraft.value = {
-    ...queryDraft.value,
+  sessionStore.patchQueryDraft({
     subjectId,
     chapterId: '',
     page: 1,
-  }
+  })
 }
 
 function handleSearch() {
-  activeQuery.value = {
-    ...activeQuery.value,
+  sessionStore.patchQuery({
     ...queryDraft.value,
     page: 1,
-  }
+  })
 }
 
 function handleReset() {
-  const nextQuery = createDefaultQuestionQueryState()
-  queryDraft.value = nextQuery
-  activeQuery.value = nextQuery
+  sessionStore.reset()
   feedback.value = null
 }
 
 function handlePageChange(page: number) {
-  activeQuery.value = {
-    ...activeQuery.value,
+  sessionStore.patchQuery({
     page,
-  }
+  })
 }
 
 function handleStatusSelect(status: QuestionStatus) {
@@ -280,10 +303,9 @@ function handleEditorSave() {
     }
 
     if (visibleInCurrentQuery) {
-      activeQuery.value = {
-        ...activeQuery.value,
+      sessionStore.patchQuery({
         page: 1,
-      }
+      })
     }
   }
 
@@ -317,10 +339,10 @@ function handleEditorSave() {
         :difficulty-options="viewModel.difficultyOptions"
         :chapter-disabled="viewModel.chapterDisabled"
         @update-subject="handleSubjectFilterUpdate"
-        @update-chapter="(chapterId) => (queryDraft.chapterId = chapterId)"
-        @update-type="(type) => (queryDraft.type = type)"
-        @update-difficulty="(difficulty) => (queryDraft.difficulty = difficulty)"
-        @update-keyword="(keyword) => (queryDraft.keyword = keyword)"
+        @update-chapter="(chapterId) => sessionStore.patchQueryDraft({ chapterId })"
+        @update-type="(type) => sessionStore.patchQueryDraft({ type })"
+        @update-difficulty="(difficulty) => sessionStore.patchQueryDraft({ difficulty })"
+        @update-keyword="(keyword) => sessionStore.patchQueryDraft({ keyword })"
         @search="handleSearch"
         @reset="handleReset"
         @create="handleCreate"
