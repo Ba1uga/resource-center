@@ -11,7 +11,9 @@ const storage = createInMemoryWorkbenchStorage()
 assert.equal(storage.getItem('resource-center:missing'), null)
 
 const fallback = { page: 1, keyword: '', filters: ['draft'] }
-assert.deepEqual(loadWorkbenchSessionState('missing', fallback, storage), fallback)
+const missingState = loadWorkbenchSessionState('missing', fallback, storage)
+assert.deepEqual(missingState, fallback)
+assert.notEqual(missingState, fallback)
 
 saveWorkbenchSessionState('video', { page: 3, keyword: 'network' }, storage)
 assert.deepEqual(loadWorkbenchSessionState('video', fallback, storage), {
@@ -21,4 +23,21 @@ assert.deepEqual(loadWorkbenchSessionState('video', fallback, storage), {
 })
 
 storage.setItem('resource-center:video', '{not-json')
-assert.deepEqual(loadWorkbenchSessionState('video', fallback, storage), fallback)
+const brokenJsonState = loadWorkbenchSessionState('video', fallback, storage)
+assert.deepEqual(brokenJsonState, fallback)
+assert.notEqual(brokenJsonState, fallback)
+
+const throwingStorage = {
+  getItem() {
+    throw new Error('read failed')
+  },
+  setItem() {
+    throw new Error('write failed')
+  },
+}
+
+const throwingStorageState = loadWorkbenchSessionState('video', fallback, throwingStorage)
+assert.deepEqual(throwingStorageState, fallback)
+assert.notEqual(throwingStorageState, fallback)
+
+assert.doesNotThrow(() => saveWorkbenchSessionState('video', { page: 2 }, throwingStorage))

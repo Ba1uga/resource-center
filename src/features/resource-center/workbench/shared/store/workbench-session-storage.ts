@@ -7,13 +7,21 @@ const STORAGE_KEY_PREFIX = 'resource-center:'
 
 const buildStorageKey = (key: string) => `${STORAGE_KEY_PREFIX}${key}`
 
+const cloneFallbackState = <T extends Record<string, unknown>>(fallback: T): T => ({
+  ...fallback,
+})
+
 const resolveWorkbenchStorage = (storage?: WorkbenchStorageLike): WorkbenchStorageLike | null => {
   if (storage) {
     return storage
   }
 
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage
+    }
+  } catch {
+    return null
   }
 
   return null
@@ -40,18 +48,24 @@ export const loadWorkbenchSessionState = <T extends Record<string, unknown>>(
   const resolvedStorage = resolveWorkbenchStorage(storage)
 
   if (!resolvedStorage) {
-    return fallback
+    return cloneFallbackState(fallback)
   }
 
-  const rawValue = resolvedStorage.getItem(buildStorageKey(key))
+  let rawValue: string | null
+  try {
+    rawValue = resolvedStorage.getItem(buildStorageKey(key))
+  } catch {
+    return cloneFallbackState(fallback)
+  }
+
   if (!rawValue) {
-    return fallback
+    return cloneFallbackState(fallback)
   }
 
   try {
     const parsedValue = JSON.parse(rawValue)
     if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) {
-      return fallback
+      return cloneFallbackState(fallback)
     }
 
     return {
@@ -59,7 +73,7 @@ export const loadWorkbenchSessionState = <T extends Record<string, unknown>>(
       ...parsedValue,
     }
   } catch {
-    return fallback
+    return cloneFallbackState(fallback)
   }
 }
 
@@ -74,5 +88,9 @@ export const saveWorkbenchSessionState = <T>(
     return
   }
 
-  resolvedStorage.setItem(buildStorageKey(key), JSON.stringify(value))
+  try {
+    resolvedStorage.setItem(buildStorageKey(key), JSON.stringify(value))
+  } catch {
+    // Ignore storage failures so persistence cannot break store behavior.
+  }
 }
