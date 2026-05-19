@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 
+import { outlineWorkbenchCourses } from '../../../../src/features/resource-center/workbench/outline/model/outline-workbench.fixtures.ts'
+
 const viewModelModuleUrl = new URL(
   '../../../../src/features/resource-center/workbench/outline/model/outline-workbench.view-model.ts',
   import.meta.url,
@@ -13,7 +15,51 @@ const {
   createOutlineWorkbenchViewModel,
 } = await import(viewModelModuleUrl.href)
 
-const defaultQuery = createDefaultOutlineWorkbenchQueryState()
+const defaultQuery = createDefaultOutlineWorkbenchQueryState(
+  {
+    records: [
+      {
+        id: 'course-functions-and-derivatives',
+        title: '函数与导数',
+        instructor: '林知夏',
+        department: '数学教研组',
+        matchedVersionCount: 2,
+        totalVersionCount: 3,
+        latestMatchedVersionUpdatedAt: '2026-04-10 09:30:00',
+      },
+    ],
+    total: 1,
+    size: 10,
+    current: 1,
+    pages: 1,
+  },
+  {
+    'course-functions-and-derivatives': {
+      records: [
+        {
+          id: 'outline-version-fd-2026-spring',
+          courseId: 'course-functions-and-derivatives',
+          versionName: '2026 春版',
+          semester: '2026春',
+          status: 'draft',
+          archiveState: 'active',
+          archivedAt: null,
+          note: '测试',
+          updatedBy: '林知夏',
+          updatedAt: '2026-04-10 09:30:00',
+          completionPercent: 83,
+          completionIssueCount: 1,
+          completionState: 'nearly-complete',
+        },
+      ],
+      total: 1,
+      size: 20,
+      current: 1,
+      pages: 1,
+    },
+  },
+)
+
 assert.deepEqual(defaultQuery, {
   selectedCourseId: 'course-functions-and-derivatives',
   selectedVersionId: 'outline-version-fd-2026-spring',
@@ -25,95 +71,92 @@ assert.deepEqual(defaultQuery, {
   sortBy: 'updated-desc',
 })
 
-const defaultView = createOutlineWorkbenchViewModel({
-  queryState: defaultQuery,
-})
-
-assert.equal('resultCountLabel' in defaultView, false)
-assert.equal(defaultView.currentVersionMatchesFilters, true)
-assert.equal(defaultView.currentCourse?.id, 'course-functions-and-derivatives')
-assert.equal(defaultView.currentVersion?.id, 'outline-version-fd-2026-spring')
-assert.equal(defaultView.courses.length, 3)
-assert.equal(defaultView.courses[0]?.id, 'course-functions-and-derivatives')
-assert.equal(defaultView.courses[0]?.versionCount, 3)
-assert.equal(defaultView.courses[0]?.versions[0]?.id, 'outline-version-fd-2026-spring')
-assert.equal(defaultView.courses[0]?.versions[0]?.completionPercent, 83)
-assert.equal(defaultView.courses[0]?.versions[0]?.issueCount, 1)
-assert.equal(defaultView.courses[0]?.versions[0]?.archiveState, 'active')
-assert.equal(defaultView.courses[2]?.id, 'course-data-structure')
-
-const archivedView = createOutlineWorkbenchViewModel({
-  queryState: {
-    ...defaultQuery,
-    archiveState: 'archived',
+const pagedSummaryView = createOutlineWorkbenchViewModel({
+  coursePage: {
+    records: [
+      {
+        id: 'course-functions-and-derivatives',
+        title: '函数与导数',
+        instructor: '林知夏',
+        department: '数学教研组',
+        matchedVersionCount: 2,
+        totalVersionCount: 3,
+        latestMatchedVersionUpdatedAt: '2026-04-10 09:30:00',
+      },
+    ],
+    total: 1,
+    size: 10,
+    current: 1,
+    pages: 1,
   },
-})
-
-assert.equal('resultCountLabel' in archivedView, false)
-assert.equal(archivedView.currentVersionMatchesFilters, false)
-assert.equal(archivedView.courses[0]?.id, 'course-functions-and-derivatives')
-assert.equal(archivedView.courses[0]?.versions[0]?.id, 'outline-version-fd-2025-fall')
-assert.equal(archivedView.courses[0]?.versions[0]?.archiveState, 'archived')
-
-const searchedView = createOutlineWorkbenchViewModel({
-  queryState: {
-    ...defaultQuery,
-    searchText: '立体',
-  },
-})
-
-assert.equal('resultCountLabel' in searchedView, false)
-assert.equal(searchedView.courses[0]?.id, 'course-solid-geometry')
-
-const collaboratorSearchView = createOutlineWorkbenchViewModel({
-  queryState: {
-    ...defaultQuery,
-    searchText: '赵明远',
-  },
-})
-
-assert.equal('resultCountLabel' in collaboratorSearchView, false)
-assert.equal(collaboratorSearchView.courses.length, 1)
-assert.equal(collaboratorSearchView.courses[0]?.id, 'course-functions-and-derivatives')
-assert.equal(collaboratorSearchView.courses[0]?.versions[0]?.id, 'outline-version-fd-2026-collab')
-assert.equal(collaboratorSearchView.courses[0]?.versions[0]?.updatedBy, '赵明远')
-
-const completedView = createOutlineWorkbenchViewModel({
-  queryState: {
-    ...defaultQuery,
-    completionState: 'complete',
-  },
-})
-
-assert.equal('resultCountLabel' in completedView, false)
-assert.equal(
-  completedView.courses.every((course: { versions: Array<{ issueCount: number }> }) =>
-    course.versions.every((version) => version.issueCount === 0),
-  ),
-  true,
-)
-
-const zeroVersionCourseView = createOutlineWorkbenchViewModel({
-  courses: [
-    {
-      id: 'course-discrete-math',
-      title: '离散数学',
-      instructor: '沈砚',
-      department: '计算机教研组',
-      versions: [],
+  versionPagesByCourseId: {
+    'course-functions-and-derivatives': {
+      records: [
+        {
+          id: 'outline-version-fd-2026-spring',
+          courseId: 'course-functions-and-derivatives',
+          versionName: '2026 春版',
+          semester: '2026春',
+          status: 'draft',
+          archiveState: 'active',
+          archivedAt: null,
+          note: '测试',
+          updatedBy: '林知夏',
+          updatedAt: '2026-04-10 09:30:00',
+          completionPercent: 83,
+          completionIssueCount: 1,
+          completionState: 'nearly-complete',
+        },
+      ],
+      total: 1,
+      size: 20,
+      current: 1,
+      pages: 1,
     },
-  ],
+  },
+  selectedCourseId: 'course-functions-and-derivatives',
+  selectedVersionId: 'outline-version-fd-2026-spring',
+  currentVersion: outlineWorkbenchCourses[0].versions[0],
   queryState: {
-    selectedCourseId: 'course-discrete-math',
-    selectedVersionId: '',
+    selectedCourseId: 'course-functions-and-derivatives',
+    selectedVersionId: 'outline-version-fd-2026-spring',
+    searchText: '函数',
+    semester: '',
+    versionStatus: 'all',
+    completionState: 'all',
+    archiveState: 'active',
+    sortBy: 'updated-desc',
   },
 })
 
-assert.equal('resultCountLabel' in zeroVersionCourseView, false)
-assert.equal(zeroVersionCourseView.courses.length, 1)
-assert.equal(zeroVersionCourseView.courses[0]?.id, 'course-discrete-math')
-assert.equal(zeroVersionCourseView.courses[0]?.versionCount, 0)
-assert.equal(zeroVersionCourseView.currentCourse?.id, 'course-discrete-math')
-assert.equal(zeroVersionCourseView.currentVersion, undefined)
-assert.equal(zeroVersionCourseView.toolbar.versionLabel, '未选择版本')
-assert.equal(zeroVersionCourseView.toolbar.statusLabel, '未开始')
+assert.equal('resultCountLabel' in pagedSummaryView, false)
+assert.equal(pagedSummaryView.currentVersionMatchesFilters, true)
+assert.equal(pagedSummaryView.currentCourse?.id, 'course-functions-and-derivatives')
+assert.equal(pagedSummaryView.currentVersion?.id, 'outline-version-fd-2026-spring')
+assert.equal(pagedSummaryView.courses[0]?.matchedVersionCount, 2)
+assert.equal(pagedSummaryView.courses[0]?.totalVersionCount, 3)
+assert.equal(pagedSummaryView.courses[0]?.versions[0]?.completionPercent, 83)
+assert.equal(pagedSummaryView.pagination.page, 1)
+assert.equal(pagedSummaryView.pagination.total, 1)
+
+const hiddenCurrentVersionView = createOutlineWorkbenchViewModel({
+  coursePage: {
+    records: [],
+    total: 0,
+    size: 10,
+    current: 1,
+    pages: 1,
+  },
+  versionPagesByCourseId: {},
+  selectedCourseId: 'course-functions-and-derivatives',
+  selectedVersionId: 'outline-version-fd-2026-spring',
+  currentVersion: outlineWorkbenchCourses[0].versions[0],
+  queryState: {
+    ...defaultQuery,
+    searchText: '不存在',
+  },
+})
+
+assert.equal(hiddenCurrentVersionView.currentVersionMatchesFilters, false)
+assert.equal(hiddenCurrentVersionView.currentVersion?.id, 'outline-version-fd-2026-spring')
+assert.equal(hiddenCurrentVersionView.pagination.total, 0)

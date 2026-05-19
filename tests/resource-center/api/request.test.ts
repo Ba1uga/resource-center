@@ -19,18 +19,20 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
   })
 }) as typeof fetch
 
-const payload = await request<{ code: number; message: string; data: unknown[] }>('/textbooks', {
-  method: 'GET',
-  query: {
-    page: 1,
-    pageSize: 10,
-    keyword: '网络',
-  },
-})
+try {
+  const payload = await request<{ code: number; message: string; data: unknown[] }>('/textbooks', {
+    method: 'GET',
+    query: {
+      page: 1,
+      pageSize: 10,
+      keyword: '网络',
+    },
+  })
 
-assert.equal(payload.code, 200)
-assert.equal(capturedUrl, 'http://localhost:8080/api/textbooks?page=1&pageSize=10&keyword=%E7%BD%91%E7%BB%9C')
-assert.equal(capturedInit?.method, 'GET')
-assert.equal(capturedInit?.cache, 'no-store')
-
-globalThis.fetch = originalFetch
+  assert.equal(payload.code, 200)
+  assert.equal(capturedUrl, 'http://localhost:8080/api/textbooks?page=1&pageSize=10&keyword=%E7%BD%91%E7%BB%9C')
+  assert.equal(capturedInit?.method, 'GET')
+  assert.equal(capturedInit?.cache, 'no-store')
+} finally {
+  globalThis.fetch = originalFetch
+}

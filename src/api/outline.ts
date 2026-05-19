@@ -81,8 +81,8 @@ export interface OutlineListParams {
   versionStatus?: 'draft' | 'final' | 'all'
   completionState?: 'all' | 'needs-completion' | 'nearly-complete' | 'complete'
   archiveState?: 'active' | 'archived' | 'all'
-  page: number
-  pageSize: number
+  page?: number
+  pageSize?: number
 }
 
 function normalizeVersion(version: OutlineVersionApiVO): OutlineVersionRecord {
@@ -248,6 +248,10 @@ export async function listOutlineCourseVersions(
       query,
     },
   )
+
+  if (!response.data || !Array.isArray(response.data.records)) {
+    throw new Error('outline course version page payload is invalid')
+  }
 
   return {
     ...response.data,

@@ -232,6 +232,8 @@ export interface OutlineCourseNavItem {
   title: string
   instructor: string
   versionCount: number
+  matchedVersionCount: number
+  totalVersionCount: number
   current: boolean
   versions: OutlineVersionNavItem[]
 }
@@ -252,6 +254,7 @@ export interface OutlineWorkbenchViewModel {
   completion: OutlineCompletionSummary
   teachingMethodOptions: string[]
   currentVersionMatchesFilters: boolean
+  pagination: OutlinePaginationState
 }
 
 export interface PrintableOutlineSection {

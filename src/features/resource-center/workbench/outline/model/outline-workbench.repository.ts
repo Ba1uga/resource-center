@@ -8,6 +8,7 @@ import type {
   DuplicateOutlineVersionInput,
   OutlineCourseRecord,
   OutlineExportResult,
+  OutlineVersionSummaryRecord,
   OutlineVersionDraft,
   OutlineVersionRecord,
   OutlineVersionSectionState,
@@ -26,6 +27,8 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
   const createId = options.createId ?? createDefaultIdFactory()
 
   let courses = cloneCourses(options.initialCourses ?? outlineWorkbenchCourses)
+  let versionDetails = new Map<string, OutlineVersionRecord>()
+  let versionSummariesByCourseId = new Map<string, OutlineVersionSummaryRecord[]>()
 
   return {
     listCourses(): OutlineCourseRecord[] {
@@ -40,6 +43,58 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
     },
     getVersion(courseId: string, versionId: string): OutlineVersionRecord | undefined {
       return this.getCourse(courseId)?.versions.find((version) => version.id === versionId)
+    },
+    replaceVersionDetail(version: OutlineVersionRecord) {
+      versionDetails.set(version.id, cloneCourseVersion(version))
+    },
+    saveVersionDetail(version: OutlineVersionRecord) {
+      versionDetails.set(version.id, cloneCourseVersion(version))
+    },
+    getVersionDetail(versionId: string): OutlineVersionRecord | undefined {
+      const version = versionDetails.get(versionId)
+      return version ? cloneCourseVersion(version) : undefined
+    },
+    upsertVersionSummary(courseId: string, summary: OutlineVersionSummaryRecord) {
+      const current = versionSummariesByCourseId.get(courseId) ?? []
+      const next = current.filter((item) => item.id !== summary.id)
+      next.unshift(cloneVersionSummary(summary))
+      versionSummariesByCourseId.set(courseId, next)
+    },
+    replaceVersionSummaries(courseId: string, summaries: OutlineVersionSummaryRecord[]) {
+      versionSummariesByCourseId.set(courseId, summaries.map(cloneVersionSummary))
+    },
+    listVersionSummaries(courseId: string): OutlineVersionSummaryRecord[] {
+      return (versionSummariesByCourseId.get(courseId) ?? []).map(cloneVersionSummary)
+    },
+    archiveVersionSummary(courseId: string, versionId: string, archivedAt: string) {
+      const current = versionSummariesByCourseId.get(courseId) ?? []
+      versionSummariesByCourseId.set(
+        courseId,
+        current.map((summary) =>
+          summary.id === versionId
+            ? {
+                ...cloneVersionSummary(summary),
+                archiveState: 'archived',
+                archivedAt,
+              }
+            : cloneVersionSummary(summary),
+        ),
+      )
+    },
+    restoreVersionSummary(courseId: string, versionId: string) {
+      const current = versionSummariesByCourseId.get(courseId) ?? []
+      versionSummariesByCourseId.set(
+        courseId,
+        current.map((summary) =>
+          summary.id === versionId
+            ? {
+                ...cloneVersionSummary(summary),
+                archiveState: 'active',
+                archivedAt: null,
+              }
+            : cloneVersionSummary(summary),
+        ),
+      )
     },
     createCourse(input: CreateOutlineCourseInput): OutlineCourseRecord {
       const created: OutlineCourseRecord = {
@@ -72,6 +127,9 @@ export function createOutlineWorkbenchRepository(options: CreateOutlineWorkbench
         createdBy: input.createdBy,
         updatedAt: now(),
         updatedBy: input.updatedBy,
+        completionPercent: 0,
+        completionIssueCount: 6,
+        completionState: 'needs-completion',
         sections: createOutlineVersionDraft({
           courseId: input.courseId,
           versionName: input.versionName,
@@ -215,7 +273,28 @@ function cloneCourseVersion(version: OutlineVersionRecord): OutlineVersionRecord
     createdBy: version.createdBy,
     updatedAt: version.updatedAt,
     updatedBy: version.updatedBy,
+    completionPercent: version.completionPercent,
+    completionIssueCount: version.completionIssueCount,
+    completionState: version.completionState,
     sections: cloneSections(version.sections),
+  }
+}
+
+function cloneVersionSummary(version: OutlineVersionSummaryRecord): OutlineVersionSummaryRecord {
+  return {
+    id: version.id,
+    courseId: version.courseId,
+    versionName: version.versionName,
+    semester: version.semester,
+    status: version.status,
+    archiveState: version.archiveState,
+    archivedAt: version.archivedAt,
+    note: version.note,
+    updatedBy: version.updatedBy,
+    updatedAt: version.updatedAt,
+    completionPercent: version.completionPercent,
+    completionIssueCount: version.completionIssueCount,
+    completionState: version.completionState,
   }
 }
 
