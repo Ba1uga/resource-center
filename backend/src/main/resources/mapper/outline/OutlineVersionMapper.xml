@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baluga.backend.modules.outline.mapper.OutlineVersionMapper">
+
+    <select id="selectCourseVersionSummaryPage" resultType="com.baluga.backend.modules.outline.dto.response.OutlineVersionSummaryVO">
+        SELECT
+            ov.id,
+            ov.course_id AS courseId,
+            ov.version_name AS versionName,
+            ov.semester,
+            ov.status,
+            ov.archive_state AS archiveState,
+            ov.archived_at AS archivedAt,
+            ov.note,
+            ov.updated_by AS updatedBy,
+            ov.updated_at AS updatedAt,
+            ov.completion_percent AS completionPercent,
+            ov.completion_issue_count AS completionIssueCount,
+            ov.completion_state AS completionState
+        FROM outline_version ov
+        WHERE ov.deleted = 0
+          AND ov.course_id = #{courseId}
+          <if test="request.semester != null and request.semester != ''">
+              AND ov.semester = #{request.semester}
+          </if>
+          <if test="request.versionStatus != null and request.versionStatus != '' and request.versionStatus != 'all'">
+              AND ov.status = #{request.versionStatus}
+          </if>
+          <if test="request.completionState != null and request.completionState != '' and request.completionState != 'all'">
+              AND ov.completion_state = #{request.completionState}
+          </if>
+          <if test="request.archiveState != null and request.archiveState != '' and request.archiveState != 'all'">
+              AND ov.archive_state = #{request.archiveState}
+          </if>
+          <if test="keyword != null and keyword != ''">
+              AND LOWER(CONCAT(ov.version_name, ' ', ov.note, ' ', ov.updated_by)) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+          </if>
+        ORDER BY ov.updated_at DESC, ov.id DESC
+    </select>
+</mapper>

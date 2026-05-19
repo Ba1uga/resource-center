@@ -1,5 +1,6 @@
 package com.baluga.backend.modules.outline.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baluga.backend.common.api.R;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateCourseRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineCreateVersionRequest;
@@ -7,6 +8,8 @@ import com.baluga.backend.modules.outline.dto.request.OutlineDuplicateVersionReq
 import com.baluga.backend.modules.outline.dto.request.OutlineListRequest;
 import com.baluga.backend.modules.outline.dto.request.OutlineSaveVersionRequest;
 import com.baluga.backend.modules.outline.dto.response.OutlineCourseVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineCourseSummaryVO;
+import com.baluga.backend.modules.outline.dto.response.OutlineVersionSummaryVO;
 import com.baluga.backend.modules.outline.dto.response.OutlineVersionVO;
 import com.baluga.backend.modules.outline.entity.OutlineCourse;
 import com.baluga.backend.modules.outline.entity.OutlineVersion;
@@ -24,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
-import java.util.List;
 
 
 @Validated
@@ -37,13 +39,16 @@ public class OutlineController {
     private final ObjectMapper objectMapper;
 
     @GetMapping("/courses")
-    public R<List<OutlineCourseVO>> listCourses(@Valid OutlineListRequest request) {
-        return R.ok(outlineService.listCoursesWithVersions(
-                request.getKeyword(),
-                request.getSemester(),
-                request.getVersionStatus(),
-                request.getArchiveState()
-        ));
+    public R<Page<OutlineCourseSummaryVO>> listCourses(@Valid OutlineListRequest request) {
+        return R.ok(outlineService.pageCourseSummaries(request));
+    }
+
+    @GetMapping("/courses/{courseId}/versions")
+    public R<Page<OutlineVersionSummaryVO>> listCourseVersions(
+            @PathVariable Long courseId,
+            @Valid OutlineListRequest request
+    ) {
+        return R.ok(outlineService.pageCourseVersions(courseId, request));
     }
 
     @GetMapping("/versions/{id}")

@@ -49,6 +49,12 @@ public class OutlineVersionVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime updatedAt;
 
+    private Integer completionPercent;
+
+    private Integer completionIssueCount;
+
+    private String completionState;
+
     public static OutlineVersionVO fromEntity(OutlineVersion version, String courseTitle, ObjectMapper objectMapper) {
         JsonNode sectionsNode;
         try {
@@ -72,6 +78,9 @@ public class OutlineVersionVO {
                 .sections(sectionsNode)
                 .createdAt(version.getCreatedAt())
                 .updatedAt(version.getUpdatedAt())
+                .completionPercent(version.getCompletionPercent())
+                .completionIssueCount(version.getCompletionIssueCount())
+                .completionState(version.getCompletionState())
                 .build();
     }
 }

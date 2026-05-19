@@ -10,7 +10,9 @@ import {
   createOutlineCourse,
   createOutlineVersion,
   duplicateOutlineVersion,
-  listOutlineCourses,
+  getOutlineVersion,
+  listOutlineCoursePage,
+  listOutlineCourseVersions,
   restoreOutlineVersion,
   saveOutlineVersion,
 } from '@/api/outline.ts'
@@ -25,14 +27,20 @@ import {
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.validation.ts'
 import {
   createDefaultOutlineWorkbenchQueryState,
+  createOutlinePaginationState,
   createOutlineWorkbenchViewModel,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.view-model.ts'
-import { outlineWorkbenchCourses } from '@/features/resource-center/workbench/outline/model/outline-workbench.fixtures.ts'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
+import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 
 import type {
   OutlineCompletionSummary,
+  OutlineCourseRecord,
+  OutlineCourseSummaryRecord,
+  OutlinePageResult,
   OutlineSectionId,
+  OutlineVersionRecord,
+  OutlineVersionSummaryRecord,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.types.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 
@@ -57,8 +65,20 @@ type UndoArchiveTarget = PendingArchiveTarget
 const repository = createOutlineWorkbenchRepository({
   initialCourses: [],
 })
-const queryState = reactive(createDefaultOutlineWorkbenchQueryState(repository.listCourses()))
-const dataVersion = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const pageSizeOptions = [10, 20, 50]
+const coursePageState = ref<OutlinePageResult<OutlineCourseSummaryRecord>>({
+  records: [],
+  total: 0,
+  size: 10,
+  current: 1,
+  pages: 1,
+})
+const courseVersionPages = reactive<Record<string, OutlinePageResult<OutlineVersionSummaryRecord>>>({})
+const courseVersionPageNumbers = reactive<Record<string, number>>({})
+const courseVersionPageSizes = reactive<Record<string, number>>({})
+const queryState = reactive(createDefaultOutlineWorkbenchQueryState(coursePageState.value, courseVersionPages))
 const draft = ref(createOutlineVersionDraft())
 const activeEditorSection = ref<OutlineSectionId>('basic-info')
 const showVersionCreator = ref(false)
@@ -84,6 +104,10 @@ const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
 const isEditing = ref(false)
 const isLoading = ref(false)
 const isCreatingCourse = ref(false)
+const loadingCourseIds = ref<string[]>([])
+const courseVersionErrors = reactive<Record<string, string>>({})
+const currentCourseDetail = ref<OutlineCourseRecord | undefined>(undefined)
+const currentVersionDetail = ref<OutlineVersionRecord | undefined>(undefined)
 const courseTreeScrollRef = ref<HTMLElement | null>(null)
 const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
@@ -100,12 +124,28 @@ const outlineScrollbarOptions: PerfectScrollbar.Options = {
 }
 
 const viewModel = computed(() => {
-  dataVersion.value
-
   return createOutlineWorkbenchViewModel({
-    courses: repository.listCourses(),
+    coursePage: coursePageState.value,
+    versionPagesByCourseId: courseVersionPages,
+    selectedCourseId: queryState.selectedCourseId,
+    selectedVersionId: queryState.selectedVersionId,
+    currentCourse: currentCourseDetail.value,
+    currentVersion: currentVersionDetail.value,
     queryState,
   })
+})
+
+const currentVersionPageHint = computed(() => {
+  const currentCourseId = queryState.selectedCourseId
+  const currentVersionId = queryState.selectedVersionId
+  if (!currentCourseId || !currentVersionId) {
+    return ''
+  }
+
+  const currentPageRecords = courseVersionPages[currentCourseId]?.records ?? []
+  return currentPageRecords.some((version) => version.id === currentVersionId)
+    ? ''
+    : '当前查看版本不在本页列表中。'
 })
 
 const hasActiveCourseFilters = computed(
@@ -153,7 +193,7 @@ watch(hasActiveCourseFilters, (isActive, wasActive) => {
 watch(
   () => [queryState.semester, queryState.versionStatus, queryState.archiveState].join('|'),
   () => {
-    loadOutlineCourses()
+    loadOutlineCoursePage()
   },
   { flush: 'post' },
 )
@@ -162,7 +202,6 @@ watch(
   () => [
     expandedCourseIds.value.join('|'),
     activeEditorSection.value,
-    dataVersion.value,
     createDraftSnapshot(draft.value),
     showVersionCreator.value || showCourseCreator.value ? 'creating' : 'idle',
     pendingArchive.value?.versionId ?? '',
@@ -259,32 +298,40 @@ function showTransientStatus() {
   }, 3200)
 }
 
-async function loadOutlineCourses(message = '') {
+async function loadOutlineCoursePage(message = '') {
   isLoading.value = true
 
   try {
-    const courses = await listOutlineCourses({
+    const response = await listOutlineCoursePage({
       keyword: queryState.searchText.trim(),
       semester: queryState.semester,
       versionStatus: queryState.versionStatus,
+      completionState: queryState.completionState,
       archiveState: queryState.archiveState,
+      page: page.value,
+      pageSize: pageSize.value,
     })
 
-    repository.replaceCourses(courses)
-    dataVersion.value += 1
+    coursePageState.value = response
 
-    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(courses)
-    const hasSelectedCourse = courses.some((course) => course.id === queryState.selectedCourseId)
+    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(response, courseVersionPages)
+    const hasSelectedCourse = response.records.some((course) => course.id === queryState.selectedCourseId)
 
     if (!hasSelectedCourse) {
-      queryState.selectedCourseId = defaultQueryState.selectedCourseId
+      if (!currentCourseDetail.value || currentCourseDetail.value.id !== queryState.selectedCourseId) {
+        queryState.selectedCourseId = defaultQueryState.selectedCourseId
+      }
     }
 
-    const selectedCourse = courses.find((course) => course.id === queryState.selectedCourseId)
-    const hasSelectedVersion = selectedCourse?.versions.some((version) => version.id === queryState.selectedVersionId) ?? false
+    if (queryState.selectedCourseId && !courseVersionPages[queryState.selectedCourseId]) {
+      await loadOutlineCourseVersions(queryState.selectedCourseId)
+    }
 
-    if (!hasSelectedVersion) {
-      queryState.selectedVersionId = selectedCourse?.versions[0]?.id ?? ''
+    const selectedVersions = queryState.selectedCourseId ? courseVersionPages[queryState.selectedCourseId]?.records ?? [] : []
+    const hasSelectedVersion = selectedVersions.some((version) => version.id === queryState.selectedVersionId)
+
+    if (!hasSelectedVersion && (!currentVersionDetail.value || currentVersionDetail.value.id !== queryState.selectedVersionId)) {
+      queryState.selectedVersionId = selectedVersions[0]?.id ?? ''
     }
 
     if (message) {
@@ -293,17 +340,50 @@ async function loadOutlineCourses(message = '') {
     connectionStatus.value = ''
   } catch (error) {
     console.error(error)
-    repository.replaceCourses(outlineWorkbenchCourses)
-    dataVersion.value += 1
-
-    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(outlineWorkbenchCourses)
-    queryState.selectedCourseId = defaultQueryState.selectedCourseId
-    queryState.selectedVersionId = defaultQueryState.selectedVersionId
     connectionStatus.value = 'offline'
     showTransientStatus()
   } finally {
     isLoading.value = false
   }
+}
+
+async function loadOutlineCourseVersions(courseId: string, requestedPage = 1) {
+  if (!courseId) {
+    return
+  }
+
+  loadingCourseIds.value = Array.from(new Set([...loadingCourseIds.value, courseId]))
+  delete courseVersionErrors[courseId]
+
+  try {
+    const response = await listOutlineCourseVersions(courseId, {
+      keyword: queryState.searchText.trim(),
+      semester: queryState.semester,
+      versionStatus: queryState.versionStatus,
+      completionState: queryState.completionState,
+      archiveState: queryState.archiveState,
+      page: requestedPage,
+      pageSize: courseVersionPageSizes[courseId] ?? 20,
+    })
+    courseVersionPages[courseId] = response
+    courseVersionPageNumbers[courseId] = response.current
+  } catch (error) {
+    console.error(error)
+    courseVersionErrors[courseId] = error instanceof Error ? error.message : '加载版本失败'
+  } finally {
+    loadingCourseIds.value = loadingCourseIds.value.filter((id) => id !== courseId)
+  }
+}
+
+function handleCoursePageChange(nextPage: number) {
+  page.value = nextPage
+  loadOutlineCoursePage()
+}
+
+function handleCoursePageSizeChange(nextPageSize: number) {
+  pageSize.value = nextPageSize
+  page.value = 1
+  loadOutlineCoursePage()
 }
 
 function isCourseExpanded(courseId: string) {
@@ -360,11 +440,32 @@ function toggleCourseGroup(courseId: string) {
   }
 
   manualExpandedCourseIds.value = [...manualExpandedCourseIds.value, courseId]
+  if (!courseVersionPages[courseId]) {
+    loadOutlineCourseVersions(courseId)
+  }
 }
 
-function selectVersion(courseId: string, versionId: string) {
+async function selectVersion(courseId: string, versionId: string) {
   queryState.selectedCourseId = courseId
   queryState.selectedVersionId = versionId
+  currentCourseDetail.value = currentCourseDetail.value?.id === courseId
+    ? currentCourseDetail.value
+    : toCourseDetail(courseId)
+
+  if (!versionId) {
+    currentVersionDetail.value = undefined
+    return
+  }
+
+  const cachedVersion = repository.getVersionDetail(versionId)
+  if (cachedVersion) {
+    currentVersionDetail.value = cachedVersion
+    return
+  }
+
+  const detail = await getOutlineVersion(Number(versionId))
+  repository.replaceVersionDetail(detail)
+  currentVersionDetail.value = detail
 }
 
 function requestVersionSelection(courseId: string, versionId: string) {
@@ -390,16 +491,16 @@ async function confirmPendingSelectionWithSave() {
   if (!saved) {
     return
   }
-  selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
+  await selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
   pendingSelection.value = null
 }
 
-function discardPendingSelection() {
+async function discardPendingSelection() {
   if (!pendingSelection.value) {
     return
   }
 
-  selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
+  await selectVersion(pendingSelection.value.courseId, pendingSelection.value.versionId)
   pendingSelection.value = null
   setStatusMessage('已放弃未保存修改并切换版本。')
 }
@@ -434,7 +535,7 @@ function closeCourseCreator() {
 }
 
 function handleResetFilters() {
-  const defaults = createDefaultOutlineWorkbenchQueryState(repository.listCourses())
+  const defaults = createDefaultOutlineWorkbenchQueryState(coursePageState.value, courseVersionPages)
   queryState.searchText = defaults.searchText
   queryState.semester = defaults.semester
   queryState.versionStatus = defaults.versionStatus
@@ -442,6 +543,7 @@ function handleResetFilters() {
   queryState.archiveState = defaults.archiveState
   queryState.sortBy = defaults.sortBy
   manualExpandedCourseIds.value = []
+  page.value = 1
 }
 
 async function handleSaveDraft() {
@@ -454,11 +556,24 @@ async function handleSaveDraft() {
 
   try {
     const savedVersion = await saveOutlineVersion(Number(currentVersion.id), draft.value)
-    repository.saveOutlineDraft(currentCourse.id, currentVersion.id, {
-      ...savedVersion,
+    repository.saveVersionDetail(savedVersion)
+    repository.upsertVersionSummary(currentCourse.id, {
+      id: savedVersion.id,
       courseId: currentCourse.id,
+      versionName: savedVersion.versionName,
+      semester: savedVersion.semester,
+      status: savedVersion.status,
+      archiveState: savedVersion.archiveState,
+      archivedAt: savedVersion.archivedAt,
+      note: savedVersion.note,
+      updatedBy: savedVersion.updatedBy,
+      updatedAt: savedVersion.updatedAt,
+      completionPercent: savedVersion.completionPercent,
+      completionIssueCount: savedVersion.completionIssueCount,
+      completionState: savedVersion.completionState,
     })
-    dataVersion.value += 1
+    currentVersionDetail.value = savedVersion
+    syncCurrentCourseVersionPage(currentCourse.id)
     savedSnapshot.value = createDraftSnapshot(draft.value)
     setStatusMessage('保存成功')
     return true
@@ -521,18 +636,28 @@ async function handleCreateVersion() {
           updatedBy: draft.value.updatedBy || currentCourse.instructor,
         })
 
-    repository.replaceCourses(repository.listCourses().map((course) =>
-      course.id === currentCourse.id
-        ? {
-            ...course,
-            versions: [createdVersion, ...course.versions],
-          }
-        : course,
-    ))
-    dataVersion.value += 1
+    repository.replaceVersionDetail(createdVersion)
+    repository.upsertVersionSummary(currentCourse.id, {
+      id: createdVersion.id,
+      courseId: currentCourse.id,
+      versionName: createdVersion.versionName,
+      semester: createdVersion.semester,
+      status: createdVersion.status,
+      archiveState: createdVersion.archiveState,
+      archivedAt: createdVersion.archivedAt,
+      note: createdVersion.note,
+      updatedBy: createdVersion.updatedBy,
+      updatedAt: createdVersion.updatedAt,
+      completionPercent: createdVersion.completionPercent,
+      completionIssueCount: createdVersion.completionIssueCount,
+      completionState: createdVersion.completionState,
+    })
+    currentVersionDetail.value = createdVersion
+    syncCurrentCourseVersionPage(currentCourse.id)
     queryState.archiveState = 'active'
     queryState.selectedCourseId = currentCourse.id
     queryState.selectedVersionId = createdVersion.id
+    currentCourseDetail.value = currentCourse
     closeVersionCreator()
     setStatusMessage(
       versionCreator.mode === 'blank'
@@ -559,9 +684,12 @@ async function handleCreateCourse() {
       department: courseCreator.department.trim(),
     })
 
+    currentCourseDetail.value = createdCourse
+    currentVersionDetail.value = undefined
     queryState.selectedCourseId = createdCourse.id
     queryState.selectedVersionId = ''
-    await loadOutlineCourses(`已创建课程 ${courseCreator.title.trim()}`)
+    page.value = 1
+    await loadOutlineCoursePage(`已创建课程 ${courseCreator.title.trim()}`)
     closeCourseCreator()
   } catch (error) {
     console.error(error)
@@ -607,7 +735,9 @@ async function confirmArchiveVersion() {
   try {
     await archiveOutlineVersion(Number(archiveTarget.versionId))
     const archived = repository.archiveOutlineVersion(archiveTarget.courseId, archiveTarget.versionId)
-    dataVersion.value += 1
+    repository.archiveVersionSummary(archiveTarget.courseId, archiveTarget.versionId, archived.archivedAt ?? '')
+    currentVersionDetail.value = archived.id === currentVersionDetail.value?.id ? archived : currentVersionDetail.value
+    syncCurrentCourseVersionPage(archiveTarget.courseId)
     pendingArchive.value = null
     queryState.archiveState = 'active'
     setStatusMessage(`已归档 ${archived.versionName}`, {
@@ -629,7 +759,9 @@ async function undoArchivedVersion() {
   try {
     await restoreOutlineVersion(Number(undoArchiveTarget.value.versionId))
     const restored = repository.restoreOutlineVersion(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
-    dataVersion.value += 1
+    repository.restoreVersionSummary(undoArchiveTarget.value.courseId, undoArchiveTarget.value.versionId)
+    currentVersionDetail.value = restored.id === currentVersionDetail.value?.id ? restored : currentVersionDetail.value
+    syncCurrentCourseVersionPage(undoArchiveTarget.value.courseId)
     queryState.archiveState = 'active'
     setStatusMessage(`已恢复 ${restored.versionName}`)
   } catch (error) {
@@ -642,7 +774,9 @@ async function handleRestoreVersion(courseId: string, versionId: string) {
   try {
     await restoreOutlineVersion(Number(versionId))
     const restored = repository.restoreOutlineVersion(courseId, versionId)
-    dataVersion.value += 1
+    repository.restoreVersionSummary(courseId, versionId)
+    currentVersionDetail.value = restored.id === currentVersionDetail.value?.id ? restored : currentVersionDetail.value
+    syncCurrentCourseVersionPage(courseId)
     queryState.archiveState = 'all'
     setStatusMessage(`已恢复 ${restored.versionName}`)
   } catch (error) {
@@ -668,7 +802,6 @@ async function handleExportVersion() {
     return
   }
 
-  dataVersion.value += 1
   savedSnapshot.value = createDraftSnapshot(draft.value)
   const exported = repository.exportOutlineVersion(currentCourse.id, currentVersion.id)
   if (!exported.document) {
@@ -778,7 +911,7 @@ onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleWindowKeydown)
   }
-  loadOutlineCourses()
+  loadOutlineCoursePage()
   initializeOutlineScrollbars()
 })
 
@@ -849,6 +982,38 @@ function openPrintWindow(documentModel: {
   printWindow.document.close()
   printWindow.focus()
   printWindow.print()
+}
+
+function toCourseDetail(courseId: string): OutlineCourseRecord | undefined {
+  const summary = coursePageState.value.records.find((course) => course.id === courseId)
+  if (!summary) {
+    return currentCourseDetail.value?.id === courseId ? currentCourseDetail.value : undefined
+  }
+
+  return {
+    id: summary.id,
+    title: summary.title,
+    instructor: summary.instructor,
+    department: summary.department,
+    versions: [],
+  }
+}
+
+function syncCurrentCourseVersionPage(courseId: string) {
+  const summaries = repository.listVersionSummaries(courseId)
+  if (summaries.length === 0 && !courseVersionPages[courseId]) {
+    return
+  }
+
+  const currentPage = courseVersionPages[courseId]?.current ?? 1
+  const currentSize = courseVersionPages[courseId]?.size ?? 20
+  courseVersionPages[courseId] = {
+    records: summaries.slice(0, currentSize),
+    total: Math.max(summaries.length, courseVersionPages[courseId]?.total ?? 0),
+    size: currentSize,
+    current: currentPage,
+    pages: Math.max(1, Math.ceil(Math.max(summaries.length, 1) / currentSize)),
+  }
 }
 </script>
 
@@ -957,7 +1122,7 @@ function openPrintWindow(documentModel: {
           >
             <span class="outline-course-group__summary">
               <strong>{{ course.title }}</strong>
-              <small>{{ course.instructor }} · {{ course.versionCount }} 个版本</small>
+              <small>{{ course.instructor }} · 命中 {{ course.matchedVersionCount }} / 共 {{ course.totalVersionCount }} 个版本</small>
             </span>
             <span class="outline-course-group__chevron" aria-hidden="true">⌄</span>
           </button>
@@ -968,6 +1133,13 @@ function openPrintWindow(documentModel: {
             :aria-hidden="!isCourseExpanded(course.id)"
           >
             <div class="outline-course-group__versions-body">
+              <p v-if="loadingCourseIds.includes(course.id)" class="outline-course-group__hint">正在加载版本...</p>
+              <p v-else-if="courseVersionErrors[course.id]" class="outline-course-group__hint error">
+                {{ courseVersionErrors[course.id] }}
+              </p>
+              <p v-else-if="course.versions.length === 0" class="outline-course-group__hint">
+                当前筛选下没有可显示的版本。
+              </p>
               <div class="outline-course-group__versions">
                 <article
                   v-for="version in course.versions"
@@ -1019,6 +1191,16 @@ function openPrintWindow(documentModel: {
             </div>
           </div>
         </article>
+        <footer class="outline-course-tree__pagination">
+          <WorkbenchTablePagination
+            :pagination="viewModel.pagination"
+            :page-size="pageSize"
+            :page-size-options="pageSizeOptions"
+            show-quick-jumper
+            @page-change="handleCoursePageChange"
+            @page-size-change="handleCoursePageSizeChange"
+          />
+        </footer>
       </aside>
 
       <section class="outline-workspace">
@@ -1066,6 +1248,9 @@ function openPrintWindow(documentModel: {
             </p>
             <p v-if="!viewModel.currentVersionMatchesFilters" class="outline-status-message">
               当前正在查看的版本不在筛选结果中。
+            </p>
+            <p v-if="currentVersionPageHint" class="outline-status-message">
+              {{ currentVersionPageHint }}
             </p>
           </div>
 

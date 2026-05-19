@@ -88,6 +88,9 @@ export interface OutlineVersionRecord {
   createdBy: string
   updatedAt: string
   updatedBy: string
+  completionPercent: number
+  completionIssueCount: number
+  completionState: Exclude<OutlineCompletionFilter, 'all'>
   sections: OutlineVersionSectionState
 }
 
@@ -97,6 +100,51 @@ export interface OutlineCourseRecord {
   instructor: string
   department: string
   versions: OutlineVersionRecord[]
+}
+
+export interface OutlineCourseSummaryRecord {
+  id: string
+  title: string
+  instructor: string
+  department: string
+  matchedVersionCount: number
+  totalVersionCount: number
+  latestMatchedVersionUpdatedAt: string
+}
+
+export interface OutlineVersionSummaryRecord {
+  id: string
+  courseId: string
+  versionName: string
+  semester: string
+  status: OutlineVersionStatus
+  archiveState: OutlineArchiveState
+  archivedAt: string | null
+  note: string
+  updatedBy: string
+  updatedAt: string
+  completionPercent: number
+  completionIssueCount: number
+  completionState: Exclude<OutlineCompletionFilter, 'all'>
+}
+
+export interface OutlinePageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+export interface OutlinePaginationState {
+  page: number
+  pageSize: number
+  total: number
+  pageCount: number
+  from: number
+  to: number
+  hasPrev: boolean
+  hasNext: boolean
 }
 
 export interface OutlineVersionDraft {
@@ -184,6 +232,8 @@ export interface OutlineCourseNavItem {
   title: string
   instructor: string
   versionCount: number
+  matchedVersionCount: number
+  totalVersionCount: number
   current: boolean
   versions: OutlineVersionNavItem[]
 }
@@ -204,6 +254,7 @@ export interface OutlineWorkbenchViewModel {
   completion: OutlineCompletionSummary
   teachingMethodOptions: string[]
   currentVersionMatchesFilters: boolean
+  pagination: OutlinePaginationState
 }
 
 export interface PrintableOutlineSection {

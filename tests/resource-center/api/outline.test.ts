@@ -33,25 +33,27 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
   )
 }) as typeof fetch
 
-const createdCourse = await createOutlineCourse({
-  title: '数据结构',
-  instructor: '张老师',
-  department: '计算机教研组',
-})
+try {
+  const createdCourse = await createOutlineCourse({
+    title: '数据结构',
+    instructor: '张老师',
+    department: '计算机教研组',
+  })
 
-assert.equal(capturedUrl, 'http://localhost:8080/api/outline/courses')
-assert.equal(capturedInit?.method, 'POST')
-assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
-  title: '数据结构',
-  instructor: '张老师',
-  department: '计算机教研组',
-})
-assert.deepEqual(createdCourse, {
-  id: '12',
-  title: '数据结构',
-  instructor: '张老师',
-  department: '计算机教研组',
-  versions: [],
-})
-
-globalThis.fetch = originalFetch
+  assert.equal(capturedUrl, 'http://localhost:8080/api/outline/courses')
+  assert.equal(capturedInit?.method, 'POST')
+  assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+    title: '数据结构',
+    instructor: '张老师',
+    department: '计算机教研组',
+  })
+  assert.deepEqual(createdCourse, {
+    id: '12',
+    title: '数据结构',
+    instructor: '张老师',
+    department: '计算机教研组',
+    versions: [],
+  })
+} finally {
+  globalThis.fetch = originalFetch
+}

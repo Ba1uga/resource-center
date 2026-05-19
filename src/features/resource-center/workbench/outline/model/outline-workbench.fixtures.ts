@@ -55,6 +55,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '林知夏',
         updatedAt: '2026-04-10T09:30:00.000Z',
         updatedBy: '林知夏',
+        completionPercent: 83,
+        completionIssueCount: 1,
+        completionState: 'nearly-complete',
         sections: createBasicSections({
           basicInfo: {
             courseName: '函数与导数',
@@ -151,6 +154,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '林知夏',
         updatedAt: '2026-03-15T10:00:00.000Z',
         updatedBy: '林知夏',
+        completionPercent: 100,
+        completionIssueCount: 0,
+        completionState: 'complete',
         sections: createBasicSections({
           basicInfo: {
             courseName: '函数与导数',
@@ -218,6 +224,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '林知夏',
         updatedAt: '2025-09-01T10:00:00.000Z',
         updatedBy: '林知夏',
+        completionPercent: 100,
+        completionIssueCount: 0,
+        completionState: 'complete',
         sections: createBasicSections({
           basicInfo: {
             courseName: '函数与导数',
@@ -303,6 +312,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '赵明远',
         updatedAt: '2026-04-01T09:00:00.000Z',
         updatedBy: '赵明远',
+        completionPercent: 17,
+        completionIssueCount: 5,
+        completionState: 'needs-completion',
         sections: createBasicSections({
           basicInfo: {
             courseName: '函数与导数',
@@ -333,6 +345,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '林知夏',
         updatedAt: '2026-03-25T08:20:00.000Z',
         updatedBy: '林知夏',
+        completionPercent: 100,
+        completionIssueCount: 0,
+        completionState: 'complete',
         sections: createBasicSections({
           basicInfo: {
             courseName: '立体几何',
@@ -399,6 +414,9 @@ export const outlineWorkbenchCourses: OutlineCourseRecord[] = [
         createdBy: '周晨',
         updatedAt: '2026-03-12T15:20:00.000Z',
         updatedBy: '周晨',
+        completionPercent: 100,
+        completionIssueCount: 0,
+        completionState: 'complete',
         sections: createBasicSections({
           basicInfo: {
             courseName: '概率与统计',
