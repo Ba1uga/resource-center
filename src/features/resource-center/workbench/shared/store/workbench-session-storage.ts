@@ -7,9 +7,17 @@ const STORAGE_KEY_PREFIX = 'resource-center:'
 
 const buildStorageKey = (key: string) => `${STORAGE_KEY_PREFIX}${key}`
 
-const cloneFallbackState = <T extends Record<string, unknown>>(fallback: T): T => ({
-  ...fallback,
-})
+const deepCloneJsonValue = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+const cloneFallbackState = <T extends Record<string, unknown>>(fallback: T): T => {
+  try {
+    return deepCloneJsonValue(fallback)
+  } catch {
+    return {
+      ...fallback,
+    }
+  }
+}
 
 const resolveWorkbenchStorage = (storage?: WorkbenchStorageLike): WorkbenchStorageLike | null => {
   if (storage) {
@@ -68,10 +76,10 @@ export const loadWorkbenchSessionState = <T extends Record<string, unknown>>(
       return cloneFallbackState(fallback)
     }
 
-    return {
+    return deepCloneJsonValue({
       ...fallback,
       ...parsedValue,
-    }
+    })
   } catch {
     return cloneFallbackState(fallback)
   }
