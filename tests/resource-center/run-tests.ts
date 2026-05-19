@@ -1,4 +1,5 @@
 import './navigation/navigation.test.ts'
+import './navigation/router.test.ts'
 import './api/request.test.ts'
 import './api/outline.test.ts'
 import './navigation/sidebar-layout.test.ts'
