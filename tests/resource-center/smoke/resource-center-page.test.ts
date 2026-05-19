@@ -31,8 +31,8 @@ async function main() {
   const pageContent = await readFile(pagePath)
   const mainContent = await readFile(mainPath)
   const pageStyles = await readFile(pageStylesPath)
-  if (!pageContent.includes("import { computed } from 'vue'")) {
-    throw new Error("ResourceCenterPage.vue must import computed from 'vue'")
+  if (!pageContent.includes("import { computed, watchEffect } from 'vue'")) {
+    throw new Error("ResourceCenterPage.vue must import computed and watchEffect from 'vue'")
   }
 
   if (!pageContent.includes("import { useRoute, useRouter } from 'vue-router'")) {
@@ -45,6 +45,18 @@ async function main() {
 
   if (!pageContent.includes('resolveWorkbenchSectionFromRouteParam(route.params.section)')) {
     throw new Error('ResourceCenterPage.vue must derive activeSection from route params')
+  }
+
+  if (!pageContent.includes('watchEffect(() => {')) {
+    throw new Error('ResourceCenterPage.vue must watch route-driven state for URL canonicalization')
+  }
+
+  if (!pageContent.includes('if (route.params.section === activeSection.value)')) {
+    throw new Error('ResourceCenterPage.vue must skip canonicalization only when the full route param is already canonical')
+  }
+
+  if (!pageContent.includes('router.replace(toResourceCenterSectionRoute(activeSection.value))')) {
+    throw new Error('ResourceCenterPage.vue must replace invalid section URLs with the canonical section route')
   }
 
   if (!pageContent.includes('router.push(toResourceCenterSectionRoute(item.key))')) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import './resource-center-page.css'
 
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { createNavigationItems } from '@/features/resource-center/navigation/model/navigation.config.ts'
@@ -21,6 +21,14 @@ const router = useRouter()
 const activeSection = computed(() => resolveWorkbenchSectionFromRouteParam(route.params.section))
 const navigationItems = computed(() => createNavigationItems(activeSection.value))
 const activeWorkbenchSection = computed(() => resolveWorkbenchSectionMeta(activeSection.value))
+
+watchEffect(() => {
+  if (route.params.section === activeSection.value) {
+    return
+  }
+
+  router.replace(toResourceCenterSectionRoute(activeSection.value))
+})
 
 function handleNavigationClick(item: NavigationItem) {
   if (item.isExternalEntry || item.key === 'home') {

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 
 import { createNavigationItems } from '../../../src/features/resource-center/navigation/model/navigation.config.ts'
-import { toResourceCenterSectionRoute } from '../../../src/features/resource-center/navigation/model/navigation.routes.ts'
+import {
+  resolveWorkbenchSectionFromRouteParam,
+  toResourceCenterSectionRoute,
+} from '../../../src/features/resource-center/navigation/model/navigation.routes.ts'
 import { workbenchSectionKeys } from '../../../src/features/resource-center/workbench/shared/model/workbench.registry.ts'
 
 const items = createNavigationItems('outline')
@@ -25,3 +28,7 @@ assert.deepEqual(toResourceCenterSectionRoute('outline'), {
   name: 'resource-center-section',
   params: { section: 'outline' },
 })
+assert.equal(resolveWorkbenchSectionFromRouteParam('outline'), 'outline')
+assert.equal(resolveWorkbenchSectionFromRouteParam('missing'), 'outline')
+assert.equal(resolveWorkbenchSectionFromRouteParam(['mapping', 'outline']), 'mapping')
+assert.equal(resolveWorkbenchSectionFromRouteParam(undefined), 'outline')
