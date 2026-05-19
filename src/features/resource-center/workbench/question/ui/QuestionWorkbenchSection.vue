@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../styles/question-workbench.css'
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
@@ -81,6 +81,23 @@ const viewModel = computed(() => {
     result: repository.listQuestions(activeQuery.value),
   })
 })
+
+watch(
+  () => ({
+    page: activeQuery.value.page,
+    pageCount: viewModel.value.pagination.pageCount,
+  }),
+  ({ page, pageCount }) => {
+    if (page <= pageCount) {
+      return
+    }
+
+    sessionStore.patchQuery({
+      page: pageCount,
+    })
+  },
+  { immediate: true },
+)
 
 const summaryCards = computed<WorkbenchSummaryCard<'matching-total' | QuestionStatus>[]>(() => [
   {
