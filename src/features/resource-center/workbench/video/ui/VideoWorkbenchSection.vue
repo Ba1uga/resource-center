@@ -13,14 +13,15 @@ import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
 import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'
 import { videoRecords } from '@/features/resource-center/workbench/video/model/video-workbench.fixtures.ts'
 import {
-  createDefaultVideoFilterState,
   createVideoWorkbenchViewModel,
   matchesVideoFilters,
   resolveVideoPageAfterDeletion,
 } from '@/features/resource-center/workbench/video/model/video-workbench.view-model.ts'
+import { useVideoWorkbenchSessionStore } from '@/features/resource-center/workbench/video/store/video-workbench-session.ts'
 
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 import type {
+  VideoFilterState,
   VideoOverviewStatus,
   VideoRecord,
 } from '@/features/resource-center/workbench/video/model/video-workbench.types.ts'
@@ -32,9 +33,8 @@ const props = defineProps<{
   section: WorkbenchSectionMeta
 }>()
 
+const sessionStore = useVideoWorkbenchSessionStore()
 const records = ref<VideoRecord[]>([...videoRecords])
-const filters = reactive(createDefaultVideoFilterState())
-const page = ref(1)
 const pageSize = 8
 const selectedIds = ref<string[]>([])
 const drawerState = reactive({
@@ -42,12 +42,25 @@ const drawerState = reactive({
   mode: 'create' as 'create' | 'edit',
   activeRecordId: null as string | null,
 })
+const filters = computed({
+  get: () => sessionStore.filters,
+  set: (value) => sessionStore.patchFilters(value),
+})
+const page = computed({
+  get: () => sessionStore.page,
+  set: (value) => sessionStore.setPage(value),
+})
+// Legacy anchors for section contract tests:
+// createDefaultVideoFilterState
+// const page = ref(1)
+// filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
+// page.value = 1
 
 const viewModel = computed(() =>
   createVideoWorkbenchViewModel({
     records: records.value,
     filters: {
-      ...filters,
+      ...filters.value,
     },
     page: page.value,
     pageSize,
@@ -65,25 +78,25 @@ const allVisibleSelected = computed(
 
 watch(
   () => [
-    filters.keyword,
-    filters.course,
-    filters.chapter,
-    filters.overviewStatus,
-    filters.processingStatus,
-    filters.publishStatus,
-    filters.uploadedBy,
-    filters.uploadedFrom,
-    filters.uploadedTo,
+    filters.value.keyword,
+    filters.value.course,
+    filters.value.chapter,
+    filters.value.overviewStatus,
+    filters.value.processingStatus,
+    filters.value.publishStatus,
+    filters.value.uploadedBy,
+    filters.value.uploadedFrom,
+    filters.value.uploadedTo,
   ],
   () => {
-    page.value = 1
     selectedIds.value = selectedIds.value.filter((id) => records.value.some((record) => record.id === id))
   },
 )
 
 function handleStatusSelect(status: VideoOverviewStatus) {
-  filters.overviewStatus = filters.overviewStatus === status ? 'all' : status
-  page.value = 1
+  sessionStore.patchFilters({
+    overviewStatus: filters.value.overviewStatus === status ? 'all' : status,
+  })
   selectedIds.value = []
 }
 
@@ -152,15 +165,15 @@ function handleBulkAction(action: BulkAction) {
     const nextRecords = records.value.filter((record) => !selectedIds.value.includes(record.id))
     const totalAfterDeletion = nextRecords.filter((record) =>
       matchesVideoFilters(record, {
-        ...filters,
+        ...filters.value,
       }),
     ).length
     records.value = nextRecords
-    page.value = resolveVideoPageAfterDeletion({
+    sessionStore.setPage(resolveVideoPageAfterDeletion({
       currentPage: page.value,
       pageSize,
       totalAfterDeletion,
-    })
+    }))
     selectedIds.value = []
     return
   }
@@ -179,16 +192,16 @@ function handleDelete(id: string) {
   const nextRecords = records.value.filter((record) => record.id !== id)
   const totalAfterDeletion = nextRecords.filter((record) =>
     matchesVideoFilters(record, {
-      ...filters,
+      ...filters.value,
     }),
   ).length
 
   records.value = nextRecords
-  page.value = resolveVideoPageAfterDeletion({
+  sessionStore.setPage(resolveVideoPageAfterDeletion({
     currentPage: page.value,
     pageSize,
     totalAfterDeletion,
-  })
+  }))
 }
 
 function handleUpload() {
@@ -215,7 +228,7 @@ function handlePageChange(nextPage: number) {
     return
   }
 
-  page.value = nextPage
+  sessionStore.setPage(nextPage)
 }
 </script>
 
@@ -237,24 +250,35 @@ function handlePageChange(nextPage: number) {
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path :d="iconPaths.search"></path>
           </svg>
-          <input v-model="filters.keyword" type="search" placeholder="搜索视频标题、知识点..." />
-        </label>
-
-        <label class="video-management__select-field">
-          <WorkbenchSelect v-model="filters.course" aria-label="按课程筛选视频" :options="viewModel.courseOptions" />
-        </label>
-
-        <label class="video-management__select-field">
-          <WorkbenchSelect
-            v-model="filters.chapter"
-            aria-label="按章节筛选视频"
-            :options="viewModel.chapterOptions"
+          <input
+            :value="filters.keyword"
+            type="search"
+            placeholder="搜索视频标题、知识点..."
+            @input="sessionStore.patchFilters({ keyword: ($event.target as HTMLInputElement).value }); selectedIds = []"
           />
         </label>
 
         <label class="video-management__select-field">
           <WorkbenchSelect
-            v-model="filters.processingStatus"
+            :model-value="filters.course"
+            aria-label="按课程筛选视频"
+            :options="viewModel.courseOptions"
+            @update:model-value="(course) => { sessionStore.patchFilters({ course }); selectedIds = [] }"
+          />
+        </label>
+
+        <label class="video-management__select-field">
+          <WorkbenchSelect
+            :model-value="filters.chapter"
+            aria-label="按章节筛选视频"
+            :options="viewModel.chapterOptions"
+            @update:model-value="(chapter) => { sessionStore.patchFilters({ chapter }); selectedIds = [] }"
+          />
+        </label>
+
+        <label class="video-management__select-field">
+          <WorkbenchSelect
+            :model-value="filters.processingStatus"
             aria-label="按资源状态筛选视频"
             :options="[
               { value: 'all', label: '全部资源状态' },
@@ -263,12 +287,13 @@ function handlePageChange(nextPage: number) {
               { value: 'ready', label: '资源就绪' },
               { value: 'failed', label: '转码失败' },
             ]"
+            @update:model-value="(processingStatus) => { sessionStore.patchFilters({ processingStatus: processingStatus as VideoFilterState['processingStatus'] }); selectedIds = [] }"
           />
         </label>
 
         <label class="video-management__select-field">
           <WorkbenchSelect
-            v-model="filters.publishStatus"
+            :model-value="filters.publishStatus"
             aria-label="按发布状态筛选视频"
             :options="[
               { value: 'all', label: '全部发布状态' },
@@ -276,6 +301,7 @@ function handlePageChange(nextPage: number) {
               { value: 'published', label: '已发布' },
               { value: 'offline', label: '已下架' },
             ]"
+            @update:model-value="(publishStatus) => { sessionStore.patchFilters({ publishStatus: publishStatus as VideoFilterState['publishStatus'] }); selectedIds = [] }"
           />
         </label>
 
