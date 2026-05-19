@@ -35,6 +35,7 @@ public class OutlineServiceImpl implements OutlineService {
     private final OutlineCourseMapper outlineCourseMapper;
     private final OutlineVersionMapper outlineVersionMapper;
     private final ObjectMapper objectMapper;
+    private final OutlineCompletionSnapshotCalculator completionSnapshotCalculator;
 
     @Override
     public List<OutlineCourseVO> listCoursesWithVersions(String keyword, String semester, String versionStatus, String archiveState) {
@@ -131,6 +132,7 @@ public class OutlineServiceImpl implements OutlineService {
                 .deleted(0)
                 .build();
 
+        applyCompletionSnapshot(version);
         outlineVersionMapper.insert(version);
         return fillCourseTitle(outlineVersionMapper.selectById(version.getId()));
     }
@@ -147,6 +149,7 @@ public class OutlineServiceImpl implements OutlineService {
         version.setUpdatedBy(normalize(request.getUpdatedBy()));
         version.setSections(writeJson(request.getSections()));
 
+        applyCompletionSnapshot(version);
         outlineVersionMapper.updateById(version);
         return fillCourseTitle(outlineVersionMapper.selectById(versionId));
     }
@@ -182,6 +185,7 @@ public class OutlineServiceImpl implements OutlineService {
                 .deleted(0)
                 .build();
 
+        applyCompletionSnapshot(duplicatedVersion);
         outlineVersionMapper.insert(duplicatedVersion);
         return fillCourseTitle(outlineVersionMapper.selectById(duplicatedVersion.getId()));
     }
@@ -210,6 +214,13 @@ public class OutlineServiceImpl implements OutlineService {
             throw new IllegalArgumentException("大纲版本不存在");
         }
         return version;
+    }
+
+    private void applyCompletionSnapshot(OutlineVersion version) {
+        OutlineCompletionSnapshot snapshot = completionSnapshotCalculator.calculate(version.getSections());
+        version.setCompletionPercent(snapshot.completionPercent());
+        version.setCompletionIssueCount(snapshot.completionIssueCount());
+        version.setCompletionState(snapshot.completionState());
     }
 
     private OutlineVersion fillCourseTitle(OutlineVersion version) {

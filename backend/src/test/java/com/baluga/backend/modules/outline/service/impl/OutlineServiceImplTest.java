@@ -41,6 +41,8 @@ class OutlineServiceImplTest {
     @Mock
     private OutlineVersionMapper outlineVersionMapper;
 
+    private OutlineCompletionSnapshotCalculator completionSnapshotCalculator;
+
     private OutlineServiceImpl outlineService;
 
     private OutlineCourse calculusCourse;
@@ -55,7 +57,13 @@ class OutlineServiceImplTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        outlineService = new OutlineServiceImpl(outlineCourseMapper, outlineVersionMapper, objectMapper);
+        completionSnapshotCalculator = new OutlineCompletionSnapshotCalculator(objectMapper);
+        outlineService = new OutlineServiceImpl(
+                outlineCourseMapper,
+                outlineVersionMapper,
+                objectMapper,
+                completionSnapshotCalculator
+        );
 
         calculusCourse = OutlineCourse.builder()
                 .id(1L)
@@ -205,6 +213,9 @@ class OutlineServiceImplTest {
                     .createdBy("张老师")
                     .updatedBy("张老师")
                     .sections(objectMapper.writeValueAsString(createEmptySections()))
+                    .completionPercent(0)
+                    .completionIssueCount(6)
+                    .completionState("needs-completion")
                     .build();
             created.setCourseTitle("概率与统计");
             return created;
@@ -216,6 +227,9 @@ class OutlineServiceImplTest {
         assertEquals("active", created.getArchiveState());
         assertEquals("张老师", created.getCreatedBy());
         assertEquals("概率与统计", created.getCourseTitle());
+        assertEquals(0, created.getCompletionPercent());
+        assertEquals(6, created.getCompletionIssueCount());
+        assertEquals("needs-completion", created.getCompletionState());
         assertTrue(objectMapper.readTree(created.getSections()).get("schedule").isArray());
         assertEquals(0, objectMapper.readTree(created.getSections()).get("schedule").size());
     }
@@ -288,16 +302,22 @@ class OutlineServiceImplTest {
         request.setUpdatedBy("林知夏");
         request.setSections(sections);
 
-        when(outlineVersionMapper.selectById(1L)).thenReturn(activeCalculusVersion);
-        when(outlineCourseMapper.selectById(1L)).thenReturn(calculusCourse);
-        when(outlineVersionMapper.updateById(any(OutlineVersion.class))).thenReturn(1);
-        when(outlineVersionMapper.selectById(1L)).thenAnswer(invocation -> activeCalculusVersion);
+        when(outlineVersionMapper.selectById(1L)).thenAnswer(invocation -> {
+            activeCalculusVersion.setCompletionPercent(50);
+            activeCalculusVersion.setCompletionIssueCount(3);
+            activeCalculusVersion.setCompletionState("needs-completion");
+            activeCalculusVersion.setCourseTitle("函数与导数");
+            return activeCalculusVersion;
+        });
 
         OutlineVersion saved = outlineService.saveVersion(1L, request);
 
         assertEquals("2026 春版-更新", saved.getVersionName());
         assertEquals("final", saved.getStatus());
         assertEquals("函数与导数", saved.getCourseTitle());
+        assertEquals(50, saved.getCompletionPercent());
+        assertEquals(3, saved.getCompletionIssueCount());
+        assertEquals("needs-completion", saved.getCompletionState());
         assertTrue(saved.getSections().contains("\"credits\":6"));
     }
 
@@ -331,6 +351,9 @@ class OutlineServiceImplTest {
                     .createdBy("林知夏")
                     .updatedBy("林知夏")
                     .sections(activeCalculusVersion.getSections())
+                    .completionPercent(83)
+                    .completionIssueCount(1)
+                    .completionState("nearly-complete")
                     .courseTitle("函数与导数")
                     .build();
             return duplicated;
@@ -342,6 +365,9 @@ class OutlineServiceImplTest {
         assertEquals("draft", duplicated.getStatus());
         assertEquals("active", duplicated.getArchiveState());
         assertEquals("函数与导数", duplicated.getCourseTitle());
+        assertEquals(83, duplicated.getCompletionPercent());
+        assertEquals(1, duplicated.getCompletionIssueCount());
+        assertEquals("nearly-complete", duplicated.getCompletionState());
         assertTrue(duplicated.getSections().contains("函数与导数"));
     }
 
