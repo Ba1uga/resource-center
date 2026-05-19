@@ -170,6 +170,10 @@ assert.ok(tableSource.includes('cell-resource'))
 assert.ok(tableSource.includes('cell-risk-tags'))
 assert.ok(tableSource.includes('v-for="tag in row.riskTags"'))
 assert.ok(tableSource.includes('v-if="row.riskTags.length === 0"'))
+assert.match(
+  stylesSource,
+  /\.mapping-management-table__review-button\s*\{[\s\S]*?white-space:\s*nowrap;/i,
+)
 
 assert.ok(reviewDrawerSource.includes('open: boolean'))
 assert.ok(reviewDrawerSource.includes('record: MappingRecord | null'))
