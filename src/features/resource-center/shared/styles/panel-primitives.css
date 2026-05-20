@@ -1,0 +1,23 @@
+.panel-kicker {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: oklch(0.96 0.02 245);
+  color: oklch(0.42 0.04 250);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.panel-pill.solid {
+  background: linear-gradient(135deg, var(--surface-strong), var(--surface-strong-2));
+  color: oklch(0.98 0.01 250);
+}
