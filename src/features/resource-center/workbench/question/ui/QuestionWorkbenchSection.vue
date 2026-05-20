@@ -4,12 +4,21 @@ import '../styles/question-workbench.css'
 import { computed, ref } from 'vue'
 
 import {
+  createQuestion,
+  deleteQuestion as deleteQuestionApi,
+  listQuestions,
+  updateQuestion,
+} from '@/api/question.ts'
+import {
   createQuestionEditorDraft,
   createQuestionEditorDraftFromRecord,
   createQuestionMutationInputFromDraft,
   setQuestionDraftType,
 } from '@/features/resource-center/workbench/question/model/question-workbench.editor.ts'
-import { questionWorkbenchSubjectOptions } from '@/features/resource-center/workbench/question/model/question-workbench.fixtures.ts'
+import {
+  questionWorkbenchSeedRecords,
+  questionWorkbenchSubjectOptions,
+} from '@/features/resource-center/workbench/question/model/question-workbench.fixtures.ts'
 import {
   createQuestionWorkbenchRepository,
   matchesQuestionQuery,
@@ -32,6 +41,7 @@ import QuestionManagementTable from './management/QuestionManagementTable.vue'
 import type {
   QuestionEditorDraft,
   QuestionEditorMode,
+  QuestionRecord,
   QuestionType,
   QuestionValidationErrors,
 } from '@/features/resource-center/workbench/question/model/question-workbench.types.ts'
@@ -46,7 +56,7 @@ const props = defineProps<{
   section: WorkbenchSectionMeta
 }>()
 
-const repository = createQuestionWorkbenchRepository()
+const fallbackRepository = createQuestionWorkbenchRepository()
 const queryDraft = ref(createDefaultQuestionQueryState())
 const activeQuery = ref(createDefaultQuestionQueryState())
 const repositoryVersion = ref(0)
@@ -56,13 +66,34 @@ const editorMode = ref<QuestionEditorMode>('create')
 const editingQuestionId = ref<string>()
 const editorDraft = ref(createDraftFromQuery(queryDraft.value))
 const validationErrors = ref<QuestionValidationErrors>({})
+const apiRecords = ref<QuestionRecord[]>([])
+const apiTotal = ref(0)
+const connectionStatus = ref<'' | 'offline'>('')
+const isLoading = ref(false)
+const isUsingFallback = ref(false)
+const isSaving = ref(false)
 
 const viewModel = computed(() => {
   repositoryVersion.value
 
+  if (isUsingFallback.value) {
+    return createQuestionWorkbenchViewModel({
+      query: activeQuery.value,
+      result: fallbackRepository.listQuestions(activeQuery.value),
+    })
+  }
+
   return createQuestionWorkbenchViewModel({
     query: activeQuery.value,
-    result: repository.listQuestions(activeQuery.value),
+    result: {
+      records: apiRecords.value,
+      total: apiTotal.value,
+      allTotal: apiTotal.value,
+      matchingPublishedTotal: apiRecords.value.filter((r) => r.status === 'published').length,
+      matchingLatestUpdatedAt: apiRecords.value.length > 0 ? apiRecords.value[0]!.updatedAt : null,
+      page: activeQuery.value.page,
+      pageSize: activeQuery.value.pageSize,
+    },
   })
 })
 
@@ -98,6 +129,33 @@ function createDraftFromQuery(query = createDefaultQuestionQueryState()): Questi
   })
 }
 
+async function loadQuestions() {
+  isLoading.value = true
+
+  try {
+    const pageData = await listQuestions({
+      subjectId: activeQuery.value.subjectId,
+      chapterId: activeQuery.value.chapterId,
+      type: activeQuery.value.type,
+      difficulty: activeQuery.value.difficulty,
+      keyword: activeQuery.value.keyword,
+      page: activeQuery.value.page,
+      pageSize: activeQuery.value.pageSize,
+    })
+
+    apiRecords.value = pageData.records
+    apiTotal.value = pageData.total
+    connectionStatus.value = ''
+    isUsingFallback.value = false
+  } catch (error) {
+    console.error(error)
+    connectionStatus.value = 'offline'
+    isUsingFallback.value = true
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function handleSubjectFilterUpdate(subjectId: string) {
   queryDraft.value = {
     ...queryDraft.value,
@@ -113,6 +171,10 @@ function handleSearch() {
     ...queryDraft.value,
     page: 1,
   }
+  repositoryVersion.value += 1
+  if (!isUsingFallback.value) {
+    loadQuestions()
+  }
 }
 
 function handleReset() {
@@ -120,12 +182,20 @@ function handleReset() {
   queryDraft.value = nextQuery
   activeQuery.value = nextQuery
   feedback.value = null
+  repositoryVersion.value += 1
+  if (!isUsingFallback.value) {
+    loadQuestions()
+  }
 }
 
 function handlePageChange(page: number) {
   activeQuery.value = {
     ...activeQuery.value,
     page,
+  }
+  repositoryVersion.value += 1
+  if (!isUsingFallback.value) {
+    loadQuestions()
   }
 }
 
@@ -163,36 +233,66 @@ function handleCopy(questionId: string) {
   editorOpen.value = true
 }
 
-function handleDelete(questionId: string) {
+async function handleDelete(questionId: string) {
   const record = viewModel.value.records.find((item) => item.id === questionId)
   if (!record) {
     return
   }
 
-  if (typeof window !== 'undefined' && !window.confirm(`确定删除“${record.stem}”吗？`)) {
+  if (typeof window !== 'undefined' && !window.confirm(`确定删除”${record.stem}”吗？`)) {
     return
   }
 
-  repository.deleteQuestion(questionId)
-  repositoryVersion.value += 1
+  if (isUsingFallback.value) {
+    fallbackRepository.deleteQuestion(questionId)
+    repositoryVersion.value += 1
 
-  const totalAfterDeletion = repository.listQuestions({
-    ...activeQuery.value,
-    page: 1,
-  }).total
+    const totalAfterDeletion = fallbackRepository.listQuestions({
+      ...activeQuery.value,
+      page: 1,
+    }).total
 
-  activeQuery.value = {
-    ...activeQuery.value,
-    page: resolveQuestionPageAfterDeletion({
-      currentPage: activeQuery.value.page,
-      pageSize: activeQuery.value.pageSize,
-      totalAfterDeletion,
-    }),
+    activeQuery.value = {
+      ...activeQuery.value,
+      page: resolveQuestionPageAfterDeletion({
+        currentPage: activeQuery.value.page,
+        pageSize: activeQuery.value.pageSize,
+        totalAfterDeletion,
+      }),
+    }
+
+    feedback.value = {
+      tone: 'success',
+      text: '习题已删除。',
+    }
+    return
   }
 
-  feedback.value = {
-    tone: 'success',
-    text: '习题已删除。',
+  try {
+    await deleteQuestionApi(Number(questionId))
+    await loadQuestions()
+
+    const totalAfterDeletion = apiTotal.value
+    activeQuery.value = {
+      ...activeQuery.value,
+      page: resolveQuestionPageAfterDeletion({
+        currentPage: activeQuery.value.page,
+        pageSize: activeQuery.value.pageSize,
+        totalAfterDeletion,
+      }),
+    }
+    repositoryVersion.value += 1
+
+    feedback.value = {
+      tone: 'success',
+      text: '习题已删除。',
+    }
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '删除失败',
+    }
   }
 }
 
@@ -220,7 +320,7 @@ function handleEditorClose() {
   validationErrors.value = {}
 }
 
-function handleEditorSave() {
+async function handleEditorSave() {
   const nextErrors = validateQuestionEditorDraft(editorDraft.value)
   validationErrors.value = nextErrors
 
@@ -229,52 +329,114 @@ function handleEditorSave() {
   }
 
   const payload = createQuestionMutationInputFromDraft(editorDraft.value)
-  const savedRecord =
-    editorMode.value === 'edit' && editingQuestionId.value
-      ? repository.updateQuestion(editingQuestionId.value, payload)
-      : repository.createQuestion(payload)
 
-  repositoryVersion.value += 1
+  if (isUsingFallback.value) {
+    const savedRecord =
+      editorMode.value === 'edit' && editingQuestionId.value
+        ? fallbackRepository.updateQuestion(editingQuestionId.value, payload)
+        : fallbackRepository.createQuestion(payload)
 
-  const visibleInCurrentQuery = matchesQuestionQuery(savedRecord, {
-    ...activeQuery.value,
-    page: 1,
-  })
+    repositoryVersion.value += 1
 
-  if (editorMode.value === 'edit') {
-    feedback.value = {
-      tone: visibleInCurrentQuery ? 'success' : 'info',
-      text: visibleInCurrentQuery ? '习题已更新。' : '习题已更新，但当前筛选下不可见。',
+    const visibleInCurrentQuery = matchesQuestionQuery(savedRecord, {
+      ...activeQuery.value,
+      page: 1,
+    })
+
+    if (editorMode.value === 'edit') {
+      feedback.value = {
+        tone: visibleInCurrentQuery ? 'success' : 'info',
+        text: visibleInCurrentQuery ? '习题已更新。' : '习题已更新，但当前筛选下不可见。',
+      }
+    } else {
+      feedback.value = {
+        tone: visibleInCurrentQuery ? 'success' : 'info',
+        text:
+          visibleInCurrentQuery
+            ? editorMode.value === 'copy'
+              ? '习题副本已保存。'
+              : '习题已保存。'
+            : '习题已保存，但当前筛选下不可见。',
+      }
+
+      if (visibleInCurrentQuery) {
+        activeQuery.value = {
+          ...activeQuery.value,
+          page: 1,
+        }
+      }
     }
-  } else {
-    feedback.value = {
-      tone: visibleInCurrentQuery ? 'success' : 'info',
-      text:
-        visibleInCurrentQuery
-          ? editorMode.value === 'copy'
-            ? '习题副本已保存。'
-            : '习题已保存。'
-          : '习题已保存，但当前筛选下不可见。',
+
+    handleEditorClose()
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    if (editorMode.value === 'edit' && editingQuestionId.value) {
+      await updateQuestion(Number(editingQuestionId.value), payload)
+    } else {
+      await createQuestion(payload)
     }
 
-    if (visibleInCurrentQuery) {
+    if (editorMode.value === 'create' || editorMode.value === 'copy') {
       activeQuery.value = {
         ...activeQuery.value,
         page: 1,
       }
     }
-  }
 
-  handleEditorClose()
+    await loadQuestions()
+    repositoryVersion.value += 1
+
+    feedback.value = {
+      tone: 'success',
+      text:
+        editorMode.value === 'edit'
+          ? '习题已更新。'
+          : editorMode.value === 'copy'
+            ? '习题副本已保存。'
+            : '习题已保存。',
+    }
+
+    handleEditorClose()
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '保存失败',
+    }
+  } finally {
+    isSaving.value = false
+  }
 }
+
+loadQuestions()
 </script>
 
 <template>
   <section class="question-management workbench-surface" :data-section="props.section.key">
+    <div v-if="isLoading && viewModel.records.length === 0" class="question-management__loading">
+      <strong>正在加载习题数据...</strong>
+      <p>正在尝试连接后端服务，请稍候。</p>
+    </div>
+
     <div class="question-management__controls">
       <header class="question-management__head">
         <h2>{{ props.section.title }}</h2>
+        <button
+          v-if="connectionStatus === 'offline'"
+          class="question-management__status-pill"
+          type="button"
+        >
+          连接异常
+        </button>
       </header>
+
+      <div v-if="connectionStatus === 'offline'" class="question-management__feedback is-info" role="status">
+        后端连接异常，当前显示本地习题样例。
+      </div>
 
       <div class="question-management__summary">
         <article v-for="item in summaryCards" :key="item.label" class="question-management__summary-card">
@@ -331,6 +493,7 @@ function handleEditorSave() {
     :subject-options="editorSubjectOptions"
     :chapter-options="editorChapterOptions"
     :type-locked="typeLocked"
+    :saving="isSaving"
     @close="handleEditorClose"
     @save="handleEditorSave"
     @patch="handleEditorPatch"

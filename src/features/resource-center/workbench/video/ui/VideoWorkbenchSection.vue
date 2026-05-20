@@ -3,6 +3,13 @@ import '../styles/video-workbench.css'
 
 import { computed, reactive, ref, watch } from 'vue'
 
+import {
+  batchUpdateVideos,
+  createVideo,
+  deleteVideo as deleteVideoApi,
+  listVideos,
+  updateVideo,
+} from '@/api/video.ts'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
@@ -24,6 +31,7 @@ import type {
 
 type DrawerMode = 'create' | 'edit'
 type BulkAction = 'publish' | 'offline' | 'delete' | 'reassign-chapter' | 'tag'
+type FeedbackTone = 'success' | 'info' | 'danger'
 
 const props = defineProps<{
   section: WorkbenchSectionMeta
@@ -39,6 +47,14 @@ const drawerState = reactive({
   mode: 'create' as 'create' | 'edit',
   activeRecordId: null as string | null,
 })
+const connectionStatus = ref<'' | 'offline'>('')
+const isLoading = ref(false)
+const isUsingFallback = ref(false)
+const isSaving = ref(false)
+const feedback = ref<{
+  tone: FeedbackTone
+  text: string
+} | null>(null)
 
 const viewModel = computed(() =>
   createVideoWorkbenchViewModel({
@@ -75,8 +91,41 @@ watch(
   () => {
     page.value = 1
     selectedIds.value = selectedIds.value.filter((id) => records.value.some((record) => record.id === id))
+    if (!isUsingFallback.value) {
+      loadVideos()
+    }
   },
 )
+
+async function loadVideos() {
+  isLoading.value = true
+
+  try {
+    const pageData = await listVideos({
+      keyword: filters.keyword,
+      course: filters.course,
+      chapter: filters.chapter,
+      processingStatus: filters.processingStatus,
+      publishStatus: filters.publishStatus,
+      uploadedBy: filters.uploadedBy,
+      uploadedFrom: filters.uploadedFrom,
+      uploadedTo: filters.uploadedTo,
+      page: 1,
+      pageSize: 200,
+    })
+
+    records.value = pageData.records
+    connectionStatus.value = ''
+    isUsingFallback.value = false
+  } catch (error) {
+    console.error(error)
+    records.value = [...videoRecords]
+    connectionStatus.value = 'offline'
+    isUsingFallback.value = true
+  } finally {
+    isLoading.value = false
+  }
+}
 
 function handleStatusSelect(status: VideoOverviewStatus) {
   filters.overviewStatus = status
@@ -111,19 +160,59 @@ function toggleVisibleSelection() {
     : [...new Set([...selectedIds.value, ...visibleIds.value])]
 }
 
-function handleBulkAction(action: BulkAction) {
+async function handleBulkAction(action: BulkAction) {
   if (selectedIds.value.length === 0) {
     return
   }
 
+  if (action === 'reassign-chapter' || action === 'tag') {
+    feedback.value = {
+      tone: 'info',
+      text: action === 'reassign-chapter' ? '批量改章节功能已预留。' : '批量打标签功能已预留。',
+    }
+    return
+  }
+
+  if (isUsingFallback.value) {
+    applyFallbackBulkAction(action)
+    return
+  }
+
+  try {
+    const numericIds = selectedIds.value.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    if (numericIds.length === 0) {
+      return
+    }
+
+    const apiAction = action === 'publish' ? 'publish' : action === 'offline' ? 'offline' : 'delete'
+    await batchUpdateVideos({ ids: numericIds, action: apiAction })
+
+    await loadVideos()
+    selectedIds.value = []
+
+    const labels: Record<string, string> = {
+      publish: '已批量发布。',
+      offline: '已批量下架。',
+      delete: '已批量删除。',
+    }
+    feedback.value = {
+      tone: 'success',
+      text: labels[action] ?? '批量操作完成。',
+    }
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '批量操作失败',
+    }
+  }
+}
+
+function applyFallbackBulkAction(action: BulkAction) {
   if (action === 'publish') {
     records.value = records.value.map((record) =>
       selectedIds.value.includes(record.id)
-        ? {
-            ...record,
-            processingStatus: 'ready',
-            publishStatus: 'published',
-          }
+        ? { ...record, processingStatus: 'ready', publishStatus: 'published' }
         : record,
     )
     selectedIds.value = []
@@ -133,10 +222,7 @@ function handleBulkAction(action: BulkAction) {
   if (action === 'offline') {
     records.value = records.value.map((record) =>
       selectedIds.value.includes(record.id)
-        ? {
-            ...record,
-            publishStatus: 'offline',
-          }
+        ? { ...record, publishStatus: 'offline' }
         : record,
     )
     selectedIds.value = []
@@ -146,9 +232,7 @@ function handleBulkAction(action: BulkAction) {
   if (action === 'delete') {
     const nextRecords = records.value.filter((record) => !selectedIds.value.includes(record.id))
     const totalAfterDeletion = nextRecords.filter((record) =>
-      matchesVideoFilters(record, {
-        ...filters,
-      }),
+      matchesVideoFilters(record, { ...filters }),
     ).length
     records.value = nextRecords
     page.value = resolveVideoPageAfterDeletion({
@@ -161,29 +245,44 @@ function handleBulkAction(action: BulkAction) {
   }
 }
 
-function handleDelete(id: string) {
+async function handleDelete(id: string) {
   const target = records.value.find((record) => record.id === id)
   if (!target) {
     return
   }
 
-  if (typeof window !== 'undefined' && !window.confirm(`确定删除“${target.title}”吗？`)) {
+  if (typeof window !== 'undefined' && !window.confirm(`确定删除"${target.title}"吗？`)) {
     return
   }
 
-  const nextRecords = records.value.filter((record) => record.id !== id)
-  const totalAfterDeletion = nextRecords.filter((record) =>
-    matchesVideoFilters(record, {
-      ...filters,
-    }),
-  ).length
+  if (isUsingFallback.value) {
+    const nextRecords = records.value.filter((record) => record.id !== id)
+    const totalAfterDeletion = nextRecords.filter((record) =>
+      matchesVideoFilters(record, { ...filters }),
+    ).length
+    records.value = nextRecords
+    page.value = resolveVideoPageAfterDeletion({
+      currentPage: page.value,
+      pageSize,
+      totalAfterDeletion,
+    })
+    return
+  }
 
-  records.value = nextRecords
-  page.value = resolveVideoPageAfterDeletion({
-    currentPage: page.value,
-    pageSize,
-    totalAfterDeletion,
-  })
+  try {
+    await deleteVideoApi(Number(id))
+    await loadVideos()
+    feedback.value = {
+      tone: 'success',
+      text: '视频已删除。',
+    }
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '删除失败',
+    }
+  }
 }
 
 function handleUpload() {
@@ -191,19 +290,117 @@ function handleUpload() {
 }
 
 function handleEdit(id: string) {
-  const target = records.value.find((record) => record.id === id)
-  if (!target) {
-    return
-  }
-
   openEditDrawer(id)
 }
 
-function handleDrawerSaveDraft() {}
+async function handleDrawerSaveDraft() {
+  if (drawerState.mode === 'create') {
+    feedback.value = {
+      tone: 'info',
+      text: '视频上传入口已预留，接入上传服务后即可保存草稿。',
+    }
+    return
+  }
 
-function handleDrawerSavePublish() {}
+  if (isUsingFallback.value || !activeRecord.value) {
+    closeDrawer()
+    return
+  }
 
-function handleRetryUpload() {}
+  isSaving.value = true
+
+  try {
+    const record = activeRecord.value
+    await updateVideo(Number(record.id), {
+      title: record.title,
+      course: record.course,
+      chapter: record.chapter,
+      duration: record.duration,
+      resolution: record.resolution,
+      viewCount: record.viewCount,
+      fileSize: record.fileSize,
+      knowledgePoint: record.knowledgePoint,
+      tags: record.tags,
+      description: record.description,
+      processingStatus: record.processingStatus,
+      publishStatus: 'draft',
+      visibility: record.visibility,
+    })
+
+    await loadVideos()
+    closeDrawer()
+    feedback.value = {
+      tone: 'success',
+      text: '视频已保存为草稿。',
+    }
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '保存失败',
+    }
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function handleDrawerSavePublish() {
+  if (drawerState.mode === 'create') {
+    feedback.value = {
+      tone: 'info',
+      text: '视频上传入口已预留，接入上传服务后即可开始上传并发布。',
+    }
+    return
+  }
+
+  if (isUsingFallback.value || !activeRecord.value) {
+    closeDrawer()
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    const record = activeRecord.value
+    await updateVideo(Number(record.id), {
+      title: record.title,
+      course: record.course,
+      chapter: record.chapter,
+      duration: record.duration,
+      resolution: record.resolution,
+      viewCount: record.viewCount,
+      fileSize: record.fileSize,
+      knowledgePoint: record.knowledgePoint,
+      tags: record.tags,
+      description: record.description,
+      processingStatus: 'ready',
+      publishStatus: 'published',
+      visibility: record.visibility,
+    })
+
+    await loadVideos()
+    closeDrawer()
+    feedback.value = {
+      tone: 'success',
+      text: '视频已发布。',
+    }
+  } catch (error) {
+    console.error(error)
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '发布失败',
+    }
+  } finally {
+    isSaving.value = false
+  }
+}
+
+function handleRetryUpload() {
+  feedback.value = {
+    tone: 'info',
+    text: '重新上传入口已预留，接入上传服务后即可重新处理。',
+  }
+}
 
 function handlePageChange(nextPage: number) {
   if (nextPage < 1 || nextPage > viewModel.value.pagination.pageCount) {
@@ -212,16 +409,38 @@ function handlePageChange(nextPage: number) {
 
   page.value = nextPage
 }
+
+loadVideos()
 </script>
 
 <template>
   <section class="video-management workbench-surface" :data-section="props.section.key">
+    <div v-if="isLoading && records.length === 0" class="video-management__loading">
+      <strong>正在加载视频数据...</strong>
+      <p>正在尝试连接后端服务，请稍候。</p>
+    </div>
+
     <div class="video-management__controls">
       <header class="video-management__heading">
         <div class="video-management__copy">
           <h2>{{ props.section.title }}</h2>
+          <button
+            v-if="connectionStatus === 'offline'"
+            class="video-management__status-pill"
+            type="button"
+          >
+            连接异常
+          </button>
         </div>
       </header>
+
+      <div v-if="connectionStatus === 'offline'" class="video-management__feedback" role="status">
+        后端连接异常，当前显示本地视频样例。
+      </div>
+
+      <div v-if="feedback" class="video-management__feedback" role="status" aria-live="polite">
+        {{ feedback.text }}
+      </div>
 
       <VideoWorkbenchStatusCards :items="viewModel.summaryCards" @select-status="handleStatusSelect" />
 

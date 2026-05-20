@@ -21,6 +21,7 @@ const props = defineProps<{
   subjectOptions: QuestionSelectOption[]
   chapterOptions: QuestionSelectOption[]
   typeLocked: boolean
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -215,7 +216,9 @@ function handleStatusChange(event: Event) {
 
       <footer class="question-management__editor-foot">
         <button class="question-button question-button--ghost" type="button" @click="emit('close')">取消</button>
-        <button class="question-button question-button--solid" type="button" @click="emit('save')">保存习题</button>
+        <button class="question-button question-button--solid" type="button" :disabled="saving" @click="emit('save')">
+          {{ saving ? '保存中...' : '保存习题' }}
+        </button>
       </footer>
     </section>
   </div>
