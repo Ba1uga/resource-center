@@ -42,6 +42,19 @@ management:
     health:
       show-details: always
 
+baluga:
+  ai:
+    matching:
+      provider: openai
+      openai-api-key: ${DEEPSEEK_API_KEY:}
+      openai-base-url: https://api.deepseek.com/v1
+      openai-model: deepseek-chat
+      max-tokens: 4096
+      temperature: 0.1
+      timeout-seconds: 120
+      max-retries: 2
+      max-candidates-per-resource: 3
+
 logging:
   level:
     root: info
