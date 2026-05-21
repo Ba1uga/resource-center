@@ -153,25 +153,13 @@ const currentVersionPageHint = computed(() => {
     : '当前查看版本不在本页列表中。'
 })
 
-const hasActiveCourseFilters = computed(
-  () =>
-    queryState.searchText.trim().length > 0 ||
-    queryState.semester.length > 0 ||
-    queryState.versionStatus !== 'all' ||
-    queryState.completionState !== 'all' ||
-    queryState.archiveState !== 'active',
-)
 const manualExpandedCourseIds = ref<string[]>([])
 const expandedCourseIds = computed(() => {
   const visibleCourseIds = viewModel.value.courses.map((course) => course.id)
 
-  if (hasActiveCourseFilters.value) {
-    return visibleCourseIds
-  }
-
   return Array.from(
     new Set(
-      [queryState.selectedCourseId, ...manualExpandedCourseIds.value].filter(
+      manualExpandedCourseIds.value.filter(
         (courseId): courseId is string => courseId.length > 0 && visibleCourseIds.includes(courseId),
       ),
     ),
@@ -188,12 +176,6 @@ watch(
   },
   { immediate: true },
 )
-
-watch(hasActiveCourseFilters, (isActive, wasActive) => {
-  if (!isActive && wasActive) {
-    manualExpandedCourseIds.value = []
-  }
-})
 
 watch(
   () => [queryState.semester, queryState.versionStatus, queryState.archiveState].join('|'),
@@ -509,19 +491,6 @@ function destroyOutlineScrollbars() {
 }
 
 function toggleCourseGroup(courseId: string) {
-  const course = viewModel.value.courses.find((item) => item.id === courseId)
-  if (course?.versions.length === 0) {
-    requestVersionSelection(courseId, '')
-  }
-
-  if (hasActiveCourseFilters.value) {
-    return
-  }
-
-  if (queryState.selectedCourseId === courseId && isCourseExpanded(courseId)) {
-    return
-  }
-
   if (isCourseExpanded(courseId)) {
     manualExpandedCourseIds.value = manualExpandedCourseIds.value.filter((id) => id !== courseId)
     return

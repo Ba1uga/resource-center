@@ -213,10 +213,11 @@
   min-height: 48px;
   justify-content: flex-start;
   padding: 0 18px;
-  border: 1px dashed var(--outline-line-strong);
+  margin-bottom: 12px;
+  border: 1px solid transparent;
   border-radius: 16px;
-  background: linear-gradient(180deg, #fff, var(--outline-surface-soft));
-  color: var(--outline-ink);
+  background: oklch(0.24 0.02 62);
+  color: oklch(0.99 0.003 88);
 }
 
 .outline-toolbar-button.primary {
