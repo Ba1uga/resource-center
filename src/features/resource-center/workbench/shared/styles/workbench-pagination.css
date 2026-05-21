@@ -137,11 +137,16 @@
 
 .workbench-pagination.is-simple {
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.workbench-pagination.is-simple .workbench-pagination__summary {
+  justify-content: space-between;
 }
 
 .workbench-pagination.is-simple .workbench-pagination__controls {
+  justify-content: flex-end;
   gap: 4px;
 }
 
@@ -157,6 +162,14 @@
 
 .workbench-pagination__page-size select {
   min-width: 96px;
+}
+
+.workbench-pagination__page-size .workbench-select__trigger {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 760px) {

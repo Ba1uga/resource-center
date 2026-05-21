@@ -75,6 +75,20 @@
   opacity: 1;
 }
 
+.workbench-select.is-drop-up .workbench-select__chevron {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.workbench-select.is-drop-up.is-open .workbench-select__chevron {
+  transform: rotate(45deg);
+  opacity: 1;
+}
+
+.workbench-select.is-drop-up .workbench-select__menu {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+
 .workbench-select__menu {
   position: absolute;
   top: calc(100% + 10px);

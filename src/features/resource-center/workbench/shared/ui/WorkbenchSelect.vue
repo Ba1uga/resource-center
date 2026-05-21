@@ -16,12 +16,14 @@ const props = withDefaults(
     ariaLabel?: string
     placeholder?: string
     size?: 'md' | 'sm'
+    dropUp?: boolean
     disabled?: boolean
   }>(),
   {
     ariaLabel: '',
     placeholder: '请选择',
     size: 'md',
+    dropUp: false,
     disabled: false,
   },
 )
@@ -189,7 +191,7 @@ onBeforeUnmount(() => {
   <div
     ref="rootRef"
     class="workbench-select"
-    :class="[{ 'is-open': open, 'is-disabled': disabled }, `is-${size}`]"
+    :class="[{ 'is-open': open, 'is-disabled': disabled, 'is-drop-up': dropUp }, `is-${size}`]"
   >
     <button
       type="button"

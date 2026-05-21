@@ -34,7 +34,7 @@ assert.ok(componentContent.includes('class="workbench-select__label"'))
 assert.ok(componentContent.includes('class="workbench-select__chevron"'))
 assert.ok(componentContent.includes('class="workbench-select__menu"'))
 assert.ok(componentContent.includes('class="workbench-select__option"'))
-assert.ok(componentContent.includes(":class=\"[{ 'is-open': open, 'is-disabled': disabled }, `is-${size}`]\""))
+assert.ok(componentContent.includes("is-drop-up"))
 assert.ok(componentContent.includes("'is-selected': option.value === modelValue"))
 
 assert.match(
@@ -52,6 +52,14 @@ assert.match(
 assert.match(
   stylesContent,
   /\.workbench-select\.is-open\s+\.workbench-select__chevron\s*\{[\s\S]*?transform:\s*rotate\(225deg\).*?;/i,
+)
+assert.match(
+  stylesContent,
+  /\.workbench-select\.is-drop-up\s+\.workbench-select__chevron\s*\{[\s\S]*?transform:\s*rotate\(225deg\).*?;/i,
+)
+assert.match(
+  stylesContent,
+  /\.workbench-select\.is-drop-up\s+\.workbench-select__menu\s*\{[\s\S]*?bottom:\s*calc\(100% \+ 10px\);/i,
 )
 assert.match(
   stylesContent,

@@ -90,6 +90,16 @@ function handlePageSizeChange(event: Event) {
       <strong v-if="!simple" class="workbench-pagination__page-status">第 {{ pagination.page }} / {{ pagination.pageCount }} 页</strong>
       <span v-if="pagination.total > 0">显示 {{ pagination.from }} - {{ pagination.to }} 条，共 {{ pagination.total }} 条</span>
       <span v-else>{{ emptyLabel }}</span>
+      <label v-if="showPageSizeSelector && simple" class="workbench-pagination__page-size">
+        <WorkbenchSelect
+          :model-value="String(pageSize)"
+          aria-label="设置每页条数"
+          size="sm"
+          drop-up
+          :options="pageSizeOptions.map((option) => ({ value: String(option), label: `${option} 条/页` }))"
+          @update:model-value="emit('page-size-change', Number($event))"
+        />
+      </label>
     </div>
 
     <div class="workbench-pagination__controls">
@@ -149,11 +159,12 @@ function handlePageSizeChange(event: Event) {
         </svg>
       </button>
 
-      <label v-if="showPageSizeSelector" class="workbench-pagination__page-size">
+      <label v-if="showPageSizeSelector && !simple" class="workbench-pagination__page-size">
         <WorkbenchSelect
           :model-value="String(pageSize)"
           aria-label="设置每页条数"
           size="sm"
+          drop-up
           :options="pageSizeOptions.map((option) => ({ value: String(option), label: `${option} 条/页` }))"
           @update:model-value="emit('page-size-change', Number($event))"
         />
