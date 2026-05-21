@@ -24,7 +24,6 @@ const emit = defineEmits<{
   (event: 'update-type', value: QuestionTypeFilter): void
   (event: 'update-difficulty', value: QuestionDifficultyFilter): void
   (event: 'update-keyword', value: string): void
-  (event: 'search'): void
   (event: 'reset'): void
   (event: 'create'): void
 }>()
@@ -51,7 +50,7 @@ function handleKeywordInput(event: Event) {
 </script>
 
 <template>
-  <form class="question-management-filters" @submit.prevent="emit('search')">
+  <form class="question-management-filters" @submit.prevent>
     <label class="question-management-filters__search-field">
       <input
         :value="query.keyword"
@@ -102,11 +101,7 @@ function handleKeywordInput(event: Event) {
       />
     </label>
 
-    <button class="question-management-filters__query-button question-button question-button--ghost" type="submit">
-      查询
-    </button>
-
-    <button class="question-button question-button--ghost" type="button" @click="emit('reset')">重置</button>
+    <button class="question-management-filters__reset-button question-button question-button--ghost" type="button" @click="emit('reset')">重置</button>
 
     <button class="question-management-filters__create-button question-button question-button--solid" type="button" @click="emit('create')">
       新增习题

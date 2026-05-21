@@ -12,6 +12,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 0 16px;
+  overflow: hidden;
   border: 1px solid var(--workbench-select-line, oklch(0.82 0.01 250));
   border-radius: var(--workbench-select-radius, 12px);
   background: var(--workbench-select-trigger-bg, #fff);

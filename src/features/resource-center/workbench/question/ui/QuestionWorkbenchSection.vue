@@ -60,16 +60,11 @@ const feedback = ref<QuestionFeedbackState | null>(null)
 const editorOpen = ref(false)
 const editorMode = ref<QuestionEditorMode>('create')
 const editingQuestionId = ref<string>()
-const editorDraft = ref(createDraftFromQuery(sessionStore.queryDraft))
+const editorDraft = ref(createDraftFromQuery(sessionStore.query))
 const validationErrors = ref<QuestionValidationErrors>({})
 
-const queryDraft = computed<QuestionQueryState>({
-  get: () => sessionStore.queryDraft,
-  set: (value) => sessionStore.patchQueryDraft(value),
-})
-
-const activeQuery = computed<QuestionQueryState>({
-  get: () => sessionStore.activeQuery,
+const query = computed<QuestionQueryState>({
+  get: () => sessionStore.query,
   set: (value) => sessionStore.patchQuery(value),
 })
 
@@ -77,14 +72,14 @@ const viewModel = computed(() => {
   repositoryVersion.value
 
   return createQuestionWorkbenchViewModel({
-    query: activeQuery.value,
-    result: repository.listQuestions(activeQuery.value),
+    query: query.value,
+    result: repository.listQuestions(query.value),
   })
 })
 
 watch(
   () => ({
-    page: activeQuery.value.page,
+    page: query.value.page,
     pageCount: viewModel.value.pagination.pageCount,
   }),
   ({ page, pageCount }) => {
@@ -115,8 +110,8 @@ const summaryCards = computed<WorkbenchSummaryCard<'matching-total' | QuestionSt
     value: String(viewModel.value.summary.draftTotal),
     hint: '点击后只查看当前筛选条件下的草稿习题',
     kind: 'filter',
-    active: activeQuery.value.status === 'draft',
-    interactive: viewModel.value.summary.draftTotal > 0 || activeQuery.value.status === 'draft',
+    active: query.value.status === 'draft',
+    interactive: viewModel.value.summary.draftTotal > 0 || query.value.status === 'draft',
   },
   {
     key: 'published',
@@ -124,8 +119,8 @@ const summaryCards = computed<WorkbenchSummaryCard<'matching-total' | QuestionSt
     value: String(viewModel.value.summary.publishedTotal),
     hint: '点击后只查看当前筛选条件下的已发布习题',
     kind: 'filter',
-    active: activeQuery.value.status === 'published',
-    interactive: viewModel.value.summary.publishedTotal > 0 || activeQuery.value.status === 'published',
+    active: query.value.status === 'published',
+    interactive: viewModel.value.summary.publishedTotal > 0 || query.value.status === 'published',
   },
 ])
 
@@ -144,16 +139,9 @@ function createDraftFromQuery(query = createDefaultQuestionQueryState()): Questi
 }
 
 function handleSubjectFilterUpdate(subjectId: string) {
-  sessionStore.patchQueryDraft({
+  sessionStore.patchQuery({
     subjectId,
     chapterId: '',
-    page: 1,
-  })
-}
-
-function handleSearch() {
-  sessionStore.patchQuery({
-    ...queryDraft.value,
     page: 1,
   })
 }
@@ -170,14 +158,13 @@ function handlePageChange(page: number) {
 }
 
 function handleStatusSelect(status: QuestionStatus) {
-  queryDraft.value = applyQuestionStatusCardSelection(queryDraft.value, status)
-  activeQuery.value = applyQuestionStatusCardSelection(activeQuery.value, status)
+  query.value = applyQuestionStatusCardSelection(query.value, status)
 }
 
 function handleCreate() {
   editorMode.value = 'create'
   editingQuestionId.value = undefined
-  editorDraft.value = createDraftFromQuery(queryDraft.value)
+  editorDraft.value = createDraftFromQuery(query.value)
   validationErrors.value = {}
   editorOpen.value = true
 }
@@ -222,15 +209,15 @@ function handleDelete(questionId: string) {
   repositoryVersion.value += 1
 
   const totalAfterDeletion = repository.listQuestions({
-    ...activeQuery.value,
+    ...query.value,
     page: 1,
   }).total
 
-  activeQuery.value = {
-    ...activeQuery.value,
+  query.value = {
+    ...query.value,
     page: resolveQuestionPageAfterDeletion({
-      currentPage: activeQuery.value.page,
-      pageSize: activeQuery.value.pageSize,
+      currentPage: query.value.page,
+      pageSize: query.value.pageSize,
       totalAfterDeletion,
     }),
   }
@@ -282,7 +269,7 @@ function handleEditorSave() {
   repositoryVersion.value += 1
 
   const visibleInCurrentQuery = matchesQuestionQuery(savedRecord, {
-    ...activeQuery.value,
+    ...query.value,
     page: 1,
   })
 
@@ -332,18 +319,17 @@ function handleEditorSave() {
     <template #toolbar>
       <QuestionManagementFilters
         class="question-management__toolbar"
-        :query="queryDraft"
+        :query="query"
         :subject-options="viewModel.subjectOptions"
         :chapter-options="viewModel.chapterOptions"
         :type-options="viewModel.typeOptions"
         :difficulty-options="viewModel.difficultyOptions"
         :chapter-disabled="viewModel.chapterDisabled"
         @update-subject="handleSubjectFilterUpdate"
-        @update-chapter="(chapterId) => sessionStore.patchQueryDraft({ chapterId })"
-        @update-type="(type) => sessionStore.patchQueryDraft({ type })"
-        @update-difficulty="(difficulty) => sessionStore.patchQueryDraft({ difficulty })"
-        @update-keyword="(keyword) => sessionStore.patchQueryDraft({ keyword })"
-        @search="handleSearch"
+        @update-chapter="(chapterId) => sessionStore.patchQuery({ chapterId, page: 1 })"
+        @update-type="(type) => sessionStore.patchQuery({ type, page: 1 })"
+        @update-difficulty="(difficulty) => sessionStore.patchQuery({ difficulty, page: 1 })"
+        @update-keyword="(keyword) => sessionStore.patchQuery({ keyword, page: 1 })"
         @reset="handleReset"
         @create="handleCreate"
       />

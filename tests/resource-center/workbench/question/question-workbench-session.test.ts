@@ -36,32 +36,30 @@ setActivePinia(createPinia())
 
 const store = useQuestionWorkbenchSessionStore()
 
-assert.deepEqual(store.queryDraft, defaultQueryState)
-assert.deepEqual(store.activeQuery, defaultQueryState)
+assert.deepEqual(store.query, defaultQueryState)
 
-store.patchQueryDraft({
+store.patchQuery({
   subjectId: 'network',
   keyword: 'tcp',
 })
 
-assert.equal(store.queryDraft.subjectId, 'network')
-assert.equal(store.queryDraft.keyword, 'tcp')
+assert.equal(store.query.subjectId, 'network')
+assert.equal(store.query.keyword, 'tcp')
 
 store.patchQuery({
   subjectId: 'network',
   page: 3,
 })
 
-assert.equal(store.activeQuery.subjectId, 'network')
-assert.equal(store.activeQuery.page, 3)
+assert.equal(store.query.subjectId, 'network')
+assert.equal(store.query.page, 3)
 
 store.reset()
 
-assert.deepEqual(store.queryDraft, defaultQueryState)
-assert.deepEqual(store.activeQuery, defaultQueryState)
+assert.deepEqual(store.query, defaultQueryState)
 
 window.localStorage.setItem(
-  `${storageKeyPrefix}question-session:draft`,
+  `${storageKeyPrefix}question-session:query`,
   JSON.stringify({
     subjectId: 'network',
     keyword: 'tcp',
@@ -69,30 +67,14 @@ window.localStorage.setItem(
     pageSize: 0,
   }),
 )
-window.localStorage.setItem(
-  `${storageKeyPrefix}question-session:active`,
-  JSON.stringify({
-    page: -1,
-    pageSize: 20,
-    sortOrder: 'asc',
-    status: null,
-  }),
-)
 
 setActivePinia(createPinia())
 const rehydratedStore = useQuestionWorkbenchSessionStore()
 
-assert.deepEqual(rehydratedStore.queryDraft, {
+assert.deepEqual(rehydratedStore.query, {
   ...defaultQueryState,
   subjectId: 'network',
   keyword: 'tcp',
   page: 1,
   pageSize: 10,
-})
-assert.deepEqual(rehydratedStore.activeQuery, {
-  ...defaultQueryState,
-  page: 1,
-  pageSize: 20,
-  sortOrder: 'asc',
-  status: 'all',
 })

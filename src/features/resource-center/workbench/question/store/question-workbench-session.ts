@@ -8,8 +8,7 @@ import {
 
 import type { QuestionQueryState } from '../model/question-workbench.types.ts'
 
-const QUESTION_DRAFT_STORAGE_KEY = 'question-session:draft'
-const QUESTION_ACTIVE_STORAGE_KEY = 'question-session:active'
+const QUESTION_STORAGE_KEY = 'question-session:query'
 type QuestionSessionState = QuestionQueryState & Record<string, unknown>
 const questionTypeFilters = new Set<QuestionQueryState['type']>(['all', 'single', 'multiple', 'short', 'coding'])
 const questionDifficultyFilters = new Set<QuestionQueryState['difficulty']>(['all', 'easy', 'medium', 'hard'])
@@ -58,39 +57,28 @@ const sanitizeQuestionState = (value: unknown): QuestionQueryState => {
   }
 }
 
-const loadQuestionState = (key: string): QuestionQueryState =>
-  sanitizeQuestionState(loadWorkbenchSessionState<QuestionSessionState>(key, createPersistedQuestionState()))
+const loadQuestionState = (): QuestionQueryState =>
+  sanitizeQuestionState(loadWorkbenchSessionState<QuestionSessionState>(QUESTION_STORAGE_KEY, createPersistedQuestionState()))
 
 const createDefaultState = (): {
-  queryDraft: QuestionQueryState
-  activeQuery: QuestionQueryState
+  query: QuestionQueryState
 } => ({
-  queryDraft: loadQuestionState(QUESTION_DRAFT_STORAGE_KEY),
-  activeQuery: loadQuestionState(QUESTION_ACTIVE_STORAGE_KEY),
+  query: loadQuestionState(),
 })
 
 export const useQuestionWorkbenchSessionStore = defineStore('question-workbench-session', {
   state: createDefaultState,
   actions: {
-    patchQueryDraft(patch: Partial<QuestionQueryState>) {
-      this.queryDraft = {
-        ...this.queryDraft,
-        ...patch,
-      }
-      saveWorkbenchSessionState(QUESTION_DRAFT_STORAGE_KEY, this.queryDraft)
-    },
     patchQuery(patch: Partial<QuestionQueryState>) {
-      this.activeQuery = {
-        ...this.activeQuery,
+      this.query = {
+        ...this.query,
         ...patch,
       }
-      saveWorkbenchSessionState(QUESTION_ACTIVE_STORAGE_KEY, this.activeQuery)
+      saveWorkbenchSessionState(QUESTION_STORAGE_KEY, this.query)
     },
     reset() {
-      this.queryDraft = createDefaultQuestionQueryState()
-      this.activeQuery = createDefaultQuestionQueryState()
-      saveWorkbenchSessionState(QUESTION_DRAFT_STORAGE_KEY, this.queryDraft)
-      saveWorkbenchSessionState(QUESTION_ACTIVE_STORAGE_KEY, this.activeQuery)
+      this.query = createDefaultQuestionQueryState()
+      saveWorkbenchSessionState(QUESTION_STORAGE_KEY, this.query)
     },
   },
 })

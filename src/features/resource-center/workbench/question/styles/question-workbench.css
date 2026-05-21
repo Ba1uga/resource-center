@@ -63,7 +63,7 @@
 
 .question-management__toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) repeat(4, minmax(0, 156px)) auto auto minmax(140px, auto);
+  grid-template-columns: minmax(260px, 1.2fr) repeat(4, minmax(0, 156px)) auto minmax(140px, auto);
   gap: 12px;
   align-items: stretch;
 }
@@ -130,7 +130,10 @@
   resize: vertical;
 }
 
-.question-management-filters__search-field input:focus,
+.question-management-filters__search-field input:focus {
+  border-color: oklch(0.76 0.02 252);
+  box-shadow: none;
+}
 .question-management-filters__select-field select:focus,
 .question-management-editor__field input:focus,
 .question-management-editor__field select:focus,
@@ -159,6 +162,10 @@
 
 .question-management__toolbar .question-button {
   height: 56px;
+}
+
+.question-management-filters__reset-button {
+  width: 100%;
 }
 
 .question-management-filters__create-button {

@@ -131,8 +131,7 @@ assert.ok(questionSection.includes('handleCopy'))
 assert.ok(questionSection.includes('handleDelete'))
 assert.ok(questionSection.includes('applyQuestionStatusCardSelection'))
 assert.ok(questionSection.includes('function handleStatusSelect(status: '))
-assert.ok(questionSection.includes('queryDraft.value = applyQuestionStatusCardSelection(queryDraft.value, status)'))
-assert.ok(questionSection.includes('activeQuery.value = applyQuestionStatusCardSelection(activeQuery.value, status)'))
+assert.ok(questionSection.includes('query.value = applyQuestionStatusCardSelection(query.value, status)'))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.matchingTotal)"))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.draftTotal)"))
 assert.ok(questionSection.includes("value: String(viewModel.value.summary.publishedTotal)"))
@@ -150,7 +149,7 @@ assert.equal(filtersContent.includes('<select :value="query.subjectId"'), false)
 assert.equal(filtersContent.includes('<select :value="query.chapterId"'), false)
 assert.equal(filtersContent.includes('<select :value="query.type"'), false)
 assert.equal(filtersContent.includes('<select :value="query.difficulty"'), false)
-assert.ok(filtersContent.includes('question-management-filters__query-button'))
+assert.ok(filtersContent.includes('question-management-filters__reset-button'))
 assert.ok(filtersContent.includes('question-management-filters__create-button'))
 assert.equal(filtersContent.includes('question-management-filters__grid'), false)
 
@@ -184,7 +183,7 @@ assert.match(
 )
 assert.match(
   questionStyles,
-  /\.question-management__toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(260px,\s*1\.2fr\)\s+repeat\(4,\s*minmax\(0,\s*156px\)\)\s+auto\s+auto\s+minmax\(140px,\s*auto\);[\s\S]*?gap:\s*12px;[\s\S]*?align-items:\s*stretch;/i,
+  /\.question-management__toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(260px,\s*1\.2fr\)\s+repeat\(4,\s*minmax\(0,\s*156px\)\)\s+auto\s+minmax\(140px,\s*auto\);[\s\S]*?gap:\s*12px;[\s\S]*?align-items:\s*stretch;/i,
 )
 assert.match(
   questionStyles,

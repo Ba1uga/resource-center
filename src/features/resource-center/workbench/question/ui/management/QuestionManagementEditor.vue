@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WorkbenchSelect from '../../../shared/ui/WorkbenchSelect.vue'
 import QuestionChoiceEditor from './QuestionChoiceEditor.vue'
 import QuestionCodingEditor from './QuestionCodingEditor.vue'
 import QuestionShortAnswerEditor from './QuestionShortAnswerEditor.vue'
@@ -51,26 +52,6 @@ const statusOptions: Array<{ value: QuestionStatus; label: string }> = [
 function patchField<K extends keyof QuestionEditorDraft>(key: K, value: QuestionEditorDraft[K]) {
   emit('patch', { [key]: value } as Partial<QuestionEditorDraft>)
 }
-
-function handleTypeChange(event: Event) {
-  emit('set-type', (event.target as HTMLSelectElement).value as QuestionType)
-}
-
-function handleSubjectChange(event: Event) {
-  patchField('subjectId', (event.target as HTMLSelectElement).value)
-}
-
-function handleChapterChange(event: Event) {
-  patchField('chapterId', (event.target as HTMLSelectElement).value)
-}
-
-function handleDifficultyChange(event: Event) {
-  patchField('difficulty', (event.target as HTMLSelectElement).value as QuestionDifficulty)
-}
-
-function handleStatusChange(event: Event) {
-  patchField('status', (event.target as HTMLSelectElement).value as QuestionStatus)
-}
 </script>
 
 <template>
@@ -100,50 +81,51 @@ function handleStatusChange(event: Event) {
         <section class="question-management-editor__section question-management-editor__section--grid">
           <label class="question-management-editor__field">
             <span>题型</span>
-            <select :value="draft.type" :disabled="typeLocked" @change="handleTypeChange">
-              <option v-for="option in typeOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              :model-value="draft.type"
+              :options="typeOptions"
+              :disabled="typeLocked"
+              @update:model-value="emit('set-type', $event as QuestionType)"
+            />
             <small v-if="typeLocked" class="question-management-editor__hint">题型在编辑模式下不可切换</small>
           </label>
 
           <label class="question-management-editor__field">
             <span>学科</span>
-            <select :value="draft.subjectId" @change="handleSubjectChange">
-              <option v-for="option in subjectOptions" :key="option.id" :value="option.id">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              :model-value="draft.subjectId"
+              :options="subjectOptions.map((o) => ({ value: o.id, label: o.label }))"
+              @update:model-value="patchField('subjectId', $event)"
+            />
             <small v-if="errors.subjectId" class="question-management-editor__error">{{ errors.subjectId }}</small>
           </label>
 
           <label class="question-management-editor__field">
             <span>章节</span>
-            <select :value="draft.chapterId" @change="handleChapterChange">
-              <option v-for="option in chapterOptions" :key="option.id" :value="option.id">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              :model-value="draft.chapterId"
+              :options="chapterOptions.map((o) => ({ value: o.id, label: o.label }))"
+              @update:model-value="patchField('chapterId', $event)"
+            />
             <small v-if="errors.chapterId" class="question-management-editor__error">{{ errors.chapterId }}</small>
           </label>
 
           <label class="question-management-editor__field">
             <span>难度</span>
-            <select :value="draft.difficulty" @change="handleDifficultyChange">
-              <option v-for="option in difficultyOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              :model-value="draft.difficulty"
+              :options="difficultyOptions"
+              @update:model-value="patchField('difficulty', $event as QuestionDifficulty)"
+            />
           </label>
 
           <label class="question-management-editor__field">
             <span>状态</span>
-            <select :value="draft.status" @change="handleStatusChange">
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
+            <WorkbenchSelect
+              :model-value="draft.status"
+              :options="statusOptions"
+              @update:model-value="patchField('status', $event as QuestionStatus)"
+            />
           </label>
         </section>
 
