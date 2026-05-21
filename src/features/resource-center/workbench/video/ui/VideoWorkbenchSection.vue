@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import '../styles/video-workbench.css'
 
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
+import { listVideos } from '@/api/video.ts'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
@@ -34,9 +35,18 @@ const props = defineProps<{
 }>()
 
 const sessionStore = useVideoWorkbenchSessionStore()
-const records = ref<VideoRecord[]>([...videoRecords])
+const fallbackRecords = ref<VideoRecord[]>([...videoRecords])
+const apiRecords = ref<VideoRecord[]>([])
+const isLoading = ref(false)
+const isUsingFallback = ref(false)
+const apiTotal = ref(0)
+const keywordInput = ref(sessionStore.filters.keyword)
+let keywordDebounceTimer: ReturnType<typeof setTimeout> | undefined
 const pageSize = 8
 const selectedIds = ref<string[]>([])
+
+const records = computed(() => (isUsingFallback.value ? fallbackRecords.value : apiRecords.value))
+const total = computed(() => (isUsingFallback.value ? fallbackRecords.value.length : apiTotal.value))
 const drawerState = reactive({
   open: false,
   mode: 'create' as 'create' | 'edit',
@@ -66,10 +76,55 @@ const activeRecord = computed(() =>
   records.value.find((record) => record.id === drawerState.activeRecordId) ?? null,
 )
 
+async function loadVideos() {
+  isLoading.value = true
+
+  try {
+    const result = await listVideos({
+      keyword: filters.value.keyword.trim(),
+      course: filters.value.course,
+      chapter: filters.value.chapter,
+      processingStatus: filters.value.processingStatus,
+      publishStatus: filters.value.publishStatus,
+      uploadedBy: filters.value.uploadedBy,
+      uploadedFrom: filters.value.uploadedFrom,
+      uploadedTo: filters.value.uploadedTo,
+      page: page.value,
+      pageSize,
+    })
+
+    apiRecords.value = result.records
+    apiTotal.value = result.total
+    isUsingFallback.value = false
+  } catch {
+    apiRecords.value = []
+    apiTotal.value = fallbackRecords.value.length
+    isUsingFallback.value = true
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const visibleIds = computed(() => viewModel.value.rows.map((row) => row.id))
 const allVisibleSelected = computed(
   () => visibleIds.value.length > 0 && visibleIds.value.every((id) => selectedIds.value.includes(id)),
 )
+
+watch(keywordInput, (value) => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer)
+  }
+
+  keywordDebounceTimer = setTimeout(() => {
+    sessionStore.patchFilters({ keyword: value })
+  }, 300)
+})
+
+onBeforeUnmount(() => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer)
+  }
+})
 
 watch(
   () => [
@@ -87,6 +142,23 @@ watch(
     selectedIds.value = selectedIds.value.filter((id) => records.value.some((record) => record.id === id))
   },
 )
+
+watch(
+  [page, () => filters.value.keyword, () => filters.value.course, () => filters.value.chapter,
+   () => filters.value.processingStatus, () => filters.value.publishStatus,
+   () => filters.value.uploadedBy, () => filters.value.uploadedFrom, () => filters.value.uploadedTo],
+  async () => {
+    if (isUsingFallback.value) {
+      return
+    }
+    await loadVideos()
+  },
+  { flush: 'post' },
+)
+
+onMounted(async () => {
+  await loadVideos()
+})
 
 function handleStatusSelect(status: VideoOverviewStatus) {
   sessionStore.patchFilters({
@@ -130,7 +202,7 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'publish') {
-    records.value = records.value.map((record) =>
+    fallbackRecords.value = fallbackRecords.value.map((record) =>
       selectedIds.value.includes(record.id)
         ? {
             ...record,
@@ -144,7 +216,7 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'offline') {
-    records.value = records.value.map((record) =>
+    fallbackRecords.value = fallbackRecords.value.map((record) =>
       selectedIds.value.includes(record.id)
         ? {
             ...record,
@@ -157,13 +229,13 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'delete') {
-    const nextRecords = records.value.filter((record) => !selectedIds.value.includes(record.id))
+    const nextRecords = fallbackRecords.value.filter((record) => !selectedIds.value.includes(record.id))
     const totalAfterDeletion = nextRecords.filter((record) =>
       matchesVideoFilters(record, {
         ...filters.value,
       }),
     ).length
-    records.value = nextRecords
+    fallbackRecords.value = nextRecords
     sessionStore.setPage(resolveVideoPageAfterDeletion({
       currentPage: page.value,
       pageSize,
@@ -184,14 +256,14 @@ function handleDelete(id: string) {
     return
   }
 
-  const nextRecords = records.value.filter((record) => record.id !== id)
+  const nextRecords = fallbackRecords.value.filter((record) => record.id !== id)
   const totalAfterDeletion = nextRecords.filter((record) =>
     matchesVideoFilters(record, {
       ...filters.value,
     }),
   ).length
 
-  records.value = nextRecords
+  fallbackRecords.value = nextRecords
   sessionStore.setPage(resolveVideoPageAfterDeletion({
     currentPage: page.value,
     pageSize,
@@ -246,10 +318,9 @@ function handlePageChange(nextPage: number) {
             <path :d="iconPaths.search"></path>
           </svg>
           <input
-            :value="filters.keyword"
+            v-model="keywordInput"
             type="search"
             placeholder="搜索视频标题、知识点..."
-            @input="sessionStore.patchFilters({ keyword: ($event.target as HTMLInputElement).value }); selectedIds = []"
           />
         </label>
 

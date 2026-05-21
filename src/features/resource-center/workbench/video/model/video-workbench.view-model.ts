@@ -66,7 +66,11 @@ export function matchesVideoFilters(record: VideoRecord, filters: VideoFilterSta
 
 function matchesVideoFiltersWithoutOverviewStatus(record: VideoRecord, filters: VideoFilterState): boolean {
   const normalizedKeyword = filters.keyword.trim().toLowerCase()
-  const matchesKeyword = normalizedKeyword.length === 0 || record.title.toLowerCase().includes(normalizedKeyword)
+  const matchesKeyword =
+    normalizedKeyword.length === 0 ||
+    record.title.toLowerCase().includes(normalizedKeyword) ||
+    record.knowledgePoint.toLowerCase().includes(normalizedKeyword) ||
+    record.tags.some((tag) => tag.toLowerCase().includes(normalizedKeyword))
   const matchesCourse = filters.course === 'all' || record.course === filters.course
   const matchesChapter = filters.chapter === 'all' || record.chapter === filters.chapter
   const matchesProcessingStatus = filters.processingStatus === 'all' || record.processingStatus === filters.processingStatus

@@ -92,7 +92,6 @@
   color: oklch(0.67 0.02 250);
 }
 
-.video-management__search-field input,
 .video-management__select-field {
   display: contents;
 }
