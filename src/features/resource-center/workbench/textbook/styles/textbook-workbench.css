@@ -3,7 +3,7 @@
 
 .textbook-management {
   --line: oklch(0.88 0.01 250);
-  --line-strong: oklch(0.82 0.015 250);
+  --line-strong: oklch(0.78 0.015 250);
   --ink: oklch(0.23 0.03 255);
   --soft: oklch(0.46 0.02 250);
   --surface: oklch(0.985 0.004 250);
@@ -368,12 +368,19 @@
 .textbook-management__drawer-head button {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line);
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: var(--surface);
+  background: #fff;
   color: var(--soft);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.textbook-management__drawer-head button:hover {
+  background: oklch(0.96 0.006 250);
+  color: var(--ink);
 }
 
 .textbook-management__drawer-form {
@@ -381,7 +388,11 @@
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .textbook-management__drawer-field {
@@ -390,19 +401,28 @@
 }
 
 .textbook-management__drawer-field span {
-  color: var(--soft);
-  font-size: 0.84rem;
+  color: oklch(0.35 0.02 250);
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
 .textbook-management__drawer-field input {
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #FFFFFF;
-  color: var(--ink);
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: oklch(0.985 0.004 250);
+  color: oklch(0.13 0.01 255);
   font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.textbook-management__drawer-field input:focus {
+  background: #fff;
+  border-color: oklch(0.52 0.08 248);
+  box-shadow: 0 0 0 3px oklch(0.58 0.1 245 / 0.22);
 }
 
 .textbook-management__drawer-field small {
@@ -418,23 +438,37 @@
 }
 
 .textbook-management__drawer-actions button {
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 10px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
   border: 1px solid transparent;
   font: inherit;
+  font-size: 0.88rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
 .textbook-management__drawer-actions button.ghost {
-  border-color: var(--line);
-  background: var(--surface-strong);
-  color: var(--soft);
+  border-color: var(--line-strong);
+  background: #fff;
+  color: oklch(0.13 0.01 255);
+}
+
+.textbook-management__drawer-actions button.ghost:hover {
+  background: oklch(0.965 0.006 250);
 }
 
 .textbook-management__drawer-actions button.solid {
-  background: var(--accent);
-  color: oklch(0.99 0.002 250);
+  min-width: 110px;
+  background: linear-gradient(140deg, oklch(0.17 0.01 250), oklch(0.23 0.02 250));
+  color: oklch(0.99 0.001 250);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.textbook-management__drawer-actions button.solid:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14);
 }
 
 @media (max-width: 760px) {

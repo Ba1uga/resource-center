@@ -10,7 +10,7 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: oklch(0.18 0.01 252 / 0.12);
+  background: oklch(0.18 0.01 252 / 0.25);
   backdrop-filter: blur(6px);
   cursor: pointer;
 }
@@ -20,7 +20,7 @@
   width: min(720px, calc(100vw - 32px));
   height: 100vh;
   padding: 28px 24px 24px;
-  background: #fff;
+  background: #F7F7F7;
   box-shadow: -24px 0 48px oklch(0.17 0.01 252 / 0.14);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
