@@ -153,6 +153,16 @@
   background: var(--mapping-success-soft);
 }
 
+.mapping-management__feedback.is-error {
+  background: oklch(0.968 0.03 25);
+}
+
+.mapping-management__feedback.is-offline {
+  background: oklch(0.97 0.02 85);
+  border-color: oklch(0.85 0.05 85);
+  color: oklch(0.4 0.05 80);
+}
+
 .mapping-management__toolbar,
 .mapping-management-filters {
   display: grid;
