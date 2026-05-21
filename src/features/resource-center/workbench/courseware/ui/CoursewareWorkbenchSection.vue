@@ -8,7 +8,7 @@ import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
-import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
+import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import {
@@ -410,82 +410,62 @@ function handleBulkDelete() {
     </template>
 
     <template #drawer>
-      <WorkbenchDrawerHost :open="drawerOpen" width="md" @close="closeDrawer">
-        <template #header>
-        <header class="courseware-management__drawer-head">
-          <div class="courseware-management__drawer-copy">
-            <h3>{{ drawerTitle }}</h3>
-            <p>{{ drawerDescription }}</p>
-          </div>
+      <WorkbenchFormDrawer
+        :open="drawerOpen"
+        width="md"
+        :title="drawerTitle"
+        confirm-text="保存课件"
+        @close="closeDrawer"
+        @confirm="saveDrawer"
+      >
+        <p v-if="drawerDescription" class="workbench-drawer-form__body-description">{{ drawerDescription }}</p>
+        <label class="workbench-drawer-form__field">
+          <span class="workbench-drawer-form__field-label">课件标题</span>
+          <input v-model="drawerDraft.title" type="text" class="workbench-drawer-form__field-input" placeholder="例如：第一章 计算机网络概述" />
+          <small v-if="drawerErrors.title" class="workbench-drawer-form__field-error">{{ drawerErrors.title }}</small>
+        </label>
 
-          <button type="button" class="courseware-management__drawer-close" aria-label="关闭抽屉" @click="closeDrawer">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path :d="iconPaths.x"></path>
-            </svg>
-          </button>
-        </header>
-        </template>
+        <label class="workbench-drawer-form__field">
+          <span class="workbench-drawer-form__field-label">课程</span>
+          <WorkbenchSelect
+            v-model="drawerDraft.course"
+            aria-label="选择课件课程"
+            :options="[
+              { value: '', label: '请选择课程', disabled: true },
+              ...viewModel.courseOptions.slice(1),
+            ]"
+          />
+          <small v-if="drawerErrors.course" class="workbench-drawer-form__field-error">{{ drawerErrors.course }}</small>
+        </label>
 
-        <template #default>
-        <div class="courseware-management__form">
-          <label class="courseware-management__form-field">
-            <span>课件标题</span>
-            <input v-model="drawerDraft.title" type="text" placeholder="例如：第一章 计算机网络概述" />
-            <small v-if="drawerErrors.title" class="courseware-management__field-error">{{ drawerErrors.title }}</small>
-          </label>
+        <label class="workbench-drawer-form__field">
+          <span class="workbench-drawer-form__field-label">章节</span>
+          <input v-model="drawerDraft.chapter" type="text" class="workbench-drawer-form__field-input" placeholder="例如：第2章" />
+          <small v-if="drawerErrors.chapter" class="workbench-drawer-form__field-error">{{ drawerErrors.chapter }}</small>
+        </label>
 
-          <label class="courseware-management__form-field">
-            <span>课程</span>
-            <WorkbenchSelect
-              v-model="drawerDraft.course"
-              aria-label="选择课件课程"
-              :options="[
-                { value: '', label: '请选择课程', disabled: true },
-                ...viewModel.courseOptions.slice(1),
-              ]"
-            />
-            <small v-if="drawerErrors.course" class="courseware-management__field-error">{{ drawerErrors.course }}</small>
-          </label>
+        <label class="workbench-drawer-form__field">
+          <span class="workbench-drawer-form__field-label">类型</span>
+          <WorkbenchSelect
+            v-model="drawerDraft.type"
+            aria-label="选择课件类型"
+            :options="viewModel.typeOptions.filter((item) => item.value !== 'all')"
+          />
+        </label>
 
-          <label class="courseware-management__form-field">
-            <span>章节</span>
-            <input v-model="drawerDraft.chapter" type="text" placeholder="例如：第2章" />
-            <small v-if="drawerErrors.chapter" class="courseware-management__field-error">{{ drawerErrors.chapter }}</small>
-          </label>
+        <label class="workbench-drawer-form__field">
+          <span class="workbench-drawer-form__field-label">文件大小</span>
+          <input v-model="drawerDraft.fileSize" type="text" class="workbench-drawer-form__field-input" placeholder="例如：2.5 MB" />
+          <small v-if="drawerErrors.fileSize" class="workbench-drawer-form__field-error">{{ drawerErrors.fileSize }}</small>
+        </label>
 
-          <label class="courseware-management__form-field">
-            <span>类型</span>
-            <WorkbenchSelect
-              v-model="drawerDraft.type"
-              aria-label="选择课件类型"
-              :options="viewModel.typeOptions.filter((item) => item.value !== 'all')"
-            />
-          </label>
-
-          <label class="courseware-management__form-field">
-            <span>文件大小</span>
-            <input v-model="drawerDraft.fileSize" type="text" placeholder="例如：2.5 MB" />
-            <small v-if="drawerErrors.fileSize" class="courseware-management__field-error">{{ drawerErrors.fileSize }}</small>
-          </label>
-
-          <div class="courseware-management__drawer-meta">
-            <strong>自动维护信息</strong>
-            <p>上传人：{{ currentCoursewareUploader }}</p>
-            <p>上传时间：保存时自动刷新为当天日期。</p>
-            <p v-if="drawerErrors.uploadedBy" class="courseware-management__field-error">{{ drawerErrors.uploadedBy }}</p>
-          </div>
+        <div class="workbench-drawer-form__meta">
+          <strong>自动维护信息</strong>
+          <p>上传人：{{ currentCoursewareUploader }}</p>
+          <p>上传时间：保存时自动刷新为当天日期。</p>
+          <p v-if="drawerErrors.uploadedBy" class="workbench-drawer-form__field-error">{{ drawerErrors.uploadedBy }}</p>
         </div>
-        </template>
-
-        <template #footer>
-        <footer class="courseware-management__drawer-actions">
-          <button type="button" class="courseware-management__drawer-action" @click="closeDrawer">取消</button>
-          <button type="button" class="courseware-management__drawer-action primary" @click="saveDrawer">
-            保存课件
-          </button>
-        </footer>
-        </template>
-      </WorkbenchDrawerHost>
+      </WorkbenchFormDrawer>
     </template>
   </WorkbenchDataView>
 </template>
