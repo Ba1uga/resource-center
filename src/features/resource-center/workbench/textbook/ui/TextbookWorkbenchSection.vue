@@ -9,6 +9,7 @@ import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
 import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
+import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
@@ -208,9 +209,8 @@ const feedback = ref<{
   tone: FeedbackTone
   text: string
 } | null>(null)
+const statusPillRef = ref<InstanceType<typeof WorkbenchStatusPill> | null>(null)
 const connectionStatus = ref<'' | 'offline'>('')
-const statusVisible = ref(false)
-let statusTimer: ReturnType<typeof setTimeout> | undefined
 
 const pageSizeOptions = [10, 20, 50]
 
@@ -314,27 +314,7 @@ onBeforeUnmount(() => {
   if (keywordDebounceTimer) {
     clearTimeout(keywordDebounceTimer)
   }
-  dismissStatus()
 })
-
-function dismissStatus() {
-  statusVisible.value = false
-  if (statusTimer) {
-    clearTimeout(statusTimer)
-    statusTimer = undefined
-  }
-}
-
-function showTransientStatus() {
-  statusVisible.value = true
-  if (statusTimer) {
-    clearTimeout(statusTimer)
-  }
-  statusTimer = setTimeout(() => {
-    statusVisible.value = false
-    statusTimer = undefined
-  }, 3200)
-}
 
 function createEmptyDraft(): TextbookDraft {
   return {
@@ -405,7 +385,7 @@ async function loadTextbooks() {
     total.value = seedRows.length
     isUsingFallback.value = true
     connectionStatus.value = 'offline'
-    showTransientStatus()
+    statusPillRef.value?.show()
     feedback.value = null
   } finally {
     isLoading.value = false
@@ -672,19 +652,13 @@ async function handleBulkDelete() {
       <header class="textbook-management__head">
         <div class="textbook-management__heading">
           <h2>{{ props.section.title }}</h2>
-        </div>
-        <div
-          v-if="connectionStatus === 'offline'"
-          class="textbook-management__status-anchor"
-          @mouseenter="statusVisible = true"
-          @mouseleave="dismissStatus"
-        >
-          <button class="textbook-management__status-pill" type="button" @click="statusVisible = !statusVisible">
-            连接异常
-          </button>
-          <div v-if="statusVisible" class="textbook-management__status-popover">
-            后端连接失败，当前显示本地教材样例。
-          </div>
+          <WorkbenchStatusPill
+            v-if="connectionStatus === 'offline'"
+            ref="statusPillRef"
+            label="连接异常"
+            message="后端连接失败，当前显示本地教材样例。"
+            severity="error"
+          />
         </div>
       </header>
     </template>

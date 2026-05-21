@@ -1,0 +1,74 @@
+.workbench-status-pill__anchor {
+  --workbench-status-pill-border: oklch(0.84 0.02 38);
+  --workbench-status-pill-bg: oklch(0.97 0.012 38);
+  --workbench-status-pill-ink: oklch(0.42 0.05 35);
+  --workbench-status-popover-border: oklch(0.86 0.03 35);
+  --workbench-status-popover-bg: oklch(0.97 0.016 35);
+  --workbench-status-popover-ink: oklch(0.43 0.04 35);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.workbench-status-pill__anchor--warning {
+  --workbench-status-pill-border: oklch(0.82 0.08 80);
+  --workbench-status-pill-bg: oklch(0.97 0.04 82);
+  --workbench-status-pill-ink: oklch(0.44 0.08 78);
+  --workbench-status-popover-border: oklch(0.84 0.08 76);
+  --workbench-status-popover-bg: oklch(0.97 0.05 80);
+  --workbench-status-popover-ink: oklch(0.45 0.08 75);
+}
+
+.workbench-status-pill__anchor--info {
+  --workbench-status-pill-border: oklch(0.78 0.04 252);
+  --workbench-status-pill-bg: oklch(0.96 0.03 250);
+  --workbench-status-pill-ink: oklch(0.42 0.06 248);
+  --workbench-status-popover-border: oklch(0.8 0.05 248);
+  --workbench-status-popover-bg: oklch(0.96 0.04 248);
+  --workbench-status-popover-ink: oklch(0.43 0.06 245);
+}
+
+.workbench-status-pill__button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--workbench-status-pill-border);
+  border-radius: 999px;
+  background: var(--workbench-status-pill-bg);
+  color: var(--workbench-status-pill-ink);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.workbench-status-pill__popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 260px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--workbench-status-popover-border);
+  border-radius: 14px;
+  background: var(--workbench-status-popover-bg);
+  color: var(--workbench-status-popover-ink);
+  box-shadow: 0 16px 28px oklch(0.42 0.02 62 / 0.12);
+  line-height: 1.5;
+  z-index: 3;
+}
+
+@media (max-width: 760px) {
+  .workbench-status-pill__anchor {
+    justify-items: start;
+  }
+
+  .workbench-status-pill__popover {
+    left: 0;
+    transform: none;
+    min-width: min(280px, calc(100vw - 64px));
+  }
+}

@@ -9,12 +9,17 @@ const stylesUrl = new URL(
   '../../../../src/features/resource-center/workbench/textbook/styles/textbook-workbench.css',
   import.meta.url,
 )
+const statusPillStylesUrl = new URL(
+  '../../../../src/features/resource-center/workbench/shared/styles/workbench-status-pill.css',
+  import.meta.url,
+)
 
 assert.equal(existsSync(sectionUrl), true, 'TextbookWorkbenchSection.vue must exist')
 assert.equal(existsSync(stylesUrl), true, 'textbook-workbench.css must exist')
 
 const sectionContent = readFileSync(sectionUrl, 'utf8')
 const stylesContent = readFileSync(stylesUrl, 'utf8')
+const statusPillStyles = readFileSync(statusPillStylesUrl, 'utf8')
 
 assert.ok(sectionContent.includes("import '../styles/textbook-workbench.css'"))
 assert.ok(sectionContent.includes("import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'"))
@@ -30,19 +35,18 @@ assert.ok(sectionContent.includes("import WorkbenchSelect from '../../shared/ui/
 assert.ok(sectionContent.includes('defineProps<{'))
 assert.ok(sectionContent.includes('section: WorkbenchSectionMeta'))
 assert.ok(sectionContent.includes('const currentAdminId ='))
-assert.ok(sectionContent.includes('const statusVisible = ref(false)'))
+assert.ok(sectionContent.includes('const statusPillRef = ref'))
 assert.ok(sectionContent.includes('const selectedIds = ref<string[]>([])'))
 assert.ok(sectionContent.includes('const visibleIds = computed(() => pageRows.value.map((row) => row.id))'))
 assert.ok(sectionContent.includes('const allVisibleSelected = computed('))
 assert.ok(sectionContent.includes('function toggleRowSelection('))
 assert.ok(sectionContent.includes('function toggleVisibleSelection('))
 assert.ok(sectionContent.includes('async function handleBulkDelete()'))
-assert.ok(sectionContent.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
 assert.ok(sectionContent.includes('textbook-management'))
 assert.equal(sectionContent.includes('管理员可管理全部教材'), false)
-assert.ok(sectionContent.includes('class="textbook-management__status-anchor"'))
-assert.ok(sectionContent.includes('class="textbook-management__status-pill"'))
-assert.ok(sectionContent.includes('class="textbook-management__status-popover"'))
+assert.ok(sectionContent.includes('WorkbenchStatusPill'))
+assert.ok(sectionContent.includes('label="连接异常"'))
+assert.ok(sectionContent.includes('message="后端连接失败，当前显示本地教材样例。"'))
 assert.ok(sectionContent.includes('<WorkbenchSelect'))
 assert.ok(sectionContent.includes('后端连接失败'))
 assert.ok(sectionContent.includes('当前显示本地教材样例'))
@@ -76,8 +80,6 @@ assert.ok(sectionContent.includes('openCreateDrawer'))
 assert.ok(sectionContent.includes('openEditDrawer'))
 assert.ok(sectionContent.includes('deleteRow'))
 assert.ok(sectionContent.includes('saveDrawer'))
-assert.ok(sectionContent.includes('function showTransientStatus('))
-assert.ok(sectionContent.includes('function dismissStatus()'))
 assert.ok(sectionContent.includes('批量删除'))
 assert.ok(sectionContent.includes('class="textbook-management__loading-state"'))
 assert.ok(sectionContent.includes('class="textbook-management__loading-icon"'))
@@ -100,16 +102,16 @@ assert.match(
   /\.textbook-management__toolbar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+200px\s+auto\s+auto;[\s\S]*?gap:\s*12px;/i,
 )
 assert.match(
-  stylesContent,
-  /\.textbook-management__status-anchor\s*\{[\s\S]*?display:\s*grid;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__anchor\s*\{[\s\S]*?position:\s*relative;/i,
 )
 assert.match(
-  stylesContent,
-  /\.textbook-management__status-pill\s*\{[\s\S]*?border-radius:\s*999px;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__button\s*\{[\s\S]*?border-radius:\s*999px;/i,
 )
 assert.match(
-  stylesContent,
-  /\.textbook-management__status-popover\s*\{[\s\S]*?position:\s*absolute;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__popover\s*\{[\s\S]*?position:\s*absolute;/i,
 )
 assert.equal(stylesContent.includes('.textbook-management__toolbar-advanced'), false)
 assert.equal(stylesContent.includes('.textbook-management__scope-pill'), false)
@@ -126,6 +128,6 @@ assert.match(
   /\.textbook-management__loading-icon\s*\{[\s\S]*?width:\s*72px;[\s\S]*?height:\s*72px;[\s\S]*?border-radius:\s*24px;/i,
 )
 assert.match(
-  stylesContent,
-  /@media \(max-width: 760px\)\s*\{[\s\S]*?\.textbook-management__status-anchor[\s\S]*?\.textbook-management__status-popover/i,
+  statusPillStyles,
+  /@media \(max-width: 760px\)\s*\{[\s\S]*?\.workbench-status-pill__anchor[\s\S]*?\.workbench-status-pill__popover/i,
 )

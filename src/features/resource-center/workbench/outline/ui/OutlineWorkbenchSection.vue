@@ -31,6 +31,7 @@ import {
   createOutlineWorkbenchViewModel,
 } from '@/features/resource-center/workbench/outline/model/outline-workbench.view-model.ts'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
+import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 
 import type {
@@ -97,7 +98,7 @@ const courseCreator = reactive({
 const statusMessage = ref('')
 const statusType = ref<'success' | 'error' | 'warning' | 'info'>('info')
 const connectionStatus = ref<'' | 'offline'>('')
-const statusVisible = ref(false)
+const statusPillRef = ref<InstanceType<typeof WorkbenchStatusPill> | null>(null)
 const savedSnapshot = ref('')
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error' | 'warning' | 'info'>('info')
@@ -117,7 +118,6 @@ const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
 let localIdSeed = 0
 let courseTreeScrollbar: PerfectScrollbar | null = null
-let statusTimer: ReturnType<typeof setTimeout> | undefined
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 let searchRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -357,25 +357,6 @@ function clearToast() {
   }
 }
 
-function dismissStatus() {
-  statusVisible.value = false
-  if (statusTimer) {
-    clearTimeout(statusTimer)
-    statusTimer = undefined
-  }
-}
-
-function showTransientStatus() {
-  statusVisible.value = true
-  if (statusTimer) {
-    clearTimeout(statusTimer)
-  }
-  statusTimer = setTimeout(() => {
-    statusVisible.value = false
-    statusTimer = undefined
-  }, 3200)
-}
-
 async function loadOutlineCoursePage(message = '') {
   isLoading.value = true
 
@@ -419,7 +400,7 @@ async function loadOutlineCoursePage(message = '') {
   } catch (error) {
     console.error(error)
     connectionStatus.value = 'offline'
-    showTransientStatus()
+    statusPillRef.value?.show()
   } finally {
     isLoading.value = false
   }
@@ -1025,7 +1006,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  dismissStatus()
   if (searchRefreshTimer) {
     clearTimeout(searchRefreshTimer)
     searchRefreshTimer = undefined
@@ -1156,24 +1136,18 @@ function resetCourseVersionCaches() {
       <div class="outline-management__top-row">
         <div class="outline-management__heading">
           <h2>{{ props.section.title }}</h2>
+          <WorkbenchStatusPill
+            v-if="connectionStatus === 'offline'"
+            ref="statusPillRef"
+            label="连接异常"
+            message="后端连接失败，当前显示本地大纲样例。"
+            severity="error"
+          />
         </div>
         <div class="outline-management__top-row-main">
           <label class="outline-query-field outline-query-field--search">
             <input v-model="queryState.searchText" type="search" placeholder="搜索课程、版本或备注" />
           </label>
-          <div
-            v-if="connectionStatus === 'offline'"
-            class="outline-management__status-anchor"
-            @mouseenter="statusVisible = true"
-            @mouseleave="dismissStatus"
-          >
-            <button class="outline-management__status-pill" type="button" @click="statusVisible = !statusVisible">
-              连接异常
-            </button>
-            <div v-if="statusVisible" class="outline-management__status-popover">
-              后端连接失败，当前显示本地大纲样例。
-            </div>
-          </div>
         </div>
       </div>
 

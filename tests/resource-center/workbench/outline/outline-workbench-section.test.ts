@@ -9,6 +9,10 @@ const outlineStylesUrl = new URL(
   '../../../../src/features/resource-center/workbench/outline/styles/outline-workbench.css',
   import.meta.url,
 )
+const statusPillStylesUrl = new URL(
+  '../../../../src/features/resource-center/workbench/shared/styles/workbench-status-pill.css',
+  import.meta.url,
+)
 const packageJsonUrl = new URL('../../../../package.json', import.meta.url)
 
 assert.equal(existsSync(outlineSectionUrl), true, 'OutlineWorkbenchSection.vue must exist')
@@ -16,6 +20,7 @@ assert.equal(existsSync(outlineStylesUrl), true, 'outline-workbench.css must exi
 
 const outlineSection = readFileSync(outlineSectionUrl, 'utf8')
 const outlineStyles = readFileSync(outlineStylesUrl, 'utf8')
+const statusPillStyles = readFileSync(statusPillStylesUrl, 'utf8')
 const packageJson = JSON.parse(readFileSync(packageJsonUrl, 'utf8')) as {
   dependencies?: Record<string, string>
 }
@@ -39,9 +44,9 @@ assert.ok(outlineSection.includes('class="outline-management__top-row"'))
 assert.ok(outlineSection.includes('class="outline-management__top-row-main"'))
 assert.ok(outlineSection.includes('class="outline-management__heading"'))
 assert.equal(outlineSection.includes('class="outline-management__scope-pill"'), false)
-assert.ok(outlineSection.includes('class="outline-management__status-anchor"'))
-assert.ok(outlineSection.includes('class="outline-management__status-pill"'))
-assert.ok(outlineSection.includes('class="outline-management__status-popover"'))
+assert.ok(outlineSection.includes('WorkbenchStatusPill'))
+assert.ok(outlineSection.includes('label="连接异常"'))
+assert.ok(outlineSection.includes('message="后端连接失败，当前显示本地大纲样例。"'))
 assert.ok(outlineSection.includes('后端连接失败，当前显示本地大纲样例。'))
 assert.ok(outlineSection.includes('class="outline-query-bar"'))
 assert.ok(outlineSection.includes('<WorkbenchSelect'))
@@ -142,8 +147,7 @@ assert.ok(outlineSection.includes('const courseVersionPages = reactive<Record<st
 assert.ok(outlineSection.includes('function handleCourseVersionPageChange(courseId: string, nextPage: number)'))
 assert.ok(outlineSection.includes('function handleCourseVersionPageSizeChange(courseId: string, nextPageSize: number)'))
 assert.ok(outlineSection.includes('const currentVersionPageHint = computed(() =>'))
-assert.ok(outlineSection.includes('const statusVisible = ref(false)'))
-assert.ok(outlineSection.includes('let statusTimer: ReturnType<typeof setTimeout> | undefined'))
+assert.ok(outlineSection.includes('const statusPillRef = ref'))
 assert.ok(outlineSection.includes('const hasUnsavedChanges = computed(() =>'))
 assert.ok(outlineSection.includes('function requestVersionSelection('))
 assert.ok(outlineSection.includes('function confirmPendingSelectionWithSave()'))
@@ -156,8 +160,6 @@ assert.ok(outlineSection.includes('function handleCoursePageSizeChange(nextPageS
 assert.ok(outlineSection.includes('function openBlankVersionCreator()'))
 assert.ok(outlineSection.includes('function openCopyVersionCreator()'))
 assert.ok(outlineSection.includes('function closeVersionCreator()'))
-assert.ok(outlineSection.includes('function showTransientStatus('))
-assert.ok(outlineSection.includes('function dismissStatus()'))
 assert.ok(outlineSection.includes('function requestArchiveVersion('))
 assert.ok(outlineSection.includes('function confirmArchiveVersion()'))
 assert.ok(outlineSection.includes('function cancelArchiveVersion()'))
@@ -501,16 +503,16 @@ assert.match(
   /\.outline-workspace__top\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*14px;[\s\S]*?align-content:\s*start;/i,
 )
 assert.match(
-  outlineStyles,
-  /\.outline-management__status-anchor\s*\{[\s\S]*?display:\s*grid;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__anchor\s*\{[\s\S]*?position:\s*relative;/i,
 )
 assert.match(
-  outlineStyles,
-  /\.outline-management__status-pill\s*\{[\s\S]*?border-radius:\s*999px;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__button\s*\{[\s\S]*?border-radius:\s*999px;/i,
 )
 assert.match(
-  outlineStyles,
-  /\.outline-management__status-popover\s*\{[\s\S]*?position:\s*absolute;/i,
+  statusPillStyles,
+  /\.workbench-status-pill__popover\s*\{[\s\S]*?position:\s*absolute;/i,
 )
 assert.match(
   outlineStyles,
