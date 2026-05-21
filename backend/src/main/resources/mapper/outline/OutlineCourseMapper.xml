@@ -53,7 +53,7 @@
         WHERE c.deleted = 0
           <choose>
               <when test="versionFilterActive">
-                  AND filtered_versions.course_id IS NOT NULL
+                  AND (filtered_versions.course_id IS NOT NULL OR COALESCE(total_versions.total_version_count, 0) = 0)
               </when>
               <otherwise>
                   AND (
