@@ -35,6 +35,8 @@ assert.ok(outlineSection.includes('const props = defineProps<{'))
 assert.ok(outlineSection.includes('currentAdminName: string'))
 assert.ok(outlineSection.includes('class="outline-management workbench-surface"'))
 assert.ok(outlineSection.includes('class="outline-management__head"'))
+assert.ok(outlineSection.includes('class="outline-management__top-row"'))
+assert.ok(outlineSection.includes('class="outline-management__top-row-main"'))
 assert.ok(outlineSection.includes('class="outline-management__heading"'))
 assert.equal(outlineSection.includes('class="outline-management__scope-pill"'), false)
 assert.ok(outlineSection.includes('class="outline-management__status-anchor"'))
@@ -55,6 +57,11 @@ assert.ok(outlineSection.includes('function isCourseExpanded(courseId: string)')
 assert.ok(outlineSection.includes('const courseTreeScrollRef = ref<HTMLElement | null>(null)'))
 assert.ok(outlineSection.includes('const workspaceBodyScrollRef = ref<HTMLElement | null>(null)'))
 assert.ok(outlineSection.includes('function initializeOutlineScrollbars()'))
+assert.ok(outlineSection.includes('const statusType = ref'))
+assert.ok(outlineSection.includes('const toastMessage = ref'))
+assert.ok(outlineSection.includes('const showToast = ref'))
+assert.ok(outlineSection.includes('function dismissBanner()'))
+assert.ok(outlineSection.includes('function clearToast()'))
 assert.ok(outlineSection.includes('function updateOutlineScrollbars()'))
 assert.ok(outlineSection.includes('function destroyOutlineScrollbars()'))
 assert.match(
@@ -193,6 +200,9 @@ assert.ok(normalizedOutlineSection.includes('@page-size-change="handleCoursePage
 assert.ok(normalizedOutlineSection.includes('class="outline-course-group__pagination"'))
 assert.ok(normalizedOutlineSection.includes('@page-change="handleCourseVersionPageChange(course.id, $event)"'))
 assert.ok(normalizedOutlineSection.includes('@page-size-change="handleCourseVersionPageSizeChange(course.id, $event)"'))
+assert.ok(normalizedOutlineSection.includes('simple'))
+assert.ok(normalizedOutlineSection.includes('class="outline-course-tree__pagination"'))
+assert.ok(normalizedOutlineSection.indexOf('class="outline-course-tree__pagination"') < normalizedOutlineSection.indexOf('</aside>'))
 assert.ok(normalizedOutlineSection.includes('当前查看版本不在本页列表中。'))
 assert.ok(normalizedOutlineSection.includes('v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state"'))
 assert.ok(normalizedOutlineSection.includes('此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。'))
@@ -274,18 +284,41 @@ assert.equal(/\.outline-management__head,\s*[\r\n]+\s*\.outline-query-bar/i.test
 assert.equal(/\.outline-query-bar,\s*[\r\n]+\s*\.outline-course-tree/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
-  /\.outline-query-bar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*1\.35fr\)\s+minmax\(0,\s*118px\)\s+minmax\(0,\s*118px\)\s+minmax\(0,\s*156px\)\s+minmax\(0,\s*124px\)\s+minmax\(84px,\s*auto\)\s+minmax\(120px,\s*auto\);[\s\S]*?gap:\s*14px;/i,
+  /\.outline-query-bar\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*148px\)\)\s+auto\s+auto;[\s\S]*?gap:\s*14px;/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-management__body\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(260px,\s*320px\)\s+minmax\(0,\s*1fr\);[\s\S]*?min-height:\s*0;/i,
+  /\.outline-query-bar\s*\{[\s\S]*?grid-column:\s*2;[\s\S]*?grid-row:\s*2;[\s\S]*?justify-self:\s*end;[\s\S]*?width:\s*fit-content;[\s\S]*?max-width:\s*100%;/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree\s*\{[\s\S]*?display:\s*grid;[\s\S]*?align-content:\s*start;[\s\S]*?overflow:\s*auto;/i,
+  /\.outline-management__top-row\s*\{[\s\S]*?display:\s*contents;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__head\s*\{[\s\S]*?display:\s*contents;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__top-row-main\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(420px,\s*1fr\)\s+auto;[\s\S]*?grid-column:\s*2;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__top-row-main\s*\{[\s\S]*?justify-self:\s*end;[\s\S]*?width:\s*min\(100%,\s*1320px\);/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-management__body\s*\{[\s\S]*?display:\s*contents;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-course-tree\s*\{[\s\S]*?grid-column:\s*1;[\s\S]*?grid-row:\s*2\s*\/\s*-1;[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;[\s\S]*?overflow:\s*hidden;/i,
 )
 assert.ok(outlineStyles.includes('.outline-course-tree__pagination'))
 assert.ok(outlineStyles.includes('.outline-course-group__pagination'))
+assert.ok(outlineStyles.includes('.outline-course-tree__scroll'))
+assert.ok(normalizedOutlineSection.includes('class="outline-course-tree__scroll"'))
+assert.match(outlineStyles, /\.outline-course-tree__pagination\s*\{[\s\S]*?flex-shrink:\s*0;/i)
 assert.match(
   outlineStyles,
   /\.outline-course-create-button\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-height:\s*48px;/i,
@@ -312,23 +345,23 @@ assert.match(
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree\s*\{[\s\S]*?scrollbar-gutter:\s*stable[\s\S]*?scrollbar-width:\s*thin;[\s\S]*?scrollbar-color:\s*var\(--outline-scroll-tree-thumb\)\s+var\(--outline-scroll-track\);/i,
+  /\.outline-course-tree__scroll\s*\{[\s\S]*?scrollbar-gutter:\s*stable[\s\S]*?scrollbar-width:\s*thin;[\s\S]*?scrollbar-color:\s*var\(--outline-scroll-tree-thumb\)\s+var\(--outline-scroll-track\);/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree::-webkit-scrollbar\s*\{[\s\S]*?width:\s*\d+px;/i,
+  /\.outline-course-tree__scroll::-webkit-scrollbar\s*\{[\s\S]*?width:\s*\d+px;/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree::-webkit-scrollbar-track\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-track\);/i,
+  /\.outline-course-tree__scroll::-webkit-scrollbar-track\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-track\);/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree::-webkit-scrollbar-thumb\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-tree-thumb\)\s+padding-box;/i,
+  /\.outline-course-tree__scroll::-webkit-scrollbar-thumb\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?background:\s*var\(--outline-scroll-tree-thumb\)\s+padding-box;/i,
 )
 assert.match(
   outlineStyles,
-  /\.outline-course-tree::-webkit-scrollbar-button\s*\{[\s\S]*?display:\s*none;[\s\S]*?width:\s*0;[\s\S]*?height:\s*0;/i,
+  /\.outline-course-tree__scroll::-webkit-scrollbar-button\s*\{[\s\S]*?display:\s*none;[\s\S]*?width:\s*0;[\s\S]*?height:\s*0;/i,
 )
 assert.match(
   outlineStyles,
@@ -485,6 +518,18 @@ assert.match(
 )
 assert.match(
   outlineStyles,
+  /\.outline-toast\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?animation:\s*outline-toast-in/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-status-message__close\s*\{[\s\S]*?cursor:\s*pointer;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-status-message--error\s*\{[\s\S]*?border-left-color:\s*var\(--outline-status-color\);/i,
+)
+assert.match(
+  outlineStyles,
   /\.outline-editor-panel\s*\{[\s\S]*?padding:\s*20px;[\s\S]*?border:\s*1px solid var\(--outline-line\);[\s\S]*?border-radius:\s*22px;[\s\S]*?background:\s*var\(--outline-surface\);/i,
 )
 assert.equal(/\.outline-workspace__completion\s*\{/i.test(outlineStyles), false)
@@ -503,7 +548,7 @@ assert.match(
 assert.equal(/\.outline-inline-notice\.warning\s*\{/i.test(outlineStyles), false)
 assert.match(
   outlineStyles,
-  /@media \(max-width: 1180px\)\s*\{[\s\S]*?\.outline-management__body\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\}[\s\S]*?\.outline-query-bar\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/i,
+  /@media \(max-width: 1180px\)\s*\{[\s\S]*?\.outline-management\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\}[\s\S]*?\.outline-management__top-row\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\}[\s\S]*?\.outline-management__heading,\s*[\r\n]+\s*\.outline-management__top-row-main\s*\{[\s\S]*?grid-column:\s*auto;[\s\S]*?grid-row:\s*auto;[\s\S]*?\}[\s\S]*?\.outline-management__top-row-main\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\}[\s\S]*?\.outline-query-bar\s*\{[\s\S]*?grid-column:\s*auto;[\s\S]*?grid-row:\s*auto;[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/i,
 )
 assert.ok(
   normalizedOutlineSection.includes(
@@ -527,7 +572,7 @@ assert.ok(
 )
 assert.match(
   outlineStyles,
-  /\.outline-goals-grid,\s*[\r\n]+\s*\.outline-materials-grid\s*\{[\s\S]*?align-items:\s*start;/i,
+  /\.outline-goals-grid,\s*[\r\n]+\s*\.outline-materials-grid\s*\{[\s\S]*?align-items:\s*stretch;/i,
 )
 assert.match(
   outlineStyles,
@@ -537,3 +582,14 @@ assert.match(
   outlineStyles,
   /\.outline-group-empty-state\s*\{[\s\S]*?border:\s*1px dashed var\(--outline-line\);[\s\S]*?background:\s*var\(--outline-surface-soft\);/i,
 )
+assert.match(
+  outlineStyles,
+  /\.outline-offline-state\s*\{[\s\S]*?display:\s*grid;[\s\S]*?justify-items:\s*center;/i,
+)
+assert.match(
+  outlineStyles,
+  /\.outline-offline-state__icon\s*\{[\s\S]*?place-items:\s*center;[\s\S]*?width:\s*72px;/i,
+)
+assert.ok(outlineSection.includes('v-if="connectionStatus === \'offline\'"'))
+assert.ok(outlineSection.includes('function retryConnection()'))
+assert.ok(outlineSection.includes('后端服务暂时无法连接'))

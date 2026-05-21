@@ -1,7 +1,6 @@
 .workbench-pagination {
   --workbench-pagination-line: #d9d9d9;
-  --workbench-pagination-line-strong: #4096ff;
-  --workbench-pagination-primary: #1677ff;
+  --workbench-pagination-line-strong: #bfbfbf;
   --workbench-pagination-surface: #fff;
   --workbench-pagination-ink: #262626;
   --workbench-pagination-soft: #595959;
@@ -59,7 +58,7 @@
 
 .workbench-pagination__button:hover {
   border-color: var(--workbench-pagination-line-strong);
-  color: var(--workbench-pagination-primary);
+  background: var(--workbench-pagination-surface);
 }
 
 .workbench-pagination__button:focus-visible,
@@ -67,7 +66,7 @@
 .workbench-pagination__page-size select:focus-visible {
   outline: 0;
   border-color: var(--workbench-pagination-line-strong);
-  box-shadow: 0 0 0 2px rgb(22 119 255 / 18%);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 8%);
 }
 
 .workbench-pagination__button:disabled {
@@ -76,8 +75,9 @@
 }
 
 .workbench-pagination__button.is-active {
-  border-color: #1677ff;
-  color: #1677ff;
+  border-color: var(--workbench-pagination-line-strong);
+  background: var(--workbench-pagination-surface);
+  font-weight: 600;
 }
 
 .workbench-pagination__button--nav {
@@ -126,6 +126,33 @@
 .workbench-pagination__quick-jumper input {
   height: 32px;
   width: 52px;
+}
+
+.workbench-pagination__page-indicator {
+  white-space: nowrap;
+  color: var(--workbench-pagination-ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.workbench-pagination.is-simple {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.workbench-pagination.is-simple .workbench-pagination__controls {
+  gap: 4px;
+}
+
+.workbench-pagination.is-simple .workbench-pagination__button {
+  min-width: 28px;
+  height: 28px;
+}
+
+.workbench-pagination.is-simple .workbench-pagination__button--nav svg {
+  width: 13px;
+  height: 13px;
 }
 
 .workbench-pagination__page-size select {

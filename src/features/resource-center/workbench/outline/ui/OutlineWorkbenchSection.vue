@@ -95,9 +95,13 @@ const courseCreator = reactive({
   department: '',
 })
 const statusMessage = ref('')
+const statusType = ref<'success' | 'error' | 'warning' | 'info'>('info')
 const connectionStatus = ref<'' | 'offline'>('')
 const statusVisible = ref(false)
 const savedSnapshot = ref('')
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error' | 'warning' | 'info'>('info')
+const showToast = ref(false)
 const pendingSelection = ref<PendingVersionSelection | null>(null)
 const pendingArchive = ref<PendingArchiveTarget | null>(null)
 const undoArchiveTarget = ref<UndoArchiveTarget | null>(null)
@@ -113,8 +117,8 @@ const workspaceBodyScrollRef = ref<HTMLElement | null>(null)
 
 let localIdSeed = 0
 let courseTreeScrollbar: PerfectScrollbar | null = null
-let workspaceBodyScrollbar: PerfectScrollbar | null = null
 let statusTimer: ReturnType<typeof setTimeout> | undefined
+let toastTimer: ReturnType<typeof setTimeout> | undefined
 let searchRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
 const outlineScrollbarOptions: PerfectScrollbar.Options = {
@@ -265,7 +269,7 @@ watch(
     if (!currentVersion) {
       draft.value = createOutlineVersionDraft()
       savedSnapshot.value = createDraftSnapshot(draft.value)
-      setStatusMessage('')
+      setStatusMessage('', null, 'info')
       return
     }
 
@@ -275,7 +279,7 @@ watch(
     versionCreator.versionName = `${currentVersion.versionName} 副本`
     versionCreator.semester = currentVersion.semester
     versionCreator.note = `复制自 ${currentVersion.versionName}`
-    setStatusMessage('')
+    setStatusMessage('', null, 'info')
   },
   { immediate: true },
 )
@@ -314,9 +318,43 @@ function seedVersionCreator(mode: 'copy' | 'blank') {
   versionCreator.note = currentVersion ? `复制自 ${currentVersion.versionName}` : ''
 }
 
-function setStatusMessage(message: string, nextUndoArchiveTarget: UndoArchiveTarget | null = null) {
-  statusMessage.value = message
-  undoArchiveTarget.value = nextUndoArchiveTarget
+function setStatusMessage(
+  message: string,
+  nextUndoArchiveTarget: UndoArchiveTarget | null = null,
+  type: 'success' | 'error' | 'warning' | 'info' = 'success',
+) {
+  if (type === 'success' && !nextUndoArchiveTarget) {
+    // Show as floating Toast for simple success messages
+    statusMessage.value = ''
+    toastMessage.value = message
+    toastType.value = type
+    showToast.value = true
+    if (toastTimer) clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => {
+      showToast.value = false
+      toastTimer = undefined
+    }, 3000)
+  } else {
+    // Show as inline banner (error/warning/info, or success with undo action)
+    statusMessage.value = message
+    statusType.value = type
+    undoArchiveTarget.value = nextUndoArchiveTarget
+    showToast.value = false
+  }
+}
+
+function dismissBanner() {
+  statusMessage.value = ''
+  statusType.value = 'info'
+  undoArchiveTarget.value = null
+}
+
+function clearToast() {
+  showToast.value = false
+  if (toastTimer) {
+    clearTimeout(toastTimer)
+    toastTimer = undefined
+  }
 }
 
 function dismissStatus() {
@@ -385,6 +423,10 @@ async function loadOutlineCoursePage(message = '') {
   } finally {
     isLoading.value = false
   }
+}
+
+function retryConnection() {
+  loadOutlineCoursePage()
 }
 
 async function loadOutlineCourseVersions(courseId: string, requestedPage = 1) {
@@ -471,7 +513,6 @@ async function initializeOutlineScrollbars() {
   await nextTick()
 
   courseTreeScrollbar = createOutlineScrollbar(courseTreeScrollRef.value)
-  workspaceBodyScrollbar = createOutlineScrollbar(workspaceBodyScrollRef.value)
   updateOutlineScrollbars()
 }
 
@@ -479,14 +520,11 @@ async function updateOutlineScrollbars() {
   await nextTick()
 
   courseTreeScrollbar?.update()
-  workspaceBodyScrollbar?.update()
 }
 
 function destroyOutlineScrollbars() {
   courseTreeScrollbar?.destroy()
-  workspaceBodyScrollbar?.destroy()
   courseTreeScrollbar = null
-  workspaceBodyScrollbar = null
 }
 
 function toggleCourseGroup(courseId: string) {
@@ -544,7 +582,7 @@ function requestVersionSelection(courseId: string, versionId: string) {
 
   if (isEditing.value && hasUnsavedChanges.value) {
     pendingSelection.value = { courseId, versionId }
-    setStatusMessage('当前版本有未保存内容，可先保存草稿再切换。')
+    setStatusMessage('当前版本有未保存内容，可先保存草稿再切换。', null, 'warning')
     return
   }
 
@@ -621,7 +659,7 @@ async function handleSaveDraft() {
   const currentCourse = viewModel.value.currentCourse
   const currentVersion = viewModel.value.currentVersion
   if (!currentCourse || !currentVersion) {
-    setStatusMessage('保存失败')
+    setStatusMessage('保存失败', null, 'error')
     return false
   }
 
@@ -650,7 +688,7 @@ async function handleSaveDraft() {
     return true
   } catch (error) {
     console.error(error)
-    setStatusMessage('保存失败')
+    setStatusMessage('保存失败', null, 'error')
     return false
   }
 }
@@ -662,7 +700,7 @@ async function handleEditAction() {
 
   if (!isEditing.value) {
     isEditing.value = true
-    setStatusMessage('')
+    setStatusMessage('', null, 'info')
     return
   }
 
@@ -682,7 +720,7 @@ async function handleCreateVersion() {
   }
 
   if (versionCreator.mode === 'copy' && !currentVersion && currentCourse.versions.length === 0) {
-    setStatusMessage('当前课程暂无可复制版本')
+    setStatusMessage('当前课程暂无可复制版本', null, 'warning')
     return
   }
 
@@ -737,7 +775,7 @@ async function handleCreateVersion() {
     )
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '创建版本失败')
+    setStatusMessage(error instanceof Error ? error.message : '创建版本失败', null, 'error')
   }
 }
 
@@ -764,7 +802,7 @@ async function handleCreateCourse() {
     closeCourseCreator()
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '创建课程失败')
+    setStatusMessage(error instanceof Error ? error.message : '创建课程失败', null, 'error')
   } finally {
     isCreatingCourse.value = false
   }
@@ -818,7 +856,7 @@ async function confirmArchiveVersion() {
     })
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '归档失败')
+    setStatusMessage(error instanceof Error ? error.message : '归档失败', null, 'error')
   }
 }
 
@@ -837,7 +875,7 @@ async function undoArchivedVersion() {
     setStatusMessage(`已恢复 ${restored.versionName}`)
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败', null, 'error')
   }
 }
 
@@ -852,7 +890,7 @@ async function handleRestoreVersion(courseId: string, versionId: string) {
     setStatusMessage(`已恢复 ${restored.versionName}`)
   } catch (error) {
     console.error(error)
-    setStatusMessage(error instanceof Error ? error.message : '恢复失败')
+    setStatusMessage(error instanceof Error ? error.message : '恢复失败', null, 'error')
   }
 }
 
@@ -864,7 +902,7 @@ async function handleExportVersion() {
   }
 
   if (!canExport.value) {
-    setStatusMessage('请先补全缺项后再导出')
+    setStatusMessage('请先补全缺项后再导出', null, 'warning')
     return
   }
 
@@ -876,7 +914,7 @@ async function handleExportVersion() {
   savedSnapshot.value = createDraftSnapshot(draft.value)
   const exported = repository.exportOutlineVersion(currentCourse.id, currentVersion.id)
   if (!exported.document) {
-    setStatusMessage('导出失败')
+    setStatusMessage('导出失败', null, 'error')
     return
   }
 
@@ -1114,88 +1152,92 @@ function resetCourseVersionCaches() {
 
 <template>
   <section class="outline-management workbench-surface">
-      <header class="outline-management__head">
+    <header class="outline-management__head">
+      <div class="outline-management__top-row">
         <div class="outline-management__heading">
           <h2>{{ props.section.title }}</h2>
         </div>
-        <div
-          v-if="connectionStatus === 'offline'"
-          class="outline-management__status-anchor"
-          @mouseenter="statusVisible = true"
-          @mouseleave="dismissStatus"
-        >
-          <button class="outline-management__status-pill" type="button" @click="statusVisible = !statusVisible">
-            连接异常
-          </button>
-          <div v-if="statusVisible" class="outline-management__status-popover">
-            后端连接失败，当前显示本地大纲样例。
+        <div class="outline-management__top-row-main">
+          <label class="outline-query-field outline-query-field--search">
+            <input v-model="queryState.searchText" type="search" placeholder="搜索课程、版本或备注" />
+          </label>
+          <div
+            v-if="connectionStatus === 'offline'"
+            class="outline-management__status-anchor"
+            @mouseenter="statusVisible = true"
+            @mouseleave="dismissStatus"
+          >
+            <button class="outline-management__status-pill" type="button" @click="statusVisible = !statusVisible">
+              连接异常
+            </button>
+            <div v-if="statusVisible" class="outline-management__status-popover">
+              后端连接失败，当前显示本地大纲样例。
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-    <section class="outline-query-bar">
-      <label class="outline-query-field outline-query-field--search">
-        <input v-model="queryState.searchText" type="search" placeholder="搜索课程、版本或备注" />
-      </label>
+      <section class="outline-query-bar">
+        <label class="outline-query-field">
+          <WorkbenchSelect
+            v-model="queryState.semester"
+            aria-label="按学期筛选"
+            :options="[
+              { value: '', label: '全部学期' },
+              { value: '2026春', label: '2026春' },
+              { value: '2026秋', label: '2026秋' },
+              { value: '2025秋', label: '2025秋' },
+            ]"
+          />
+        </label>
 
-      <label class="outline-query-field">
-        <WorkbenchSelect
-          v-model="queryState.semester"
-          aria-label="按学期筛选"
-          :options="[
-            { value: '', label: '全部学期' },
-            { value: '2026春', label: '2026春' },
-            { value: '2026秋', label: '2026秋' },
-            { value: '2025秋', label: '2025秋' },
-          ]"
-        />
-      </label>
+        <label class="outline-query-field">
+          <WorkbenchSelect
+            v-model="queryState.versionStatus"
+            aria-label="按版本状态筛选"
+            :options="[
+              { value: 'all', label: '全部状态' },
+              { value: 'draft', label: '草稿' },
+              { value: 'final', label: '定稿' },
+            ]"
+          />
+        </label>
 
-      <label class="outline-query-field">
-        <WorkbenchSelect
-          v-model="queryState.versionStatus"
-          aria-label="按版本状态筛选"
-          :options="[
-            { value: 'all', label: '全部状态' },
-            { value: 'draft', label: '草稿' },
-            { value: 'final', label: '定稿' },
-          ]"
-        />
-      </label>
+        <label class="outline-query-field">
+          <WorkbenchSelect
+            v-model="queryState.completionState"
+            aria-label="按完整度筛选"
+            :options="[
+              { value: 'all', label: '全部完整度' },
+              { value: 'needs-completion', label: '待补全' },
+              { value: 'nearly-complete', label: '接近完成' },
+              { value: 'complete', label: '已完成' },
+            ]"
+          />
+        </label>
 
-      <label class="outline-query-field">
-        <WorkbenchSelect
-          v-model="queryState.completionState"
-          aria-label="按完整度筛选"
-          :options="[
-            { value: 'all', label: '全部完整度' },
-            { value: 'needs-completion', label: '待补全' },
-            { value: 'nearly-complete', label: '接近完成' },
-            { value: 'complete', label: '已完成' },
-          ]"
-        />
-      </label>
+        <label class="outline-query-field">
+          <WorkbenchSelect
+            v-model="queryState.archiveState"
+            aria-label="按归档状态筛选"
+            :options="[
+              { value: 'all', label: '全部版本' },
+              { value: 'active', label: '进行中' },
+              { value: 'archived', label: '已归档' },
+            ]"
+          />
+        </label>
 
-      <label class="outline-query-field">
-        <WorkbenchSelect
-          v-model="queryState.archiveState"
-          aria-label="按归档状态筛选"
-          :options="[
-            { value: 'all', label: '全部版本' },
-            { value: 'active', label: '进行中' },
-            { value: 'archived', label: '已归档' },
-          ]"
-        />
-      </label>
-
-      <button class="outline-toolbar-button" type="button" @click="handleResetFilters">重置</button>
-      <button class="outline-toolbar-button primary" type="button" @click="openBlankVersionCreator">
-        新建版本
-      </button>
-    </section>
+        <button class="outline-toolbar-button" type="button" @click="handleResetFilters">重置</button>
+        <button class="outline-toolbar-button primary" type="button" @click="openBlankVersionCreator">
+          新建版本
+        </button>
+      </section>
+    </header>
 
     <div class="outline-management__body">
-      <aside ref="courseTreeScrollRef" class="outline-course-tree">
+    <aside class="outline-course-tree">
+      <div ref="courseTreeScrollRef" class="outline-course-tree__scroll">
         <button
           class="outline-course-create-button"
           type="button"
@@ -1292,6 +1334,7 @@ function resetCourseVersionCaches() {
                   :page-size="getCourseVersionPagination(course.id)!.pageResult.size"
                   :page-size-options="[10, 20, 50]"
                   show-quick-jumper
+                  simple
                   @page-change="handleCourseVersionPageChange(course.id, $event)"
                   @page-size-change="handleCourseVersionPageSizeChange(course.id, $event)"
                 />
@@ -1299,12 +1342,14 @@ function resetCourseVersionCaches() {
             </div>
           </div>
         </article>
+      </div>
         <footer class="outline-course-tree__pagination">
           <WorkbenchTablePagination
             :pagination="viewModel.pagination"
             :page-size="pageSize"
             :page-size-options="pageSizeOptions"
             show-quick-jumper
+            simple
             @page-change="handleCoursePageChange"
             @page-size-change="handleCoursePageSizeChange"
           />
@@ -1343,8 +1388,11 @@ function resetCourseVersionCaches() {
           </header>
 
           <div class="outline-workspace__feedback">
-            <p v-if="statusMessage" class="outline-status-message">
-              <span>{{ statusMessage }}</span>
+            <div
+              v-if="statusMessage"
+              :class="['outline-status-message', `outline-status-message--${statusType}`]"
+            >
+              <span class="outline-status-message__text">{{ statusMessage }}</span>
               <button
                 v-if="undoArchiveTarget"
                 class="outline-status-message__action"
@@ -1353,11 +1401,22 @@ function resetCourseVersionCaches() {
               >
                 撤销
               </button>
-            </p>
-            <p v-if="!viewModel.currentVersionMatchesFilters" class="outline-status-message">
+              <button
+                v-if="statusType === 'error' || statusType === 'warning' || statusType === 'info'"
+                class="outline-status-message__close"
+                type="button"
+                @click="dismissBanner"
+              >
+                ×
+              </button>
+            </div>
+            <p
+              v-if="!viewModel.currentVersionMatchesFilters"
+              class="outline-status-message outline-status-message--warning"
+            >
               当前正在查看的版本不在筛选结果中。
             </p>
-            <p v-if="currentVersionPageHint" class="outline-status-message">
+            <p v-if="currentVersionPageHint" class="outline-status-message outline-status-message--info">
               {{ currentVersionPageHint }}
             </p>
           </div>
@@ -1385,7 +1444,16 @@ function resetCourseVersionCaches() {
           </div>
 
           <div ref="workspaceBodyScrollRef" class="outline-workspace__body">
-            <div v-if="isLoading && viewModel.courses.length === 0" class="outline-empty-state">
+            <div v-if="connectionStatus === 'offline'" class="outline-offline-state">
+              <div class="outline-offline-state__icon">🔌</div>
+              <h3>网络连接中断</h3>
+              <p>后端服务暂时无法连接</p>
+              <button class="outline-toolbar-button primary" type="button" @click="retryConnection">
+                重新连接
+              </button>
+            </div>
+
+            <div v-else-if="isLoading && viewModel.courses.length === 0" class="outline-empty-state">
               <div class="outline-empty-state__icon">⏳</div>
               <h3>正在加载大纲数据...</h3>
               <p>正在尝试连接后端服务，请稍候。</p>
@@ -1777,4 +1845,13 @@ function resetCourseVersionCaches() {
       </section>
     </div>
   </section>
+  <Teleport to="body">
+    <div
+      v-if="showToast"
+      :class="['outline-toast', `outline-toast--${toastType}`]"
+      @click="clearToast"
+    >
+      {{ toastMessage }}
+    </div>
+  </Teleport>
 </template>

@@ -24,11 +24,13 @@ const props = withDefaults(
     emptyLabel?: string
     pageSize?: number
     pageSizeOptions?: number[]
+    simple?: boolean
   }>(),
   {
     showQuickJumper: false,
     emptyLabel: '暂无结果',
     pageSizeOptions: () => [],
+    simple: false,
   },
 )
 
@@ -83,9 +85,9 @@ function handlePageSizeChange(event: Event) {
 </script>
 
 <template>
-  <div class="workbench-pagination">
+  <div class="workbench-pagination" :class="{ 'is-simple': simple }">
     <div class="workbench-pagination__summary">
-      <strong class="workbench-pagination__page-status">第 {{ pagination.page }} / {{ pagination.pageCount }} 页</strong>
+      <strong v-if="!simple" class="workbench-pagination__page-status">第 {{ pagination.page }} / {{ pagination.pageCount }} 页</strong>
       <span v-if="pagination.total > 0">显示 {{ pagination.from }} - {{ pagination.to }} 条，共 {{ pagination.total }} 条</span>
       <span v-else>{{ emptyLabel }}</span>
     </div>
@@ -110,17 +112,22 @@ function handlePageSizeChange(event: Event) {
         </svg>
       </button>
 
-      <template v-for="(item, index) in paginationItems" :key="`${item}-${index}`">
-        <span v-if="item === 'ellipsis'" class="workbench-pagination__ellipsis">...</span>
-        <button
-          v-else
-          type="button"
-          class="workbench-pagination__button"
-          :class="{ 'is-active': item === pagination.page }"
-          @click="emit('page-change', item)"
-        >
-          {{ item }}
-        </button>
+      <template v-if="simple">
+        <span class="workbench-pagination__page-indicator">第 {{ pagination.page }} / {{ pagination.pageCount }} 页</span>
+      </template>
+      <template v-else>
+        <template v-for="(item, index) in paginationItems" :key="`${item}-${index}`">
+          <span v-if="item === 'ellipsis'" class="workbench-pagination__ellipsis">...</span>
+          <button
+            v-else
+            type="button"
+            class="workbench-pagination__button"
+            :class="{ 'is-active': item === pagination.page }"
+            @click="emit('page-change', item)"
+          >
+            {{ item }}
+          </button>
+        </template>
       </template>
 
       <button

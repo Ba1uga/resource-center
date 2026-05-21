@@ -56,8 +56,18 @@ assert.match(
 )
 assert.match(
   paginationStyles,
-  /\.workbench-pagination__button\.is-active\s*\{[\s\S]*?border-color:\s*#1677ff;[\s\S]*?color:\s*#1677ff;/i,
+  /\.workbench-pagination__button\.is-active\s*\{[\s\S]*?border-color:\s*var\(--workbench-pagination-line-strong\);/i,
 )
+assert.match(
+  paginationStyles,
+  /\.workbench-pagination__page-indicator\s*\{[\s\S]*?white-space:\s*nowrap;/i,
+)
+assert.match(
+  paginationStyles,
+  /\.workbench-pagination\.is-simple\s*\.workbench-pagination__controls\s*\{[\s\S]*?gap:\s*4px;/i,
+)
+assert.ok(paginationComponent.includes('simple'))
+assert.ok(paginationComponent.includes('page-indicator'))
 assert.match(
   paginationStyles,
   /\.workbench-pagination__quick-jumper\s*\{[\s\S]*?display:\s*inline-flex;/i,
