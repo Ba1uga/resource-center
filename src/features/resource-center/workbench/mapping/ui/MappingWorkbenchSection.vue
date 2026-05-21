@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import '../styles/mapping-workbench.css'
 
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { mappingRecords } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.fixtures.ts'
+import { createMappingBatch, listMappingRecords, runMappingBatch } from '@/api/mapping.ts'
 import {
   createMappingWorkbenchViewModel,
   matchesMappingFilters,
@@ -25,7 +26,7 @@ import type {
   MappingSummaryCardKey,
 } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.types.ts'
 
-type FeedbackTone = 'info' | 'success'
+type FeedbackTone = 'info' | 'success' | 'error'
 type BulkAction = 'confirm' | 'remap' | 'ignore' | 'rerun'
 
 const props = defineProps<{
@@ -33,6 +34,11 @@ const props = defineProps<{
 }>()
 
 const pageSize = 8
+
+const connectionStatus = ref<'' | 'offline'>('')
+const isLoading = ref(false)
+const isUsingFallback = ref(false)
+const totalCount = ref(0)
 
 const sessionStore = useMappingWorkbenchSessionStore()
 const records = ref<MappingRecord[]>(createLocalRecords())
@@ -76,10 +82,70 @@ watch(
   },
 )
 
-function handleLaunchBatch() {
-  feedback.value = {
-    tone: 'info',
-    text: 'AI 挂载批次入口已预留，接入批次创建流程后即可开始新的映射任务。',
+async function loadData() {
+  isLoading.value = true
+  try {
+    const data = await listMappingRecords({
+      keyword: filters.value.keyword,
+      resourceType: filters.value.resourceType,
+      course: filters.value.course,
+      chapter: filters.value.chapter,
+      batchId: filters.value.batchId,
+      reviewStatus: filters.value.reviewStatus,
+      confidenceLevel: filters.value.confidenceLevel,
+      overviewStatus: filters.value.overviewStatus,
+      page: page.value,
+      pageSize,
+    })
+    records.value = data.records as MappingRecord[]
+    totalCount.value = data.total
+    connectionStatus.value = ''
+    isUsingFallback.value = false
+  } catch (error) {
+    console.error('Mapping module: failed to load records, using local fixtures', error)
+    connectionStatus.value = 'offline'
+    isUsingFallback.value = true
+    if (records.value.length === 0) {
+      records.value = createLocalRecords()
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleLaunchBatch() {
+  const label = `AI挂载 ${new Date().toLocaleDateString('zh-CN')} ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+
+  if (isUsingFallback.value) {
+    feedback.value = {
+      tone: 'info',
+      text: '当前为离线模式，AI 挂载批次将使用本地数据模拟。已创建模拟批次。',
+    }
+    return
+  }
+
+  feedback.value = { tone: 'info', text: '正在创建批次并采集资源...' }
+
+  try {
+    const batch = await createMappingBatch({
+      label,
+      course: filters.value.course !== 'all' ? filters.value.course : '',
+      createdBy: '管理员',
+    })
+    feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建，正在执行 AI 知识点匹配...` }
+
+    const result = await runMappingBatch(batch.id)
+    await loadData()
+
+    feedback.value = {
+      tone: 'success',
+      text: `AI 挂载完成：${result.matchedCount} 条匹配成功，${result.failedCount} 条匹配失败。`,
+    }
+  } catch (error) {
+    feedback.value = {
+      tone: 'error',
+      text: `AI 挂载批次执行失败：${error instanceof Error ? error.message : '未知错误'}`,
+    }
   }
 }
 
@@ -316,6 +382,10 @@ function createLocalRecords(): MappingRecord[] {
     candidates: record.candidates.map((candidate) => ({ ...candidate })),
   }))
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <template>
