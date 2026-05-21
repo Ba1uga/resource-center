@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = '/api'
 
 export type QueryValue = string | number | boolean | null | undefined
 
@@ -21,7 +21,7 @@ export class ApiError extends Error {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { query, body, headers, ...init } = options
-  const url = new URL(`${API_BASE_URL}${path}`)
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin)
 
   if (query) {
     for (const [key, value] of Object.entries(query)) {

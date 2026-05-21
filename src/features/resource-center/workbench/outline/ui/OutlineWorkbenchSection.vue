@@ -1844,14 +1844,14 @@ function resetCourseVersionCaches() {
         </div>
       </section>
     </div>
+    <Teleport to="body">
+      <div
+        v-if="showToast"
+        :class="['outline-toast', `outline-toast--${toastType}`]"
+        @click="clearToast"
+      >
+        {{ toastMessage }}
+      </div>
+    </Teleport>
   </section>
-  <Teleport to="body">
-    <div
-      v-if="showToast"
-      :class="['outline-toast', `outline-toast--${toastType}`]"
-      @click="clearToast"
-    >
-      {{ toastMessage }}
-    </div>
-  </Teleport>
 </template>
