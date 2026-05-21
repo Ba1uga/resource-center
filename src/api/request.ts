@@ -21,7 +21,8 @@ export class ApiError extends Error {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { query, body, headers, ...init } = options
-  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin)
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080'
+  const url = new URL(`${API_BASE_URL}${path}`, baseUrl)
 
   if (query) {
     for (const [key, value] of Object.entries(query)) {
