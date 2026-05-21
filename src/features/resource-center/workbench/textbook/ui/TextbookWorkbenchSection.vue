@@ -7,7 +7,7 @@ import { createTextbook, deleteTextbook, listTextbooks, updateTextbook } from '@
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
-import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
+import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
 import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
@@ -788,65 +788,51 @@ async function handleBulkDelete() {
     </template>
 
     <template #drawer>
-      <WorkbenchDrawerHost :open="drawerOpen" width="md" @close="closeDrawer">
-        <template #header>
-      <header class="textbook-management__drawer-head">
-        <h3>{{ drawerMode === 'create' ? '新建教材' : '编辑教材' }}</h3>
-        <button type="button" aria-label="关闭抽屉" @click="closeDrawer">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path :d="iconPaths.x"></path>
-          </svg>
-        </button>
-      </header>
-        </template>
+      <WorkbenchFormDrawer
+        :open="drawerOpen"
+        width="md"
+        :title="drawerMode === 'create' ? '新建教材' : '编辑教材'"
+        @close="closeDrawer"
+        @confirm="saveDrawer"
+      >
+        <form class="workbench-drawer-form__body" @submit.prevent="saveDrawer">
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">教材名称</span>
+            <input v-model="drawerDraft.name" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.name" class="workbench-drawer-form__field-error">{{ drawerErrors.name }}</small>
+          </label>
 
-        <template #default>
-          <form class="textbook-management__drawer-form" @submit.prevent="saveDrawer">
-            <label class="textbook-management__drawer-field">
-              <span>教材名称</span>
-              <input v-model="drawerDraft.name" type="text" />
-              <small v-if="drawerErrors.name">{{ drawerErrors.name }}</small>
-            </label>
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">作者</span>
+            <input v-model="drawerDraft.author" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.author" class="workbench-drawer-form__field-error">{{ drawerErrors.author }}</small>
+          </label>
 
-            <label class="textbook-management__drawer-field">
-              <span>作者</span>
-              <input v-model="drawerDraft.author" type="text" />
-              <small v-if="drawerErrors.author">{{ drawerErrors.author }}</small>
-            </label>
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">出版社</span>
+            <input v-model="drawerDraft.publisher" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.publisher" class="workbench-drawer-form__field-error">{{ drawerErrors.publisher }}</small>
+          </label>
 
-            <label class="textbook-management__drawer-field">
-              <span>出版社</span>
-              <input v-model="drawerDraft.publisher" type="text" />
-              <small v-if="drawerErrors.publisher">{{ drawerErrors.publisher }}</small>
-            </label>
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">版本</span>
+            <input v-model="drawerDraft.edition" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.edition" class="workbench-drawer-form__field-error">{{ drawerErrors.edition }}</small>
+          </label>
 
-            <label class="textbook-management__drawer-field">
-              <span>版本</span>
-              <input v-model="drawerDraft.edition" type="text" />
-              <small v-if="drawerErrors.edition">{{ drawerErrors.edition }}</small>
-            </label>
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">ISBN</span>
+            <input v-model="drawerDraft.isbn" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.isbn" class="workbench-drawer-form__field-error">{{ drawerErrors.isbn }}</small>
+          </label>
 
-            <label class="textbook-management__drawer-field">
-              <span>ISBN</span>
-              <input v-model="drawerDraft.isbn" type="text" />
-              <small v-if="drawerErrors.isbn">{{ drawerErrors.isbn }}</small>
-            </label>
-
-            <label class="textbook-management__drawer-field">
-              <span>关联课程</span>
-              <input v-model="drawerDraft.course" type="text" />
-              <small v-if="drawerErrors.course">{{ drawerErrors.course }}</small>
-            </label>
-          </form>
-        </template>
-
-        <template #footer>
-          <footer class="textbook-management__drawer-actions">
-            <button type="button" class="ghost" @click="closeDrawer">取消</button>
-            <button type="button" class="solid" @click="saveDrawer">保存</button>
-          </footer>
-        </template>
-      </WorkbenchDrawerHost>
+          <label class="workbench-drawer-form__field">
+            <span class="workbench-drawer-form__field-label">关联课程</span>
+            <input v-model="drawerDraft.course" type="text" class="workbench-drawer-form__field-input" />
+            <small v-if="drawerErrors.course" class="workbench-drawer-form__field-error">{{ drawerErrors.course }}</small>
+          </label>
+        </form>
+      </WorkbenchFormDrawer>
     </template>
   </WorkbenchDataView>
 </template>
