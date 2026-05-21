@@ -166,6 +166,11 @@ const expandedCourseIds = computed(() => {
   )
 })
 
+const selectedCourseHasVersions = computed(() => {
+  const course = viewModel.value.courses.find((c) => c.id === queryState.selectedCourseId)
+  return course ? course.totalVersionCount > 0 : false
+})
+
 watch(
   () => viewModel.value.courses.map((course) => course.id).join('|'),
   () => {
@@ -355,26 +360,6 @@ async function loadOutlineCoursePage(message = '') {
 
     coursePageState.value = response
 
-    const defaultQueryState = createDefaultOutlineWorkbenchQueryState(response, courseVersionPages)
-    const hasSelectedCourse = response.records.some((course) => course.id === queryState.selectedCourseId)
-
-    if (!hasSelectedCourse) {
-      if (!currentCourseDetail.value || currentCourseDetail.value.id !== queryState.selectedCourseId) {
-        queryState.selectedCourseId = defaultQueryState.selectedCourseId
-      }
-    }
-
-    if (queryState.selectedCourseId && !courseVersionPages[queryState.selectedCourseId]) {
-      await loadOutlineCourseVersions(queryState.selectedCourseId)
-    }
-
-    const selectedVersions = queryState.selectedCourseId ? courseVersionPages[queryState.selectedCourseId]?.records ?? [] : []
-    const hasSelectedVersion = selectedVersions.some((version) => version.id === queryState.selectedVersionId)
-
-    if (!hasSelectedVersion && (!currentVersionDetail.value || currentVersionDetail.value.id !== queryState.selectedVersionId)) {
-      queryState.selectedVersionId = selectedVersions[0]?.id ?? ''
-    }
-
     if (message) {
       setStatusMessage(message)
     }
@@ -500,6 +485,7 @@ function toggleCourseGroup(courseId: string) {
   if (!courseVersionPages[courseId]) {
     loadOutlineCourseVersions(courseId)
   }
+  selectVersion(courseId, '')
 }
 
 async function selectVersion(courseId: string, versionId: string) {
@@ -1318,11 +1304,22 @@ function resetCourseVersionCaches() {
           <header class="outline-workspace__summary">
             <div class="outline-workspace__copy">
               <h3>{{ viewModel.toolbar.courseLabel }}</h3>
-              <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }} - {{ viewModel.toolbar.updatedLabel }}</p>
-              <small>{{ liveCompletion.percent }}% · {{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出 · {{ liveCompletion.issues[0]?.message || '当前版本已满足导出要求' }}</small>
+              <template v-if="!viewModel.currentCourse">
+                <!-- 未选择课程：仅显示标题 -->
+              </template>
+              <template v-else-if="!viewModel.currentVersion && selectedCourseHasVersions">
+                <p>未选择版本</p>
+              </template>
+              <template v-else-if="!viewModel.currentVersion && !selectedCourseHasVersions">
+                <p>当前课程暂无版本</p>
+              </template>
+              <template v-else>
+                <p>{{ viewModel.toolbar.versionLabel }} · {{ viewModel.toolbar.statusLabel }} - {{ viewModel.toolbar.updatedLabel }}</p>
+                <small>{{ liveCompletion.percent }}% · {{ liveCompletion.completedSectionCount }}/{{ liveCompletion.totalSectionCount }} 分区可导出 · {{ liveCompletion.issues[0]?.message || '当前版本已满足导出要求' }}</small>
+              </template>
             </div>
 
-            <div class="outline-workspace__actions">
+            <div v-if="viewModel.currentVersion" class="outline-workspace__actions">
               <button class="outline-toolbar-button" type="button" @click="openCopyVersionCreator">
                 复制为新版本
               </button>
@@ -1364,7 +1361,7 @@ function resetCourseVersionCaches() {
             </p>
           </div>
 
-          <nav class="outline-section-tabs">
+          <nav v-if="viewModel.currentVersion" class="outline-section-tabs">
             <button
               v-for="item in viewModel.directory"
               :key="item.id"
@@ -1402,7 +1399,19 @@ function resetCourseVersionCaches() {
               <p>正在尝试连接后端服务，请稍候。</p>
             </div>
 
-            <div v-else-if="!viewModel.currentVersion && viewModel.currentCourse" class="outline-empty-state">
+            <div v-else-if="!viewModel.currentCourse" class="outline-empty-state">
+              <div class="outline-empty-state__icon">👈</div>
+              <h3>尚未选择课程</h3>
+              <p>点击左侧课程名称展开版本列表，选择一个版本即可开始编辑</p>
+            </div>
+
+            <div v-else-if="!viewModel.currentVersion && viewModel.currentCourse && selectedCourseHasVersions" class="outline-empty-state">
+              <div class="outline-empty-state__icon">📝</div>
+              <h3>请选择一个大纲版本</h3>
+              <p>从左侧版本列表中选择一个版本即可开始编辑</p>
+            </div>
+
+            <div v-else-if="!viewModel.currentVersion && viewModel.currentCourse && !selectedCourseHasVersions" class="outline-empty-state">
               <div class="outline-empty-state__icon">📋</div>
               <h3>暂无大纲版本</h3>
               <p>此课程尚未创建任何大纲版本。点击下方按钮创建第一个版本。</p>
