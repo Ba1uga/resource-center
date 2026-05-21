@@ -198,10 +198,13 @@ assert.match(
 
 assert.ok(reviewDrawerSource.includes('open: boolean'))
 assert.ok(reviewDrawerSource.includes('record: MappingRecord | null'))
-assert.ok(reviewDrawerSource.includes("import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'"))
+assert.ok(reviewDrawerSource.includes("import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'"))
+assert.ok(reviewDrawerSource.includes('workbench-drawer-form__action-btn--ghost'))
+assert.ok(reviewDrawerSource.includes('confirm-text="确认挂载"'))
+assert.ok(reviewDrawerSource.includes('#footer-extra'))
 assert.ok(reviewDrawerSource.includes('v-for="candidate in record.candidates"'))
 assert.ok(reviewDrawerSource.includes("emit('switch-primary', candidate.id)"))
-assert.ok(reviewDrawerSource.includes("@click=\"emit('confirm-record')\""))
+assert.ok(reviewDrawerSource.includes("@confirm=\"emit('confirm-record')\""))
 assert.ok(reviewDrawerSource.includes("@click=\"emit('ignore-record')\""))
 assert.match(stylesSource, /\.mapping-management__editor-footer\s*\{[\s\S]*?justify-content:\s*flex-end;/i)
 assert.match(
