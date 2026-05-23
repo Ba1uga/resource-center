@@ -13,6 +13,7 @@ public interface AiMatchingProvider {
 
     record ResourceInfo(
             int index,
+            Long resourceId,
             String title,
             String type,
             String course,

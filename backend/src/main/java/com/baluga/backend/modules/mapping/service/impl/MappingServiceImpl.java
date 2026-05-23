@@ -213,7 +213,7 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
             MappingRecord record = MappingRecord.builder()
                     .batchId(batch.getId())
                     .resourceType(ri.type())
-                    .resourceId((long) ri.index())
+                    .resourceId(ri.resourceId())
                     .resourceTitle(ri.title())
                     .courseName(ri.course())
                     .chapterName(ri.chapter())
@@ -278,7 +278,7 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
             for (int i = 0; i < records.size(); i++) {
                 MappingRecord r = records.get(i);
                 resourceInfos.add(new ResourceInfo(
-                        i, r.getResourceTitle(), r.getResourceType(),
+                        i, r.getResourceId(), r.getResourceTitle(), r.getResourceType(),
                         r.getCourseName(), r.getChapterName(), ""
                 ));
             }

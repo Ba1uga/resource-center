@@ -64,6 +64,7 @@ public class ResourceCollector {
             for (var textbook : textbookMapper.selectList(tw)) {
                 result.add(new ResourceInfo(
                         index++,
+                        textbook.getId(),
                         textbook.getName(),
                         "article",
                         textbook.getCourse(),
@@ -83,6 +84,7 @@ public class ResourceCollector {
             for (var courseware : coursewareMapper.selectList(cw)) {
                 result.add(new ResourceInfo(
                         index++,
+                        courseware.getId(),
                         courseware.getTitle(),
                         "courseware",
                         courseware.getCourse(),
@@ -106,6 +108,7 @@ public class ResourceCollector {
                 }
                 result.add(new ResourceInfo(
                         index++,
+                        question.getId(),
                         question.getStem() != null && question.getStem().length() > 200
                                 ? question.getStem().substring(0, 200)
                                 : (question.getStem() != null ? question.getStem() : ""),
@@ -127,6 +130,7 @@ public class ResourceCollector {
             for (var video : videoMapper.selectList(vw)) {
                 result.add(new ResourceInfo(
                         index++,
+                        video.getId(),
                         video.getTitle(),
                         "video",
                         video.getCourse(),
@@ -158,6 +162,7 @@ public class ResourceCollector {
                             if (topic.isBlank()) continue;
                             result.add(new ResourceInfo(
                                     index++,
+                                    version.getId(),
                                     topic,
                                     "excerpt",
                                     outlineCourse.getTitle(),
