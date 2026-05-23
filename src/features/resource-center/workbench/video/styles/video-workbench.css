@@ -184,6 +184,14 @@
   font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: -0.03em;
+  overflow: hidden;
+}
+
+.video-management__cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .video-management__info-copy {

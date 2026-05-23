@@ -580,7 +580,15 @@ function handlePageChange(nextPage: number) {
       >
         <template #cell-resource="{ row }">
           <div class="video-management__info-cell">
-            <div class="video-management__cover">{{ row.coverLabel }}</div>
+            <div class="video-management__cover">
+              <img
+                v-if="row.coverAssetId"
+                :src="`/api/upload/stream/${row.coverAssetId}`"
+                :alt="row.coverLabel"
+                class="video-management__cover-img"
+              />
+              <template v-else>{{ row.coverLabel }}</template>
+            </div>
             <div class="video-management__info-copy">
               <strong>{{ row.title }}</strong>
               <span class="video-management__knowledge-point">{{ row.knowledgePoint }}</span>
