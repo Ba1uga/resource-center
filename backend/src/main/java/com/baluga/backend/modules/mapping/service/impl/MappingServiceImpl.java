@@ -35,6 +35,7 @@ import com.baluga.backend.modules.mapping.service.MappingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -61,7 +62,8 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
     private final KnowledgePointMapper knowledgePointMapper;
     private final ResourceCollector resourceCollector;
     private final ObjectMapper objectMapper;
-    private final AiMatchingProvider aiProvider;
+    private final AiMatchingConfig aiConfig;
+    private AiMatchingProvider currentProvider;
 
     public MappingServiceImpl(
             MappingRecordMapper mappingRecordMapper,
@@ -93,20 +95,22 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
         }
 
         // Select AI provider based on config
-        boolean isOpenAi = "openai".equalsIgnoreCase(aiConfig.getProvider());
-        boolean hasKey = aiConfig.getOpenaiApiKey() != null && !aiConfig.getOpenaiApiKey().isBlank();
-        log.info("AI Matching — provider='{}' isOpenAi={} hasKey={}", aiConfig.getProvider(), isOpenAi, hasKey);
+        this.aiConfig = aiConfig;
+        this.currentProvider = resolveProvider(aiConfig.getProvider());
+        log.info("Mapping service using AI provider: {}", this.currentProvider.getProviderName());
+    }
 
+    private AiMatchingProvider resolveProvider(String name) {
+        boolean isOpenAi = "openai".equalsIgnoreCase(name);
+        boolean hasKey = aiConfig.getOpenaiApiKey() != null && !aiConfig.getOpenaiApiKey().isBlank();
         if (isOpenAi && hasKey) {
-            this.aiProvider = new OpenAiCompatibleMatchingProvider(aiConfig, objectMapper);
-        } else {
-            this.aiProvider = new KeywordFallbackMatchingProvider();
-            if (isOpenAi && !hasKey) {
-                log.warn("AI Matching — provider is 'openai' but API key is empty. "
-                        + "Set DEEPSEEK_API_KEY environment variable or configure openai-api-key in yml.");
-            }
+            return new OpenAiCompatibleMatchingProvider(aiConfig, objectMapper);
         }
-        log.info("Mapping service using AI provider: {}", this.aiProvider.getProviderName());
+        if (isOpenAi && !hasKey) {
+            log.warn("AI Matching — provider is 'openai' but API key is empty. "
+                    + "Set DEEPSEEK_API_KEY environment variable or configure openai-api-key in yml.");
+        }
+        return new KeywordFallbackMatchingProvider();
     }
 
     // ========== Query ==========
@@ -231,13 +235,33 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public MappingBatchVO runBatch(Long batchId) {
         MappingBatch batch = mappingBatchMapper.selectById(batchId);
         if (batch == null) {
             throw new IllegalArgumentException("批次不存在");
         }
+        MappingBatchVO vo = MappingBatchVO.fromEntity(batch);
+        // Run asynchronously, frontend polls GET /batches/{id} for status
+        runBatchAsync(batch);
+        return vo;
+    }
 
+    @Async
+    @Transactional(rollbackFor = Exception.class)
+    public void runBatchAsync(MappingBatch batch) {
+        executeRunBatch(batch);
+    }
+
+    public void setProvider(String name) {
+        this.currentProvider = resolveProvider(name);
+        log.info("AI 匹配提供者已切换: {}", currentProvider.getProviderName());
+    }
+
+    public String getCurrentProviderName() {
+        return currentProvider.getProviderName();
+    }
+
+    private MappingBatchVO executeRunBatch(MappingBatch batch) {
         batch.setStatus("processing");
         batch.setStartedAt(LocalDateTime.now());
         mappingBatchMapper.updateById(batch);
@@ -245,14 +269,14 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
         try {
             // Collect mapping records for this batch
             LambdaQueryWrapper<MappingRecord> recordWrapper = Wrappers.lambdaQuery();
-            recordWrapper.eq(MappingRecord::getBatchId, batchId);
+            recordWrapper.eq(MappingRecord::getBatchId, batch.getId());
             List<MappingRecord> records = mappingRecordMapper.selectList(recordWrapper);
 
             if (records.isEmpty()) {
                 batch.setStatus("completed");
                 batch.setCompletedAt(LocalDateTime.now());
                 mappingBatchMapper.updateById(batch);
-                log.info("Batch {} has no records to match", batchId);
+                log.info("Batch {} has no records to match", batch.getId());
                 return MappingBatchVO.fromEntity(batch);
             }
 
@@ -263,10 +287,10 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
             }
             List<KnowledgePoint> knowledgePoints = knowledgePointMapper.selectList(kpWrapper);
 
-            log.info("Batch {}: collected {} resources and {} knowledge points", batchId, records.size(), knowledgePoints.size());
+            log.info("Batch {}: collected {} resources and {} knowledge points", batch.getId(),records.size(), knowledgePoints.size());
 
             if (knowledgePoints.isEmpty()) {
-                log.warn("Batch {}: no knowledge points found, cannot perform AI matching", batchId);
+                log.warn("Batch {}: no knowledge points found, cannot perform AI matching", batch.getId());
                 batch.setStatus("failed");
                 batch.setCompletedAt(LocalDateTime.now());
                 mappingBatchMapper.updateById(batch);
@@ -296,9 +320,9 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
                     resourceInfos, kpInfos, 3
             );
 
-            log.info("Batch {}: calling AI provider '{}' for matching", batchId, aiProvider.getProviderName());
-            List<ResourceMatchResponse> responses = aiProvider.match(aiRequest);
-            log.info("Batch {}: AI matching returned {} resource match responses", batchId, responses.size());
+            log.info("Batch {}: calling AI provider '{}' for matching", batch.getId(),currentProvider.getProviderName());
+            List<ResourceMatchResponse> responses = currentProvider.match(aiRequest);
+            log.info("Batch {}: AI matching returned {} resource match responses", batch.getId(),responses.size());
 
             int matchedCount = 0;
             int failedCount = 0;
@@ -401,7 +425,7 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
 
         // Reset failed records to pending
         LambdaQueryWrapper<MappingRecord> wrapper = Wrappers.lambdaQuery();
-        wrapper.eq(MappingRecord::getBatchId, batchId)
+        wrapper.eq(MappingRecord::getBatchId, batch.getId())
                .eq(MappingRecord::getConfidenceLevel, "low");
         List<MappingRecord> lowRecords = mappingRecordMapper.selectList(wrapper);
         long count = 0;
@@ -415,7 +439,7 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
         }
 
         // Re-run matching
-        runBatch(batchId);
+        runBatch(batch.getId());
 
         Map<String, Long> result = new HashMap<>();
         result.put("resetCount", count);

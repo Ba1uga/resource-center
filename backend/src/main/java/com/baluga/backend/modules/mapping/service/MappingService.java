@@ -37,4 +37,8 @@ public interface MappingService extends IService<MappingRecord> {
     Page<MappingBatchVO> pageBatches(String keyword, Integer page, Integer pageSize);
 
     Map<String, Long> batchRemap(Long batchId);
+
+    String getCurrentProviderName();
+
+    void setProvider(String name);
 }

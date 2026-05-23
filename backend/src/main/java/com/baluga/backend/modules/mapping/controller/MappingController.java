@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -125,5 +126,16 @@ public class MappingController {
         } catch (IllegalArgumentException ex) {
             return R.fail(ex.getMessage());
         }
+    }
+
+    @GetMapping("/provider")
+    public R<String> getProvider() {
+        return R.ok(mappingService.getCurrentProviderName());
+    }
+
+    @PutMapping("/provider")
+    public R<String> switchProvider(@RequestParam String name) {
+        mappingService.setProvider(name);
+        return R.ok(mappingService.getCurrentProviderName());
     }
 }

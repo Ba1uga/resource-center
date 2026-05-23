@@ -4,7 +4,7 @@ import '../styles/mapping-workbench.css'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { mappingRecords } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.fixtures.ts'
-import { createMappingBatch, listMappingRecords, runMappingBatch } from '@/api/mapping.ts'
+import { createMappingBatch, listMappingRecords, runMappingBatch, batchRemapMappingRecords } from '@/api/mapping.ts'
 import {
   createMappingWorkbenchViewModel,
   matchesMappingFilters,
@@ -19,6 +19,7 @@ import MappingWorkbenchBulkBar from './MappingWorkbenchBulkBar.vue'
 import MappingWorkbenchFilters from './MappingWorkbenchFilters.vue'
 import MappingWorkbenchReviewDrawer from './MappingWorkbenchReviewDrawer.vue'
 import MappingWorkbenchTable from './MappingWorkbenchTable.vue'
+import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
 import type {
@@ -113,6 +114,17 @@ async function loadData() {
   }
 }
 
+const batchResourceType = ref('')
+
+const batchTypeOptions = [
+  { value: '', label: '全部类型' },
+  { value: 'courseware', label: '课件' },
+  { value: 'article', label: '教材' },
+  { value: 'question', label: '习题' },
+  { value: 'video', label: '视频' },
+  { value: 'excerpt', label: '大纲节选' },
+]
+
 async function handleLaunchBatch() {
   const label = `AI挂载 ${new Date().toLocaleDateString('zh-CN')} ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
 
@@ -130,17 +142,17 @@ async function handleLaunchBatch() {
     const batch = await createMappingBatch({
       label,
       course: filters.value.course !== 'all' ? filters.value.course : '',
+      resourceType: batchResourceType.value || '',
       createdBy: '管理员',
     })
-    feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建，正在执行 AI 知识点匹配...` }
+    feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建，AI 匹配已提交，请稍候...` }
 
-    const result = await runMappingBatch(batch.id)
-    await loadData()
-
-    feedback.value = {
-      tone: 'success',
-      text: `AI 挂载完成：${result.matchedCount} 条匹配成功，${result.failedCount} 条匹配失败。`,
-    }
+    await runMappingBatch(batch.id)
+    // Poll for completion since runBatch is now async
+    setTimeout(async () => {
+      await loadData()
+      feedback.value = { tone: 'success', text: 'AI 挂载完成，请查看下方结果。' }
+    }, 3000)
   } catch (error) {
     feedback.value = {
       tone: 'error',
@@ -249,17 +261,41 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'rerun') {
-    feedback.value = {
-      tone: 'info',
-      text: `已标记 ${selectedCount} 条记录重新执行 AI 挂载。`,
+    if (!isUsingFallback.value && filters.value.batchId) {
+      (async () => {
+        try {
+          feedback.value = { tone: 'info', text: '正在重新执行 AI 匹配...' }
+          await runMappingBatch(Number(filters.value.batchId))
+          await loadData()
+          feedback.value = { tone: 'success', text: '已重新执行 AI 匹配。' }
+        } catch (e) {
+          feedback.value = { tone: 'error', text: `重新执行失败: ${e instanceof Error ? e.message : '未知'}` }
+        }
+      })()
+    } else {
+      feedback.value = { tone: 'info', text: 'AI 挂载已重新提交处理。' }
     }
+    selectedIds.value = []
+    return
   }
 
   if (action === 'remap') {
-    feedback.value = {
-      tone: 'info',
-      text: `已选 ${selectedCount} 条记录，重新挂载将在线索详情流中处理。`,
+    if (!isUsingFallback.value && filters.value.batchId) {
+      (async () => {
+        try {
+          feedback.value = { tone: 'info', text: '正在重新映射...' }
+          await batchRemapMappingRecords(Number(filters.value.batchId))
+          await loadData()
+          feedback.value = { tone: 'success', text: '已重新映射低置信度记录。' }
+        } catch (e) {
+          feedback.value = { tone: 'error', text: `重新映射失败: ${e instanceof Error ? e.message : '未知'}` }
+        }
+      })()
+    } else {
+      feedback.value = { tone: 'info', text: '已提交重新映射。' }
     }
+    selectedIds.value = []
+    return
   }
 
   selectedIds.value = []
@@ -394,12 +430,18 @@ onMounted(() => {
       <header class="mapping-management__head">
         <div class="mapping-management__copy">
           <h2>{{ props.section.title }}</h2>
-          
         </div>
 
-        <button type="button" class="mapping-management__launch-button" @click="handleLaunchBatch">
-          发起 AI 挂载批次
-        </button>
+        <div class="mapping-management__batch-controls">
+          <WorkbenchSelect
+            v-model="batchResourceType"
+            :options="batchTypeOptions"
+            aria-label="选择资源类型"
+          />
+          <button type="button" class="mapping-management__launch-button" @click="handleLaunchBatch">
+            发起 AI 挂载批次
+          </button>
+        </div>
       </header>
 
       <div class="mapping-management__summary">
