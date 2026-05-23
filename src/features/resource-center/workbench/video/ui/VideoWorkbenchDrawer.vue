@@ -40,6 +40,7 @@ export interface VideoDrawerDraft {
   course: string
   chapter: string
   knowledgePoint: string
+  duration: string
   videoAssetId: number | null
   videoFileName: string
   videoFileSizeLabel: string
@@ -67,7 +68,10 @@ const form = reactive({
   course: '',
   chapter: '',
   knowledgePoint: '',
+  duration: '',
 })
+
+const extractingDuration = ref(false)
 
 const videoFileInfo = ref<{ assetId: number | null; fileName: string; sizeLabel: string } | null>(null)
 const coverFileInfo = ref<{ assetId: number | null; fileName: string; sizeLabel: string } | null>(null)
@@ -110,6 +114,33 @@ watch(
 
 function onVideoFilesSelected(files: File[]) {
   videoUploader.addFiles(files)
+  const videoFile = files[0]
+  if (videoFile && videoFile.type.startsWith('video/')) {
+    extractingDuration.value = true
+    const url = URL.createObjectURL(videoFile)
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        form.duration = formatDurationSeconds(video.duration)
+      }
+      URL.revokeObjectURL(url)
+      extractingDuration.value = false
+    }
+    video.onerror = () => {
+      URL.revokeObjectURL(url)
+      extractingDuration.value = false
+    }
+    video.src = url
+  }
+}
+
+function formatDurationSeconds(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 function onCoverFilesSelected(files: File[]) {
@@ -155,6 +186,7 @@ function syncUploadToDraft(): VideoDrawerDraft {
     course: form.course.trim(),
     chapter: form.chapter.trim(),
     knowledgePoint: form.knowledgePoint.trim(),
+    duration: form.duration,
     videoAssetId: videoFileInfo.value?.assetId ?? null,
     videoFileName: videoFileInfo.value?.fileName ?? '',
     videoFileSizeLabel: videoFileInfo.value?.sizeLabel ?? '',
@@ -225,7 +257,9 @@ function handleRetry() {
       />
       <p v-if="videoFileInfo?.fileName" class="video-management__upload-info">
         已上传：{{ videoFileInfo.fileName }} ({{ videoFileInfo.sizeLabel }})
+        <span v-if="form.duration"> · 时长 {{ form.duration }}</span>
       </p>
+      <p v-if="extractingDuration" class="video-management__upload-info">正在解析视频时长...</p>
     </section>
 
     <section class="video-management__drawer-section">
