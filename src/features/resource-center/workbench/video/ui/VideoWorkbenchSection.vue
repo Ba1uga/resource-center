@@ -589,7 +589,7 @@ function handlePageChange(nextPage: number) {
               />
               <img
                 v-else
-                src="/cover-default.svg"
+                src="/streamline-stickies-color--filming-movie.svg"
                 alt="默认封面"
                 class="video-management__cover-placeholder"
               />
