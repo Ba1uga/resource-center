@@ -55,39 +55,14 @@ public class TextbookController {
 
     @PostMapping
     public R<TextbookVO> createTextbook(@Valid @RequestBody TextbookCreateRequest request) {
-        Textbook textbook = Textbook.builder()
-                .name(request.getName().trim())
-                .author(request.getAuthor().trim())
-                .publisher(request.getPublisher().trim())
-                .edition(request.getEdition().trim())
-                .isbn(request.getIsbn().trim())
-                .course(request.getCourse().trim())
-                .ownerId(request.getOwnerId().trim())
-                .assetId(request.getAssetId())
-                .deleted(0)
-                .build();
-
-        textbookService.save(textbook);
-        return R.ok(TextbookVO.fromEntity(textbookService.getById(textbook.getId())));
+        Textbook textbook = textbookService.createTextbook(request);
+        return R.ok(TextbookVO.fromEntity(textbook));
     }
 
     @PutMapping("/{id}")
     public R<?> updateTextbook(@PathVariable Long id, @Valid @RequestBody TextbookUpdateRequest request) {
-        Textbook textbook = textbookService.getById(id);
-        if (textbook == null) {
-            throw new ResourceNotFoundException("教材不存在");
-        }
-
-        textbook.setName(request.getName().trim());
-        textbook.setAuthor(request.getAuthor().trim());
-        textbook.setPublisher(request.getPublisher().trim());
-        textbook.setEdition(request.getEdition().trim());
-        textbook.setIsbn(request.getIsbn().trim());
-        textbook.setCourse(request.getCourse().trim());
-        textbook.setAssetId(request.getAssetId());
-
-        textbookService.updateById(textbook);
-        return R.ok(TextbookVO.fromEntity(textbookService.getById(id)));
+        Textbook textbook = textbookService.updateTextbook(id, request);
+        return R.ok(TextbookVO.fromEntity(textbook));
     }
 
     @DeleteMapping("/{id}")
@@ -97,7 +72,7 @@ public class TextbookController {
             throw new ResourceNotFoundException("教材不存在");
         }
 
-        textbookService.removeById(id);
+        textbookService.deleteTextbookWithAssets(id);
         return R.ok();
     }
 }
