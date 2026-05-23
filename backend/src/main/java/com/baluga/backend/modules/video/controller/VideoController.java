@@ -12,6 +12,7 @@ import com.baluga.backend.modules.video.service.VideoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.validation.annotation.Validated;
 
 
+@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -77,12 +79,16 @@ public class VideoController {
 
     @DeleteMapping("/{id}")
     public R<?> deleteVideo(@PathVariable Long id) {
+        log.info("DELETE /api/videos/{} 收到请求", id);
         Video video = videoService.getById(id);
         if (video == null) {
+            log.warn("DELETE /api/videos/{} 视频不存在", id);
             return R.fail("视频不存在");
         }
 
+        log.info("DELETE /api/videos/{} 准备级联删除, assetId={}", id, video.getAssetId());
         videoService.deleteVideoWithAssets(id);
+        log.info("DELETE /api/videos/{} 级联删除完成", id);
         return R.ok();
     }
 

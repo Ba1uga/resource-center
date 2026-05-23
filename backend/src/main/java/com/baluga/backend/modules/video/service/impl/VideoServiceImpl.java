@@ -166,8 +166,11 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteVideoWithAssets(Long id) {
+        log.info("deleteVideoWithAssets 开始: videoId={}", id);
         deleteLinkedAssets(id);
+        log.info("deleteVideoWithAssets 资产已清理, 准备删除视频记录");
         super.removeById(id);
+        log.info("deleteVideoWithAssets 完成: videoId={}", id);
     }
 
     @Override
