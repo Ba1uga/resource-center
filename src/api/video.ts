@@ -109,7 +109,7 @@ function normalizeRecord(vo: VideoApiVO): VideoRecord {
     title: vo.title,
     course: vo.course,
     chapter: vo.chapter,
-    duration: vo.duration,
+    duration: vo.duration === '00:00' ? '' : vo.duration,
     resolution: vo.resolution,
     viewCount: vo.viewCount,
     uploadedBy: vo.uploadedBy,
