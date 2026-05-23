@@ -63,7 +63,15 @@ const feedback = ref<{
   text: string
 } | null>(null)
 
-const uploader = useUploader('courseware')
+const uploader = useUploader('courseware', {
+  maxSizeBytes: 100 * 1024 * 1024,
+  allowedMimeTypes: [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.ms-powerpoint',
+  ],
+  allowedExtensions: ['.pdf', '.pptx', '.ppt'],
+})
 
 const drawerConfirmDisabled = computed(() => uploader.hasUploading())
 
@@ -491,7 +499,7 @@ function handleBulkDelete() {
         <div class="workbench-drawer-form__upload-section">
           <UploadDropzone
             :disabled="drawerMode === 'edit' && drawerDraft.assetId !== null"
-            accept=".pdf,.ppt,.pptx,.doc,.docx"
+            accept=".pdf,.pptx,.ppt"
             @files-selected="onFilesSelected"
           />
           <UploadQueue

@@ -51,7 +51,15 @@ const props = defineProps<{
 
 const currentAdminId = 'admin-xie'
 
-const uploader = useUploader('textbook')
+const uploader = useUploader('textbook', {
+  maxSizeBytes: 100 * 1024 * 1024,
+  allowedMimeTypes: [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+  ],
+  allowedExtensions: ['.pdf', '.docx', '.doc'],
+})
 
 const seedRows: TeacherOwnedTextbookRecord[] = [
   {
@@ -855,7 +863,7 @@ async function handleBulkDelete() {
           <div class="workbench-drawer-form__upload-section">
             <UploadDropzone
               :disabled="drawerMode === 'edit' && uploadFileInfo?.assetId !== null && uploadFileInfo?.assetId !== undefined"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf,.docx,.doc"
               @files-selected="onFilesSelected"
             />
             <UploadQueue
