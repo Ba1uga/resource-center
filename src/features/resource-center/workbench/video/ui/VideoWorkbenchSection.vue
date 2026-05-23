@@ -334,8 +334,8 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
     if (drawerState.mode === 'create') {
       await createVideo({
         title: data.title || '未命名视频',
-        course: data.course,
-        chapter: data.chapter,
+        course: data.course || '未指定课程',
+        chapter: data.chapter || '未指定章节',
         fileSize: data.videoFileSizeLabel || '',
         knowledgePoint: data.knowledgePoint,
         uploadedBy: '当前用户',
@@ -375,8 +375,8 @@ async function handleDrawerSavePublish(data: VideoDrawerDraft) {
     if (drawerState.mode === 'create') {
       await createVideo({
         title: data.title || '未命名视频',
-        course: data.course,
-        chapter: data.chapter,
+        course: data.course || '未指定课程',
+        chapter: data.chapter || '未指定章节',
         fileSize: data.videoFileSizeLabel || '',
         knowledgePoint: data.knowledgePoint,
         uploadedBy: '当前用户',
