@@ -143,6 +143,23 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
             throw new IllegalArgumentException("视频不存在");
         }
 
+        Long newAssetId = request.getAssetId();
+        Long oldAssetId = video.getAssetId();
+
+        // Atomically replace old asset with new one
+        if (newAssetId != null && !newAssetId.equals(oldAssetId)) {
+            if (oldAssetId != null) {
+                deleteSingleAsset(oldAssetId);
+            }
+            ResourceAsset newAsset = resourceAssetMapper.selectById(newAssetId);
+            if (newAsset != null && "video".equals(newAsset.getModuleType())) {
+                newAsset.setModuleId(video.getId());
+                resourceAssetMapper.updateById(newAsset);
+                log.info("替换资源资产: oldAssetId={}, newAssetId={}, videoId={}",
+                        oldAssetId, newAssetId, id);
+            }
+        }
+
         video.setTitle(normalize(request.getTitle()));
         video.setCourse(normalize(request.getCourse()));
         video.setChapter(normalize(request.getChapter()));
@@ -155,13 +172,35 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setDescription(defaultString(request.getDescription()));
         video.setProcessingStatus(defaultString(request.getProcessingStatus(), "ready"));
         video.setPublishStatus(defaultString(request.getPublishStatus(), "draft"));
-        video.setAssetId(request.getAssetId());
+        video.setAssetId(newAssetId != null ? newAssetId : oldAssetId);
         video.setVisibility(defaultString(request.getVisibility(), "students"));
         video.setScheduledPublishAt(parseDateTime(request.getScheduledPublishAt()));
         video.setLastEditedAt(LocalDateTime.now());
 
         updateById(video);
         return getById(id);
+    }
+
+    private void deleteSingleAsset(Long assetId) {
+        ResourceAsset asset = resourceAssetMapper.selectById(assetId);
+        if (asset == null) return;
+
+        try {
+            Path filePath = Path.of(storageProperties.getUploadDir(), asset.getObjectKey());
+            Files.deleteIfExists(filePath);
+            Path parentDir = filePath.getParent();
+            if (Files.exists(parentDir) && Files.isDirectory(parentDir)) {
+                try {
+                    Files.deleteIfExists(parentDir);
+                } catch (IOException ignored) {
+                }
+            }
+            resourceAssetMapper.deleteById(assetId);
+            log.info("已清理旧资源资产: assetId={}, path={}", assetId, filePath);
+        } catch (IOException e) {
+            log.warn("清理旧资源文件失败: assetId={}", assetId, e);
+            throw new RuntimeException("旧资源文件清理失败", e);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

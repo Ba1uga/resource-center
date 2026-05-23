@@ -351,6 +351,7 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
         chapter: data.chapter,
         fileSize: data.videoFileSizeLabel || undefined,
         knowledgePoint: data.knowledgePoint,
+        assetId: data.videoAssetId ?? undefined,
       })
     }
 
@@ -394,6 +395,7 @@ async function handleDrawerSavePublish(data: VideoDrawerDraft) {
         fileSize: data.videoFileSizeLabel || undefined,
         knowledgePoint: data.knowledgePoint,
         publishStatus: 'published',
+        assetId: data.videoAssetId ?? undefined,
       })
     }
 
