@@ -97,7 +97,7 @@ public class UploadController {
         InputStreamResource resource = new InputStreamResource(Files.newInputStream(filePath));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, mimeType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + originName + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(originName))
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileSize))
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .body(resource);
@@ -125,11 +125,21 @@ public class UploadController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.CONTENT_TYPE, mimeType);
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + originName + "\"");
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(originName));
         headers.set(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize);
         headers.set(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
         headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");
 
         return new ResponseEntity<>(new InputStreamResource(input), headers, HttpStatus.PARTIAL_CONTENT);
+    }
+
+    private static String contentDisposition(String filename) {
+        try {
+            String encoded = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            return "inline; filename*=UTF-8''" + encoded;
+        } catch (Exception e) {
+            return "inline";
+        }
     }
 }
