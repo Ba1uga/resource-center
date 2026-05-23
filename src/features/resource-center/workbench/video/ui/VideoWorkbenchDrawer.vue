@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 
-import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import UploadDropzone from '../../shared/ui/UploadDropzone.vue'
 import UploadQueue from '../../shared/ui/UploadQueue.vue'
+import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
 import { useUploader } from '../../shared/model/use-uploader.ts'
 import { formatFileSize } from '../../shared/model/upload.types.ts'
 
 import type { VideoRecord } from '@/features/resource-center/workbench/video/model/video-workbench.types.ts'
-import WorkbenchDrawerHost from '../../shared/ui/WorkbenchDrawerHost.vue'
 
 const processingStatusLabel: Record<string, string> = {
   uploading: '上传中',
@@ -74,6 +73,8 @@ const videoFileInfo = ref<{ assetId: number | null; fileName: string; sizeLabel:
 const coverFileInfo = ref<{ assetId: number | null; fileName: string; sizeLabel: string } | null>(null)
 
 const isUploading = computed(() => videoUploader.hasUploading() || coverUploader.hasUploading())
+
+const drawerTitle = computed(() => props.mode === 'create' ? '上传视频' : '编辑视频')
 
 watch(
   () => [props.open, props.record],
@@ -181,145 +182,118 @@ function handleRetry() {
 </script>
 
 <template>
-  <WorkbenchDrawerHost :open="open" @close="emit('close')">
-    <template #header>
-      <div class="video-management__drawer" aria-label="视频编辑抽屉">
-        <header class="video-management__drawer-head">
-          <div>
-            <h3>{{ mode === 'create' ? '上传视频' : '编辑视频' }}</h3>
-            <p>{{ record?.id ?? '新建视频记录' }}</p>
-          </div>
-
-          <button type="button" class="video-management__icon-button" aria-label="关闭抽屉" @click="emit('close')">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path :d="iconPaths.x"></path>
-            </svg>
-          </button>
-        </header>
-      </div>
+  <WorkbenchFormDrawer
+    :open="open"
+    width="lg"
+    :title="drawerTitle"
+    :confirm-text="mode === 'create' ? '保存并发布' : '保存更改并发布'"
+    :confirm-disabled="isUploading"
+    @close="emit('close')"
+    @confirm="handleSavePublish"
+  >
+    <template #footer-extra>
+      <button
+        type="button"
+        class="workbench-drawer-form__action-btn workbench-drawer-form__action-btn--ghost"
+        :disabled="isUploading"
+        @click="handleSaveDraft"
+      >
+        {{ mode === 'create' ? '保存草稿' : '保存修改' }}
+      </button>
+      <button
+        v-if="record?.processingStatus === 'failed'"
+        type="button"
+        class="workbench-drawer-form__action-btn workbench-drawer-form__action-btn--ghost danger"
+        @click="handleRetry"
+      >
+        重新上传
+      </button>
     </template>
 
-    <template #default>
-      <div class="video-management__drawer">
-        <div class="video-management__drawer-body">
-          <section class="video-management__drawer-section">
-            <h4>主视频</h4>
+    <section class="video-management__drawer-section">
+      <h4>主视频</h4>
 
-            <UploadDropzone
-              accept=".mp4,.webm,.mov"
-              @files-selected="onVideoFilesSelected"
-            />
-            <UploadQueue
-              :entries="videoUploader.entries.value"
-              :uploading="videoUploader.hasUploading()"
-              @remove="videoUploader.removeEntry"
-              @retry="videoUploader.retryEntry"
-            />
-            <p v-if="videoFileInfo?.fileName" class="video-management__upload-info">
-              已上传视频：{{ videoFileInfo.fileName }} ({{ videoFileInfo.sizeLabel }})
-            </p>
-          </section>
+      <UploadDropzone
+        accept=".mp4,.webm,.mov"
+        @files-selected="onVideoFilesSelected"
+      />
+      <UploadQueue
+        :entries="videoUploader.entries.value"
+        :uploading="videoUploader.hasUploading()"
+        @remove="videoUploader.removeEntry"
+        @retry="videoUploader.retryEntry"
+      />
+      <p v-if="videoFileInfo?.fileName" class="video-management__upload-info">
+        已上传：{{ videoFileInfo.fileName }} ({{ videoFileInfo.sizeLabel }})
+      </p>
+    </section>
 
-          <section class="video-management__drawer-section">
-            <h4>封面图</h4>
+    <section class="video-management__drawer-section">
+      <h4>封面图</h4>
 
-            <UploadDropzone
-              accept=".png,.jpg,.jpeg,.webp"
-              @files-selected="onCoverFilesSelected"
-            />
-            <UploadQueue
-              :entries="coverUploader.entries.value"
-              :uploading="coverUploader.hasUploading()"
-              @remove="coverUploader.removeEntry"
-              @retry="coverUploader.retryEntry"
-            />
-            <p v-if="coverFileInfo?.fileName" class="video-management__upload-info">
-              已上传封面：{{ coverFileInfo.fileName }} ({{ coverFileInfo.sizeLabel }})
-            </p>
-          </section>
+      <UploadDropzone
+        accept=".png,.jpg,.jpeg,.webp"
+        @files-selected="onCoverFilesSelected"
+      />
+      <UploadQueue
+        :entries="coverUploader.entries.value"
+        :uploading="coverUploader.hasUploading()"
+        @remove="coverUploader.removeEntry"
+        @retry="coverUploader.retryEntry"
+      />
+      <p v-if="coverFileInfo?.fileName" class="video-management__upload-info">
+        已上传：{{ coverFileInfo.fileName }} ({{ coverFileInfo.sizeLabel }})
+      </p>
+    </section>
 
-          <section class="video-management__drawer-section">
-            <h4>视频信息</h4>
+    <section class="video-management__drawer-section">
+      <h4>视频信息</h4>
 
-            <div class="video-management__drawer-grid">
-              <label>
-                <span>标题</span>
-                <input v-model="form.title" type="text" placeholder="输入视频标题" />
-              </label>
-              <label>
-                <span>所属课程</span>
-                <input v-model="form.course" type="text" placeholder="例如：计算机网络" />
-              </label>
-              <label>
-                <span>所属章节</span>
-                <input v-model="form.chapter" type="text" placeholder="例如：第1章" />
-              </label>
-              <label>
-                <span>关联知识点</span>
-                <input v-model="form.knowledgePoint" type="text" placeholder="例如：TCP三次握手" />
-              </label>
-            </div>
-          </section>
-
-          <section v-if="record" class="video-management__drawer-section">
-            <h4>状态信息</h4>
-
-            <div class="video-management__drawer-grid">
-              <label>
-                <span>发布状态</span>
-                <input type="text" :value="publishStatusLabel[record.publishStatus] ?? record.publishStatus" readonly />
-              </label>
-              <label>
-                <span>处理状态</span>
-                <input
-                  type="text"
-                  :value="processingStatusLabel[videoUploader.hasUploading() ? 'uploading' : record.processingStatus] ?? record.processingStatus"
-                  readonly
-                />
-              </label>
-              <label v-if="record.fileSize">
-                <span>文件大小</span>
-                <input type="text" :value="record.fileSize" readonly />
-              </label>
-              <label v-if="record.duration">
-                <span>时长</span>
-                <input type="text" :value="record.duration" readonly />
-              </label>
-            </div>
-          </section>
-        </div>
+      <div class="video-management__drawer-grid">
+        <label>
+          <span>标题</span>
+          <input v-model="form.title" type="text" placeholder="输入视频标题" />
+        </label>
+        <label>
+          <span>所属课程</span>
+          <input v-model="form.course" type="text" placeholder="例如：计算机网络" />
+        </label>
+        <label>
+          <span>所属章节</span>
+          <input v-model="form.chapter" type="text" placeholder="例如：第1章" />
+        </label>
+        <label>
+          <span>关联知识点</span>
+          <input v-model="form.knowledgePoint" type="text" placeholder="例如：TCP三次握手" />
+        </label>
       </div>
-    </template>
+    </section>
 
-    <template #footer>
-      <div class="video-management__drawer">
-        <footer class="video-management__drawer-footer">
-          <button type="button" @click="emit('close')">取消</button>
-          <button
-            type="button"
-            :disabled="isUploading"
-            @click="handleSaveDraft"
-          >
-            {{ mode === 'create' ? '保存草稿' : '保存修改' }}
-          </button>
-          <button
-            type="button"
-            class="primary"
-            :disabled="isUploading"
-            @click="handleSavePublish"
-          >
-            {{ mode === 'create' ? '开始上传并发布' : '保存并发布' }}
-          </button>
-          <button
-            v-if="record?.processingStatus === 'failed'"
-            type="button"
-            class="danger"
-            @click="handleRetry"
-          >
-            重新上传视频
-          </button>
-        </footer>
+    <section v-if="record" class="video-management__drawer-section">
+      <h4>状态信息</h4>
+
+      <div class="video-management__drawer-grid">
+        <label>
+          <span>发布状态</span>
+          <input type="text" :value="publishStatusLabel[record.publishStatus] ?? record.publishStatus" readonly />
+        </label>
+        <label>
+          <span>处理状态</span>
+          <input
+            type="text"
+            :value="processingStatusLabel[isUploading ? 'uploading' : record.processingStatus] ?? record.processingStatus"
+            readonly
+          />
+        </label>
+        <label v-if="record.fileSize">
+          <span>文件大小</span>
+          <input type="text" :value="record.fileSize" readonly />
+        </label>
+        <label v-if="record.duration">
+          <span>时长</span>
+          <input type="text" :value="record.duration" readonly />
+        </label>
       </div>
-    </template>
-  </WorkbenchDrawerHost>
+    </section>
+  </WorkbenchFormDrawer>
 </template>
