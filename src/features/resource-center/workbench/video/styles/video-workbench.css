@@ -207,6 +207,11 @@
   flex-wrap: wrap;
 }
 
+.video-management__knowledge-point {
+  color: var(--video-soft);
+  font-size: 0.84rem;
+}
+
 .video-management__tag-list {
   display: flex;
   align-items: center;

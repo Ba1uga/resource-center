@@ -394,7 +394,7 @@ onMounted(() => {
       <header class="mapping-management__head">
         <div class="mapping-management__copy">
           <h2>{{ props.section.title }}</h2>
-          <p>优先处理待复核和低置信度资源，快速完成 AI 知识点挂载确认。</p>
+          
         </div>
 
         <button type="button" class="mapping-management__launch-button" @click="handleLaunchBatch">
