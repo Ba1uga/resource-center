@@ -42,4 +42,6 @@ public class VideoUpdateRequest {
     private String scheduledPublishAt;
 
     private Long assetId;
+
+    private Long coverAssetId;
 }

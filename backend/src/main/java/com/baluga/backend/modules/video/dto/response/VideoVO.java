@@ -59,6 +59,8 @@ public class VideoVO {
 
     private Long assetId;
 
+    private Long coverAssetId;
+
     private String resourceAlert;
 
     private String visibility;
@@ -101,6 +103,7 @@ public class VideoVO {
                 .processingStatus(video.getProcessingStatus())
                 .publishStatus(video.getPublishStatus())
                 .assetId(video.getAssetId())
+                .coverAssetId(video.getCoverAssetId())
                 .resourceAlert(video.getResourceAlert())
                 .visibility(video.getVisibility())
                 .scheduledPublishAt(video.getScheduledPublishAt())

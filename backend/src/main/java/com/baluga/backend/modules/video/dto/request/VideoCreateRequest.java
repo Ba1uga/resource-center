@@ -45,4 +45,6 @@ public class VideoCreateRequest {
     private String scheduledPublishAt;
 
     private Long assetId;
+
+    private Long coverAssetId;
 }

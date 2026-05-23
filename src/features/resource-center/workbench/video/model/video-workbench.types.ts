@@ -25,6 +25,7 @@ export interface VideoRecord {
   processingStatus: VideoProcessingStatus
   publishStatus: VideoPublishStatus
   assetId: number | null
+  coverAssetId: number | null
   resourceAlert: string | null
   visibility: VideoVisibility
   scheduledPublishAt: string | null

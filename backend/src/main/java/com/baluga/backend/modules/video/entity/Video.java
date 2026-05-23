@@ -69,6 +69,9 @@ public class Video {
     @TableField("asset_id")
     private Long assetId;
 
+    @TableField("cover_asset_id")
+    private Long coverAssetId;
+
     @TableField("resource_alert")
     private String resourceAlert;
 

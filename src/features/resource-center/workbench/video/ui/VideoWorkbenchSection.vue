@@ -343,15 +343,18 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
         processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'draft',
         assetId: data.videoAssetId,
+        coverAssetId: data.coverAssetId,
       })
     } else if (drawerState.activeRecordId) {
       await updateVideo(Number(drawerState.activeRecordId), {
         title: data.title,
         course: data.course,
         chapter: data.chapter,
+        duration: data.duration || undefined,
         fileSize: data.videoFileSizeLabel || undefined,
         knowledgePoint: data.knowledgePoint,
         assetId: data.videoAssetId ?? undefined,
+        coverAssetId: data.coverAssetId ?? undefined,
       })
     }
 
@@ -386,16 +389,19 @@ async function handleDrawerSavePublish(data: VideoDrawerDraft) {
         processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'published',
         assetId: data.videoAssetId,
+        coverAssetId: data.coverAssetId,
       })
     } else if (drawerState.activeRecordId) {
       await updateVideo(Number(drawerState.activeRecordId), {
         title: data.title,
         course: data.course,
         chapter: data.chapter,
+        duration: data.duration || undefined,
         fileSize: data.videoFileSizeLabel || undefined,
         knowledgePoint: data.knowledgePoint,
         publishStatus: 'published',
         assetId: data.videoAssetId ?? undefined,
+        coverAssetId: data.coverAssetId ?? undefined,
       })
     }
 

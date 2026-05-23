@@ -115,6 +115,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 .processingStatus(defaultString(request.getProcessingStatus(), "uploading"))
                 .publishStatus(defaultString(request.getPublishStatus(), "draft"))
                 .assetId(request.getAssetId())
+                .coverAssetId(request.getCoverAssetId())
                 .resourceAlert(null)
                 .visibility(defaultString(request.getVisibility(), "students"))
                 .scheduledPublishAt(parseDateTime(request.getScheduledPublishAt()))
@@ -131,6 +132,14 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 log.info("关联资源资产: assetId={}, videoId={}", asset.getId(), video.getId());
             }
         }
+        if (video.getCoverAssetId() != null) {
+            ResourceAsset coverAsset = resourceAssetMapper.selectById(video.getCoverAssetId());
+            if (coverAsset != null && "video".equals(coverAsset.getModuleType())) {
+                coverAsset.setModuleId(video.getId());
+                resourceAssetMapper.updateById(coverAsset);
+                log.info("关联封面资源资产: coverAssetId={}, videoId={}", coverAsset.getId(), video.getId());
+            }
+        }
 
         return getById(video.getId());
     }
@@ -145,8 +154,10 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
 
         Long newAssetId = request.getAssetId();
         Long oldAssetId = video.getAssetId();
+        Long newCoverAssetId = request.getCoverAssetId();
+        Long oldCoverAssetId = video.getCoverAssetId();
 
-        // Atomically replace old asset with new one
+        // Atomically replace old video asset with new one
         if (newAssetId != null && !newAssetId.equals(oldAssetId)) {
             if (oldAssetId != null) {
                 deleteSingleAsset(oldAssetId);
@@ -155,8 +166,20 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
             if (newAsset != null && "video".equals(newAsset.getModuleType())) {
                 newAsset.setModuleId(video.getId());
                 resourceAssetMapper.updateById(newAsset);
-                log.info("替换资源资产: oldAssetId={}, newAssetId={}, videoId={}",
-                        oldAssetId, newAssetId, id);
+                log.info("替换主视频资源: old={}, new={}, videoId={}", oldAssetId, newAssetId, id);
+            }
+        }
+
+        // Atomically replace old cover asset with new one
+        if (newCoverAssetId != null && !newCoverAssetId.equals(oldCoverAssetId)) {
+            if (oldCoverAssetId != null) {
+                deleteSingleAsset(oldCoverAssetId);
+            }
+            ResourceAsset newCover = resourceAssetMapper.selectById(newCoverAssetId);
+            if (newCover != null && "video".equals(newCover.getModuleType())) {
+                newCover.setModuleId(video.getId());
+                resourceAssetMapper.updateById(newCover);
+                log.info("替换封面资源: old={}, new={}, videoId={}", oldCoverAssetId, newCoverAssetId, id);
             }
         }
 
@@ -173,6 +196,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setProcessingStatus(defaultString(request.getProcessingStatus(), "ready"));
         video.setPublishStatus(defaultString(request.getPublishStatus(), "draft"));
         video.setAssetId(newAssetId != null ? newAssetId : oldAssetId);
+        video.setCoverAssetId(newCoverAssetId != null ? newCoverAssetId : oldCoverAssetId);
         video.setVisibility(defaultString(request.getVisibility(), "students"));
         video.setScheduledPublishAt(parseDateTime(request.getScheduledPublishAt()));
         video.setLastEditedAt(LocalDateTime.now());
