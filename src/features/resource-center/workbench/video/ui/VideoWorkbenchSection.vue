@@ -26,6 +26,7 @@ import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
 import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'
 import type { VideoDrawerDraft } from './VideoWorkbenchDrawer.vue'
+import PreviewDrawer from '../../shared/ui/PreviewDrawer.vue'
 import { videoRecords } from '@/features/resource-center/workbench/video/model/video-workbench.fixtures.ts'
 import {
   createVideoWorkbenchViewModel,
@@ -312,6 +313,23 @@ async function handleDelete(id: string) {
 
 function handleUpload() {
   openUploadDrawer()
+}
+
+const previewState = reactive({
+  open: false,
+  record: null as VideoRecord | null,
+})
+
+function handlePreview(id: string) {
+  const target = records.value.find((r) => r.id === id)
+  if (!target) return
+  previewState.record = target
+  previewState.open = true
+}
+
+function closePreview() {
+  previewState.open = false
+  previewState.record = null
 }
 
 function handleEdit(id: string) {
@@ -604,6 +622,17 @@ function handlePageChange(nextPage: number) {
         <template #cell-actions="{ row }">
           <div class="video-management__row-actions">
             <button
+              v-if="row.assetId"
+              type="button"
+              class="video-management__icon-button"
+              aria-label="预览视频"
+              @click.stop="handlePreview(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.eye"></path>
+              </svg>
+            </button>
+            <button
               type="button"
               class="video-management__icon-button"
               aria-label="编辑视频"
@@ -635,6 +664,13 @@ function handlePageChange(nextPage: number) {
     </template>
 
     <template #drawer>
+      <PreviewDrawer
+        :open="previewState.open"
+        :asset-id="previewState.record?.assetId ?? null"
+        :origin-name="previewState.record?.title ?? ''"
+        :mime-type="'video/mp4'"
+        @close="closePreview"
+      />
       <VideoWorkbenchDrawer
         :open="drawerState.open"
         :mode="drawerState.mode"
