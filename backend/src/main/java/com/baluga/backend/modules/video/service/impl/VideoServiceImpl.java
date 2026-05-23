@@ -96,6 +96,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Video createVideo(VideoCreateRequest request) {
+        log.info("创建视频: title={}, assetId={}", normalize(request.getTitle()), request.getAssetId());
         Video video = Video.builder()
                 .title(normalize(request.getTitle()))
                 .course(normalize(request.getCourse()))
@@ -206,11 +207,28 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     }
 
     private void deleteLinkedAssets(Long videoId) {
+        Video video = getById(videoId);
+
+        // Path 1: find assets linked by module_id
         LambdaQueryWrapper<ResourceAsset> wrapper = Wrappers.lambdaQuery();
         wrapper.eq(ResourceAsset::getModuleType, "video")
                .eq(ResourceAsset::getModuleId, videoId);
-
         List<ResourceAsset> assets = resourceAssetMapper.selectList(wrapper);
+
+        // Path 2: if no assets found by module_id, try direct lookup via video.assetId
+        if (assets.isEmpty() && video != null && video.getAssetId() != null) {
+            ResourceAsset directAsset = resourceAssetMapper.selectById(video.getAssetId());
+            if (directAsset != null && "video".equals(directAsset.getModuleType())) {
+                assets = List.of(directAsset);
+                log.info("通过 video.assetId 直接定位到资源资产: assetId={}", directAsset.getId());
+            }
+        }
+
+        if (assets.isEmpty()) {
+            log.warn("未找到关联的资源资产记录: videoId={}, videoAssetId={}", videoId,
+                    video != null ? video.getAssetId() : null);
+        }
+
         for (ResourceAsset asset : assets) {
             try {
                 Path filePath = Path.of(storageProperties.getUploadDir(), asset.getObjectKey());
