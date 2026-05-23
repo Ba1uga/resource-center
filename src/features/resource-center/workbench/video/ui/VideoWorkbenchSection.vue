@@ -589,7 +589,7 @@ function handlePageChange(nextPage: number) {
               />
               <img
                 v-else
-                src="/streamline-stickies-color--filming-movie.svg"
+                src="/Romance-Pride-Lgbt-Movies-Film--Streamline-Ultimate.png"
                 alt="默认封面"
                 class="video-management__cover-placeholder"
               />

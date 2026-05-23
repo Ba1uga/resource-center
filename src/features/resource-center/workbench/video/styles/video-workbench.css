@@ -195,9 +195,10 @@
 }
 
 .video-management__cover-placeholder {
-  width: 36px;
-  height: 36px;
-  opacity: 0.7;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
 }
 
 .video-management__info-copy {
