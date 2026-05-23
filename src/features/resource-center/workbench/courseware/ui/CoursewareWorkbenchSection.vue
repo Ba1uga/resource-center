@@ -252,6 +252,7 @@ async function saveDrawer() {
         chapter: drawerDraft.chapter.trim(),
         type: drawerDraft.type,
         fileSize: drawerDraft.fileSize.trim(),
+        assetId: drawerDraft.assetId ?? undefined,
       })
     } else {
       await createCourseware({
@@ -261,6 +262,7 @@ async function saveDrawer() {
         type: drawerDraft.type,
         fileSize: drawerDraft.fileSize.trim(),
         uploadedBy: currentCoursewareUploader,
+        assetId: drawerDraft.assetId ?? undefined,
       })
     }
 

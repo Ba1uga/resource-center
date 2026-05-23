@@ -24,4 +24,6 @@ public class CoursewareCreateRequest {
 
     @NotBlank(message = "请填写上传人")
     private String uploadedBy;
+
+    private Long assetId;
 }

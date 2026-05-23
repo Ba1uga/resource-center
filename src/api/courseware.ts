@@ -56,6 +56,7 @@ export interface CoursewareCreatePayload {
   type: CoursewareType
   fileSize: string
   uploadedBy: string
+  assetId?: number | null
 }
 
 export interface CoursewareUpdatePayload {
@@ -64,6 +65,7 @@ export interface CoursewareUpdatePayload {
   chapter: string
   type: CoursewareType
   fileSize: string
+  assetId?: number | null
 }
 
 function normalizeRecord(vo: CoursewareApiVO): CoursewareRecord {
@@ -76,6 +78,10 @@ function normalizeRecord(vo: CoursewareApiVO): CoursewareRecord {
     fileSize: vo.fileSize,
     uploadedBy: vo.uploadedBy,
     uploadedAt: vo.uploadedAt,
+    assetId: vo.assetId ?? null,
+    fileName: '',
+    fileSizeBytes: 0,
+    mimeType: '',
   }
 }
 

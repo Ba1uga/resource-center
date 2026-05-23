@@ -14,4 +14,6 @@ public interface CoursewareService extends IService<Courseware> {
     Courseware createCourseware(CoursewareCreateRequest request);
 
     Courseware updateCourseware(Long id, CoursewareUpdateRequest request);
+
+    void deleteCoursewareWithAssets(Long id);
 }

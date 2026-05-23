@@ -31,6 +31,8 @@ public class CoursewareVO {
 
     private String uploadedBy;
 
+    private Long assetId;
+
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Shanghai")
     private LocalDate uploadedAt;
 
@@ -49,6 +51,7 @@ public class CoursewareVO {
                 .type(courseware.getType())
                 .fileSize(courseware.getFileSize())
                 .uploadedBy(courseware.getUploadedBy())
+                .assetId(courseware.getAssetId())
                 .uploadedAt(courseware.getUploadedAt())
                 .createdAt(courseware.getCreatedAt())
                 .updatedAt(courseware.getUpdatedAt())

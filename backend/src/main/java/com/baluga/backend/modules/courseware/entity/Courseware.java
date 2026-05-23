@@ -42,6 +42,9 @@ public class Courseware {
     @TableField("uploaded_at")
     private LocalDate uploadedAt;
 
+    @TableField("asset_id")
+    private Long assetId;
+
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

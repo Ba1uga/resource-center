@@ -72,7 +72,7 @@ public class CoursewareController {
             return R.fail("课件不存在");
         }
 
-        coursewareService.removeById(id);
+        coursewareService.deleteCoursewareWithAssets(id);
         return R.ok();
     }
 }

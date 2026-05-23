@@ -21,4 +21,6 @@ public class CoursewareUpdateRequest {
 
     @NotBlank(message = "请填写文件大小")
     private String fileSize;
+
+    private Long assetId;
 }
