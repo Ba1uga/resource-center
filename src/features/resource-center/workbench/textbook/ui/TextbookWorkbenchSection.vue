@@ -12,6 +12,10 @@ import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
+import UploadDropzone from '../../shared/ui/UploadDropzone.vue'
+import UploadQueue from '../../shared/ui/UploadQueue.vue'
+import { useUploader } from '../../shared/model/use-uploader.ts'
+import { formatFileSize } from '../../shared/model/upload.types.ts'
 
 import type { TextbookCreatePayload, TextbookRecord, TextbookUpdatePayload } from '@/api/textbook.ts'
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
@@ -26,6 +30,7 @@ interface TeacherOwnedTextbookRecord {
   isbn: string
   course: string
   updatedAt: string
+  assetId: number | null
 }
 
 interface TextbookDraft {
@@ -46,6 +51,8 @@ const props = defineProps<{
 
 const currentAdminId = 'admin-xie'
 
+const uploader = useUploader('textbook')
+
 const seedRows: TeacherOwnedTextbookRecord[] = [
   {
     id: 'tb-1001',
@@ -57,6 +64,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787121361708',
     course: '计算机网络',
     updatedAt: '2026-04-02',
+    assetId: null,
   },
   {
     id: 'tb-1002',
@@ -68,6 +76,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787302147510',
     course: '数据结构',
     updatedAt: '2026-04-01',
+    assetId: null,
   },
   {
     id: 'tb-1003',
@@ -79,6 +88,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787040452532',
     course: '操作系统',
     updatedAt: '2026-04-03',
+    assetId: null,
   },
   {
     id: 'tb-1004',
@@ -90,6 +100,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787040556407',
     course: '数据库系统',
     updatedAt: '2026-04-04',
+    assetId: null,
   },
   {
     id: 'tb-1005',
@@ -101,6 +112,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787302501374',
     course: '编译原理',
     updatedAt: '2026-04-04',
+    assetId: null,
   },
   {
     id: 'tb-1006',
@@ -112,6 +124,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787040580174',
     course: '离散数学',
     updatedAt: '2026-04-05',
+    assetId: null,
   },
   {
     id: 'tb-1007',
@@ -123,6 +136,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787302553915',
     course: '软件工程',
     updatedAt: '2026-04-06',
+    assetId: null,
   },
   {
     id: 'tb-1008',
@@ -134,6 +148,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787111726555',
     course: '人工智能',
     updatedAt: '2026-04-07',
+    assetId: null,
   },
   {
     id: 'tb-1009',
@@ -145,6 +160,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787040521979',
     course: '计算机组成原理',
     updatedAt: '2026-04-08',
+    assetId: null,
   },
   {
     id: 'tb-1010',
@@ -156,6 +172,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787040566208',
     course: '程序设计基础',
     updatedAt: '2026-04-09',
+    assetId: null,
   },
   {
     id: 'tb-1011',
@@ -167,6 +184,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787302423287',
     course: '机器学习',
     updatedAt: '2026-03-20',
+    assetId: null,
   },
   {
     id: 'tb-1012',
@@ -178,6 +196,7 @@ const seedRows: TeacherOwnedTextbookRecord[] = [
     isbn: '9787115599940',
     course: '计算机图形学',
     updatedAt: '2026-03-22',
+    assetId: null,
   },
 ]
 
@@ -316,6 +335,35 @@ onBeforeUnmount(() => {
   }
 })
 
+const drawerConfirmDisabled = computed(() => uploader.hasUploading())
+
+function onFilesSelected(files: File[]) {
+  uploader.addFiles(files)
+  for (const entry of uploader.entries.value) {
+    if (entry.status === 'idle') {
+      uploader.startUpload(entry.id)
+    }
+  }
+}
+
+function syncUploadToDraft() {
+  const successEntries = uploader.successEntries()
+  if (successEntries.length > 0) {
+    const latest = successEntries[successEntries.length - 1]
+    uploadFileInfo.value = {
+      assetId: latest.assetId,
+      fileName: latest.originName,
+      fileSizeLabel: formatFileSize(latest.sizeBytes),
+    }
+  }
+}
+
+const uploadFileInfo = ref<{
+  assetId: number | null
+  fileName: string
+  fileSizeLabel: string
+} | null>(null)
+
 function createEmptyDraft(): TextbookDraft {
   return {
     name: '',
@@ -347,6 +395,7 @@ function normalizeApiRecord(record: TextbookRecord): TeacherOwnedTextbookRecord 
     isbn: record.isbn,
     course: record.course,
     updatedAt: record.updatedAt.slice(0, 10),
+    assetId: record.assetId ?? null,
   }
 }
 
@@ -412,6 +461,7 @@ function openCreateDrawer() {
   drawerTargetId.value = undefined
   resetDrawerDraft()
   clearDrawerErrors()
+  uploadFileInfo.value = null
   drawerOpen.value = true
 }
 
@@ -431,6 +481,8 @@ function openEditDrawer(id: string) {
 function closeDrawer() {
   drawerOpen.value = false
   clearDrawerErrors()
+  uploader.clearAll()
+  uploadFileInfo.value = null
 }
 
 function toggleRowSelection(id: string) {
@@ -490,10 +542,13 @@ function buildPayload(): TextbookUpdatePayload {
     edition: drawerDraft.edition.trim(),
     isbn: drawerDraft.isbn.trim(),
     course: drawerDraft.course.trim(),
+    assetId: uploadFileInfo.value?.assetId ?? null,
   }
 }
 
 async function saveDrawer() {
+  syncUploadToDraft()
+
   if (!validateDrawer()) {
     return
   }
@@ -790,12 +845,30 @@ async function handleBulkDelete() {
     <template #drawer>
       <WorkbenchFormDrawer
         :open="drawerOpen"
-        width="md"
+        width="lg"
         :title="drawerMode === 'create' ? '新建教材' : '编辑教材'"
+        :confirm-disabled="drawerConfirmDisabled"
         @close="closeDrawer"
         @confirm="saveDrawer"
       >
         <form class="workbench-drawer-form__body" @submit.prevent="saveDrawer">
+          <div class="workbench-drawer-form__upload-section">
+            <UploadDropzone
+              :disabled="drawerMode === 'edit' && uploadFileInfo?.assetId !== null && uploadFileInfo?.assetId !== undefined"
+              accept=".pdf,.doc,.docx"
+              @files-selected="onFilesSelected"
+            />
+            <UploadQueue
+              :entries="uploader.entries.value"
+              :uploading="uploader.hasUploading()"
+              @remove="uploader.removeEntry"
+              @retry="uploader.retryEntry"
+            />
+            <p v-if="uploadFileInfo?.fileName" class="workbench-drawer-form__upload-info">
+              已上传：{{ uploadFileInfo.fileName }} ({{ uploadFileInfo.fileSizeLabel }})
+            </p>
+          </div>
+
           <label class="workbench-drawer-form__field">
             <span class="workbench-drawer-form__field-label">教材名称</span>
             <input v-model="drawerDraft.name" type="text" class="workbench-drawer-form__field-input" />

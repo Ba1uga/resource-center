@@ -1,4 +1,4 @@
-package com.baluga.backend.modules.textbook.entity;
+package com.baluga.backend.modules.storage.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -18,29 +18,42 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("textbook")
-public class Textbook {
+@TableName("resource_asset")
+public class ResourceAsset {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String name;
+    @TableField("module_type")
+    private String moduleType;
 
-    private String author;
+    @TableField("module_id")
+    private Long moduleId;
 
-    private String publisher;
+    private String bucket;
 
-    private String edition;
+    @TableField("object_key")
+    private String objectKey;
 
-    private String isbn;
+    @TableField("origin_name")
+    private String originName;
 
-    private String course;
+    @TableField("mime_type")
+    private String mimeType;
 
-    @TableField("owner_id")
-    private String ownerId;
+    @TableField("size_bytes")
+    private Long sizeBytes;
 
-    @TableField("asset_id")
-    private Long assetId;
+    private String sha256;
+
+    @TableField("upload_status")
+    private String uploadStatus;
+
+    @TableField("upload_token")
+    private String uploadToken;
+
+    @TableField("created_by")
+    private String createdBy;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

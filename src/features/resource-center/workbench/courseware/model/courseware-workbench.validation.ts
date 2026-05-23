@@ -15,8 +15,8 @@ export function validateCoursewareDraft(draft: CoursewareDraft): CoursewareValid
     errors.chapter = '请填写章节。'
   }
 
-  if (draft.fileSize.trim().length === 0) {
-    errors.fileSize = '请填写文件大小。'
+  if (draft.assetId === null) {
+    errors.upload = '请先上传课件文件并等待上传完成。'
   }
 
   if (draft.uploadedBy.trim().length === 0) {

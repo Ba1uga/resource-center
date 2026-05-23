@@ -32,6 +32,8 @@ public class TextbookVO {
 
     private String ownerId;
 
+    private Long assetId;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private LocalDateTime createdAt;
 
@@ -48,6 +50,7 @@ public class TextbookVO {
                 .isbn(textbook.getIsbn())
                 .course(textbook.getCourse())
                 .ownerId(textbook.getOwnerId())
+                .assetId(textbook.getAssetId())
                 .createdAt(textbook.getCreatedAt())
                 .updatedAt(textbook.getUpdatedAt())
                 .build();

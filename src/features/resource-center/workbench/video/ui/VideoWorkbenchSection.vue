@@ -3,7 +3,20 @@ import '../styles/video-workbench.css'
 
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
-import { listVideos } from '@/api/video.ts'
+import { createVideo, listVideos, updateVideo } from '@/api/video.ts'
+
+const processingStatusLabel: Record<string, string> = {
+  uploading: '上传中',
+  transcoding: '转码中',
+  ready: '资源就绪',
+  failed: '转码失败',
+}
+
+const publishStatusLabel: Record<string, string> = {
+  draft: '草稿',
+  published: '已发布',
+  offline: '已下架',
+}
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
@@ -12,6 +25,7 @@ import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.v
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
 import VideoWorkbenchDrawer from './VideoWorkbenchDrawer.vue'
+import type { VideoDrawerDraft } from './VideoWorkbenchDrawer.vue'
 import { videoRecords } from '@/features/resource-center/workbench/video/model/video-workbench.fixtures.ts'
 import {
   createVideoWorkbenchViewModel,
@@ -284,11 +298,100 @@ function handleEdit(id: string) {
   openEditDrawer(id)
 }
 
-function handleDrawerSaveDraft() {}
+const videoFeedback = ref<{
+  tone: 'success' | 'danger'
+  text: string
+} | null>(null)
 
-function handleDrawerSavePublish() {}
+async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
+  try {
+    if (drawerState.mode === 'create') {
+      await createVideo({
+        title: data.title || '未命名视频',
+        course: data.course,
+        chapter: data.chapter,
+        fileSize: data.videoFileSizeLabel || '',
+        knowledgePoint: data.knowledgePoint,
+        uploadedBy: '当前用户',
+        processingStatus: 'uploading',
+        publishStatus: 'draft',
+      })
+    } else if (drawerState.activeRecordId) {
+      await updateVideo(Number(drawerState.activeRecordId), {
+        title: data.title,
+        course: data.course,
+        chapter: data.chapter,
+        fileSize: data.videoFileSizeLabel || undefined,
+        knowledgePoint: data.knowledgePoint,
+      })
+    }
 
-function handleRetryUpload() {}
+    await loadVideos()
+    videoFeedback.value = {
+      tone: 'success',
+      text: drawerState.mode === 'create' ? '视频已保存为草稿。' : '视频信息已更新。',
+    }
+  } catch (error) {
+    videoFeedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '视频保存失败，请稍后重试。',
+    }
+    return
+  }
+
+  closeDrawer()
+}
+
+async function handleDrawerSavePublish(data: VideoDrawerDraft) {
+  try {
+    if (drawerState.mode === 'create') {
+      await createVideo({
+        title: data.title || '未命名视频',
+        course: data.course,
+        chapter: data.chapter,
+        fileSize: data.videoFileSizeLabel || '',
+        knowledgePoint: data.knowledgePoint,
+        uploadedBy: '当前用户',
+        processingStatus: 'uploading',
+        publishStatus: 'published',
+      })
+    } else if (drawerState.activeRecordId) {
+      await updateVideo(Number(drawerState.activeRecordId), {
+        title: data.title,
+        course: data.course,
+        chapter: data.chapter,
+        fileSize: data.videoFileSizeLabel || undefined,
+        knowledgePoint: data.knowledgePoint,
+        publishStatus: 'published',
+      })
+    }
+
+    await loadVideos()
+    videoFeedback.value = {
+      tone: 'success',
+      text: drawerState.mode === 'create' ? '视频已发布。' : '视频已更新并发布。',
+    }
+  } catch (error) {
+    videoFeedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '视频发布失败，请稍后重试。',
+    }
+    return
+  }
+
+  closeDrawer()
+}
+
+function handleRetryUpload() {
+  const record = activeRecord.value
+  if (!record) return
+
+  fallbackRecords.value = fallbackRecords.value.map((r) =>
+    r.id === record.id
+      ? { ...r, processingStatus: 'uploading', resourceAlert: null }
+      : r,
+  )
+}
 
 function handlePageChange(nextPage: number) {
   if (nextPage < 1 || nextPage > viewModel.value.pagination.pageCount) {
@@ -309,6 +412,18 @@ function handlePageChange(nextPage: number) {
       </header>
 
       <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleStatusSelect(key as VideoOverviewStatus)" />
+    </template>
+
+    <template #feedback>
+      <div
+        v-if="videoFeedback"
+        class="video-management__feedback"
+        :class="`is-${videoFeedback.tone}`"
+        role="status"
+        aria-live="polite"
+      >
+        {{ videoFeedback.text }}
+      </div>
     </template>
 
     <template #toolbar>
@@ -411,14 +526,7 @@ function handlePageChange(nextPage: number) {
             <div class="video-management__cover">{{ row.coverLabel }}</div>
             <div class="video-management__info-copy">
               <strong>{{ row.title }}</strong>
-              <div class="video-management__meta-line">
-                <span>{{ row.id }}</span>
-                <span>{{ row.knowledgePoint }}</span>
-              </div>
-              <div class="video-management__tag-list">
-                <span v-for="tag in row.tags" :key="tag">{{ tag }}</span>
-              </div>
-              <p v-if="row.resourceAlert" class="video-management__resource-alert">{{ row.resourceAlert }}</p>
+              <span class="video-management__knowledge-point">{{ row.knowledgePoint }}</span>
             </div>
           </div>
         </template>
@@ -432,13 +540,13 @@ function handlePageChange(nextPage: number) {
 
         <template #cell-processingStatus="{ row }">
           <span class="video-management__status-badge" :class="`is-${row.processingStatus}`">
-            {{ row.processingStatus }}
+            {{ processingStatusLabel[row.processingStatus] ?? row.processingStatus }}
           </span>
         </template>
 
         <template #cell-publishStatus="{ row }">
           <span class="video-management__status-badge" :class="`is-${row.publishStatus}`">
-            {{ row.publishStatus }}
+            {{ publishStatusLabel[row.publishStatus] ?? row.publishStatus }}
           </span>
         </template>
 

@@ -19,6 +19,10 @@ spring:
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -43,6 +47,8 @@ management:
       show-details: always
 
 baluga:
+  storage:
+    upload-dir: ${BALUGA_UPLOAD_DIR:}
   ai:
     matching:
       provider: openai
@@ -54,6 +60,7 @@ baluga:
       timeout-seconds: 120
       max-retries: 2
       max-candidates-per-resource: 3
+
 
 logging:
   level:

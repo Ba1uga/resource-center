@@ -29,4 +29,6 @@ public class TextbookCreateRequest {
 
     @NotBlank(message = "请填写归属管理员ID")
     private String ownerId;
+
+    private Long assetId;
 }

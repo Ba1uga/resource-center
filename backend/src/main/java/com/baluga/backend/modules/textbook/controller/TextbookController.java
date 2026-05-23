@@ -63,6 +63,7 @@ public class TextbookController {
                 .isbn(request.getIsbn().trim())
                 .course(request.getCourse().trim())
                 .ownerId(request.getOwnerId().trim())
+                .assetId(request.getAssetId())
                 .deleted(0)
                 .build();
 
@@ -83,6 +84,7 @@ public class TextbookController {
         textbook.setEdition(request.getEdition().trim());
         textbook.setIsbn(request.getIsbn().trim());
         textbook.setCourse(request.getCourse().trim());
+        textbook.setAssetId(request.getAssetId());
 
         textbookService.updateById(textbook);
         return R.ok(TextbookVO.fromEntity(textbookService.getById(id)));

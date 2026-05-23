@@ -27,6 +27,10 @@ export function createDefaultCoursewareDraft(): CoursewareDraft {
     type: 'PPT',
     fileSize: '',
     uploadedBy: currentCoursewareUploader,
+    assetId: null,
+    fileName: '',
+    fileSizeBytes: 0,
+    mimeType: '',
   }
 }
 

@@ -10,6 +10,10 @@ export interface CoursewareRecord {
   fileSize: string
   uploadedBy: string
   uploadedAt: string
+  assetId: number | null
+  fileName: string
+  fileSizeBytes: number
+  mimeType: string
 }
 
 export interface CoursewareFilterState {
@@ -36,6 +40,10 @@ export interface CoursewareDraft {
   type: CoursewareType
   fileSize: string
   uploadedBy: string
+  assetId: number | null
+  fileName: string
+  fileSizeBytes: number
+  mimeType: string
 }
 
 export interface CoursewareSelectOption<TValue extends string = string> {
@@ -59,5 +67,5 @@ export interface CoursewareWorkbenchViewModel {
   emptyState: CoursewareEmptyState | null
 }
 
-export type CoursewareValidationField = 'title' | 'course' | 'chapter' | 'fileSize' | 'uploadedBy'
+export type CoursewareValidationField = 'title' | 'course' | 'chapter' | 'upload' | 'uploadedBy'
 export type CoursewareValidationErrors = Partial<Record<CoursewareValidationField, string>>

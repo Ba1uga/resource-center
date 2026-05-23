@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import '../styles/courseware-workbench.css'
 
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import { createCourseware, deleteCourseware, listCoursewares, updateCourseware } from '@/api/courseware.ts'
 import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchBulkBar from '../../shared/ui/WorkbenchBulkBar.vue'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
@@ -11,6 +12,10 @@ import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
+import UploadDropzone from '../../shared/ui/UploadDropzone.vue'
+import UploadQueue from '../../shared/ui/UploadQueue.vue'
+import { useUploader } from '../../shared/model/use-uploader.ts'
+import { formatFileSize } from '../../shared/model/upload.types.ts'
 import {
   coursewareRecords,
   currentCoursewareUploader,
@@ -58,6 +63,10 @@ const feedback = ref<{
   text: string
 } | null>(null)
 
+const uploader = useUploader('courseware')
+
+const drawerConfirmDisabled = computed(() => uploader.hasUploading())
+
 const filters = computed({
   get: () => sessionStore.filters,
   set: (value) => sessionStore.patchFilters(value),
@@ -87,9 +96,19 @@ const allVisibleSelected = computed(
 const drawerTitle = computed(() => (drawerMode.value === 'create' ? '上传课件' : '编辑课件'))
 const drawerDescription = computed(() =>
   drawerMode.value === 'create'
-    ? '补充课件基础信息，保存后会自动归入当前课件台。'
+    ? '拖拽或点击上传课件文件，补充基础信息后保存。'
     : '更新课件信息后，上传时间会自动刷新为最新保存时间。',
 )
+
+watch(drawerOpen, (open) => {
+  if (!open) {
+    uploader.clearAll()
+  }
+})
+
+onMounted(() => {
+  loadCoursewares()
+})
 
 function handleCreate() {
   drawerMode.value = 'create'
@@ -114,19 +133,29 @@ function handleEdit(id: string) {
     type: target.type,
     fileSize: target.fileSize,
     uploadedBy: target.uploadedBy,
+    assetId: target.assetId,
+    fileName: target.fileName,
+    fileSizeBytes: target.fileSizeBytes,
+    mimeType: target.mimeType,
   })
   clearDrawerErrors()
   drawerOpen.value = true
 }
 
-function handleDelete(id: string) {
+async function handleDelete(id: string) {
   const target = records.value.find((record) => record.id === id)
   if (!target) {
     return
   }
 
-  if (typeof window !== 'undefined' && !window.confirm(`确定删除“${target.title}”吗？`)) {
+  if (typeof window !== 'undefined' && !window.confirm(`确定删除"${target.title}"吗？`)) {
     return
+  }
+
+  try {
+    await deleteCourseware(Number(id))
+  } catch {
+    // proceed with local removal even if API fails
   }
 
   records.value = records.value.filter((record) => record.id !== id)
@@ -176,7 +205,30 @@ function closeDrawer() {
   clearDrawerErrors()
 }
 
-function saveDrawer() {
+function onFilesSelected(files: File[]) {
+  uploader.addFiles(files)
+  for (const entry of uploader.entries.value) {
+    if (entry.status === 'idle') {
+      uploader.startUpload(entry.id)
+    }
+  }
+}
+
+function syncUploadToDraft() {
+  const successEntries = uploader.successEntries()
+  if (successEntries.length > 0) {
+    const latest = successEntries[successEntries.length - 1]
+    drawerDraft.fileName = latest.originName
+    drawerDraft.fileSizeBytes = latest.sizeBytes
+    drawerDraft.mimeType = latest.mimeType
+    drawerDraft.fileSize = formatFileSize(latest.sizeBytes)
+    drawerDraft.assetId = latest.assetId
+  }
+}
+
+async function saveDrawer() {
+  syncUploadToDraft()
+
   const nextErrors = validateCoursewareDraft({ ...drawerDraft })
   assignDrawerErrors(nextErrors)
 
@@ -184,40 +236,51 @@ function saveDrawer() {
     return
   }
 
-  const nextRecord: CoursewareRecord = {
-    id: drawerTargetId.value ?? createCoursewareId(),
-    title: drawerDraft.title.trim(),
-    course: drawerDraft.course.trim(),
-    chapter: drawerDraft.chapter.trim(),
-    type: drawerDraft.type,
-    fileSize: drawerDraft.fileSize.trim(),
-    uploadedBy: currentCoursewareUploader,
-    uploadedAt: formatCurrentDate(),
-  }
+  try {
+    if (drawerMode.value === 'edit' && drawerTargetId.value) {
+      await updateCourseware(Number(drawerTargetId.value), {
+        title: drawerDraft.title.trim(),
+        course: drawerDraft.course.trim(),
+        chapter: drawerDraft.chapter.trim(),
+        type: drawerDraft.type,
+        fileSize: drawerDraft.fileSize.trim(),
+      })
+    } else {
+      await createCourseware({
+        title: drawerDraft.title.trim(),
+        course: drawerDraft.course.trim(),
+        chapter: drawerDraft.chapter.trim(),
+        type: drawerDraft.type,
+        fileSize: drawerDraft.fileSize.trim(),
+        uploadedBy: currentCoursewareUploader,
+      })
+    }
 
-  if (drawerMode.value === 'edit' && drawerTargetId.value) {
-    records.value = records.value.map((record) => (record.id === drawerTargetId.value ? nextRecord : record))
-  } else {
-    records.value = [nextRecord, ...records.value]
-    sessionStore.setPage(1)
-  }
-
-  const visibleUnderFilters = matchesCoursewareFilters(nextRecord, {
-    ...filters.value,
-  })
-  feedback.value = {
-    tone: visibleUnderFilters ? 'success' : 'info',
-    text:
-      drawerMode.value === 'edit'
-        ? visibleUnderFilters
-          ? '课件已更新。'
-          : '课件已更新，但当前筛选条件下不可见。'
-        : visibleUnderFilters
-          ? '课件已上传。'
-          : '课件已上传，但当前筛选条件下不可见。',
+    await loadCoursewares()
+  } catch (error) {
+    feedback.value = {
+      tone: 'danger',
+      text: error instanceof Error ? error.message : '课件保存失败，请稍后重试。',
+    }
+    return
   }
 
   closeDrawer()
+}
+
+async function loadCoursewares() {
+  try {
+    const result = await listCoursewares({
+      page: page.value,
+      pageSize,
+      keyword: filters.value.keyword,
+      course: filters.value.course,
+      type: filters.value.type,
+    })
+    records.value = result.records
+  } catch {
+    // keep local records on error
+  }
 }
 
 function fillDrawerDraft(nextDraft: CoursewareDraft) {
@@ -227,6 +290,10 @@ function fillDrawerDraft(nextDraft: CoursewareDraft) {
   drawerDraft.type = nextDraft.type
   drawerDraft.fileSize = nextDraft.fileSize
   drawerDraft.uploadedBy = nextDraft.uploadedBy
+  drawerDraft.assetId = nextDraft.assetId
+  drawerDraft.fileName = nextDraft.fileName
+  drawerDraft.fileSizeBytes = nextDraft.fileSizeBytes
+  drawerDraft.mimeType = nextDraft.mimeType
 }
 
 function clearDrawerErrors() {
@@ -412,13 +479,30 @@ function handleBulkDelete() {
     <template #drawer>
       <WorkbenchFormDrawer
         :open="drawerOpen"
-        width="md"
+        width="lg"
         :title="drawerTitle"
         confirm-text="保存课件"
+        :confirm-disabled="drawerConfirmDisabled"
         @close="closeDrawer"
         @confirm="saveDrawer"
       >
         <p v-if="drawerDescription" class="workbench-drawer-form__body-description">{{ drawerDescription }}</p>
+
+        <div class="workbench-drawer-form__upload-section">
+          <UploadDropzone
+            :disabled="drawerMode === 'edit' && drawerDraft.assetId !== null"
+            accept=".pdf,.ppt,.pptx,.doc,.docx"
+            @files-selected="onFilesSelected"
+          />
+          <UploadQueue
+            :entries="uploader.entries.value"
+            :uploading="uploader.hasUploading()"
+            @remove="uploader.removeEntry"
+            @retry="uploader.retryEntry"
+          />
+          <small v-if="drawerErrors.upload" class="workbench-drawer-form__field-error">{{ drawerErrors.upload }}</small>
+        </div>
+
         <label class="workbench-drawer-form__field">
           <span class="workbench-drawer-form__field-label">课件标题</span>
           <input v-model="drawerDraft.title" type="text" class="workbench-drawer-form__field-input" placeholder="例如：第一章 计算机网络概述" />
@@ -453,15 +537,10 @@ function handleBulkDelete() {
           />
         </label>
 
-        <label class="workbench-drawer-form__field">
-          <span class="workbench-drawer-form__field-label">文件大小</span>
-          <input v-model="drawerDraft.fileSize" type="text" class="workbench-drawer-form__field-input" placeholder="例如：2.5 MB" />
-          <small v-if="drawerErrors.fileSize" class="workbench-drawer-form__field-error">{{ drawerErrors.fileSize }}</small>
-        </label>
-
         <div class="workbench-drawer-form__meta">
           <strong>自动维护信息</strong>
           <p>上传人：{{ currentCoursewareUploader }}</p>
+          <p>文件大小：{{ drawerDraft.fileSize || '待上传' }}</p>
           <p>上传时间：保存时自动刷新为当天日期。</p>
           <p v-if="drawerErrors.uploadedBy" class="workbench-drawer-form__field-error">{{ drawerErrors.uploadedBy }}</p>
         </div>

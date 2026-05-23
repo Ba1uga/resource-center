@@ -17,6 +17,7 @@ export interface TextbookRecord {
   isbn: string
   course: string
   ownerId: string
+  assetId: number | null
   createdAt: string
   updatedAt: string
 }
@@ -44,6 +45,7 @@ export interface TextbookCreatePayload {
   isbn: string
   course: string
   ownerId: string
+  assetId?: number | null
 }
 
 export interface TextbookUpdatePayload {
@@ -53,6 +55,7 @@ export interface TextbookUpdatePayload {
   edition: string
   isbn: string
   course: string
+  assetId?: number | null
 }
 
 export async function listTextbooks(params: TextbookListParams): Promise<TextbookPageResult> {

@@ -26,4 +26,6 @@ public class TextbookUpdateRequest {
 
     @NotBlank(message = "请填写关联课程")
     private String course;
+
+    private Long assetId;
 }
