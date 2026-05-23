@@ -305,6 +305,7 @@ const videoFeedback = ref<{
 
 async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
   try {
+    const uploadSucceeded = data.videoAssetId !== null
     if (drawerState.mode === 'create') {
       await createVideo({
         title: data.title || '未命名视频',
@@ -313,7 +314,7 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
         fileSize: data.videoFileSizeLabel || '',
         knowledgePoint: data.knowledgePoint,
         uploadedBy: '当前用户',
-        processingStatus: 'uploading',
+        processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'draft',
       })
     } else if (drawerState.activeRecordId) {
@@ -344,6 +345,7 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
 
 async function handleDrawerSavePublish(data: VideoDrawerDraft) {
   try {
+    const uploadSucceeded = data.videoAssetId !== null
     if (drawerState.mode === 'create') {
       await createVideo({
         title: data.title || '未命名视频',
@@ -352,7 +354,7 @@ async function handleDrawerSavePublish(data: VideoDrawerDraft) {
         fileSize: data.videoFileSizeLabel || '',
         knowledgePoint: data.knowledgePoint,
         uploadedBy: '当前用户',
-        processingStatus: 'uploading',
+        processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'published',
       })
     } else if (drawerState.activeRecordId) {
@@ -551,7 +553,7 @@ function handlePageChange(nextPage: number) {
         </template>
 
         <template #cell-duration="{ row }">
-          <span class="video-management__numeric-cell">{{ row.duration }}</span>
+          <span class="video-management__numeric-cell">{{ row.duration || '--' }}</span>
         </template>
 
         <template #cell-resolution="{ row }">
