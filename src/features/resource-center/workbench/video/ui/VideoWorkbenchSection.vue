@@ -587,7 +587,12 @@ function handlePageChange(nextPage: number) {
                 :alt="row.coverLabel"
                 class="video-management__cover-img"
               />
-              <template v-else>{{ row.coverLabel }}</template>
+              <img
+                v-else
+                src="/cover-default.svg"
+                alt="默认封面"
+                class="video-management__cover-placeholder"
+              />
             </div>
             <div class="video-management__info-copy">
               <strong>{{ row.title }}</strong>

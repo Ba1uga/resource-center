@@ -194,6 +194,12 @@
   display: block;
 }
 
+.video-management__cover-placeholder {
+  width: 32px;
+  height: 32px;
+  opacity: 0.55;
+}
+
 .video-management__info-copy {
   display: grid;
   gap: 6px;
