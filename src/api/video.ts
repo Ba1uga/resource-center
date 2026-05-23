@@ -79,6 +79,7 @@ export interface VideoCreatePayload {
   publishStatus?: string
   visibility?: string
   scheduledPublishAt?: string
+  assetId?: number | null
 }
 
 export interface VideoUpdatePayload {
@@ -96,6 +97,7 @@ export interface VideoUpdatePayload {
   publishStatus?: string
   visibility?: string
   scheduledPublishAt?: string
+  assetId?: number | null
 }
 
 export interface VideoBatchPayload {
@@ -122,6 +124,7 @@ function normalizeRecord(vo: VideoApiVO): VideoRecord {
     description: vo.description,
     processingStatus: vo.processingStatus as VideoRecord['processingStatus'],
     publishStatus: vo.publishStatus as VideoRecord['publishStatus'],
+    assetId: vo.assetId ?? null,
     resourceAlert: vo.resourceAlert,
     visibility: vo.visibility as VideoRecord['visibility'],
     scheduledPublishAt: vo.scheduledPublishAt?.replace('T', ' ').slice(0, 16) ?? null,

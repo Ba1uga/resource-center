@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baluga.backend.modules.storage.config.StorageProperties;
+import com.baluga.backend.modules.storage.entity.ResourceAsset;
+import com.baluga.backend.modules.storage.mapper.ResourceAssetMapper;
 import com.baluga.backend.modules.video.dto.request.VideoCreateRequest;
 import com.baluga.backend.modules.video.dto.request.VideoUpdateRequest;
 import com.baluga.backend.modules.video.entity.Video;
@@ -11,21 +14,28 @@ import com.baluga.backend.modules.video.mapper.VideoMapper;
 import com.baluga.backend.modules.video.service.VideoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements VideoService {
 
     private final ObjectMapper objectMapper;
+    private final ResourceAssetMapper resourceAssetMapper;
+    private final StorageProperties storageProperties;
 
     @Override
     public Page<Video> pageVideos(String keyword, String course, String chapter,
@@ -90,7 +100,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 .title(normalize(request.getTitle()))
                 .course(normalize(request.getCourse()))
                 .chapter(normalize(request.getChapter()))
-                .duration(defaultString(request.getDuration(), "00:00"))
+                .duration(defaultString(request.getDuration()))
                 .resolution(defaultString(request.getResolution(), "1080p"))
                 .viewCount(request.getViewCount() != null ? request.getViewCount() : 0)
                 .uploadedBy(normalize(request.getUploadedBy()))
@@ -103,6 +113,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 .description(defaultString(request.getDescription()))
                 .processingStatus(defaultString(request.getProcessingStatus(), "uploading"))
                 .publishStatus(defaultString(request.getPublishStatus(), "draft"))
+                .assetId(request.getAssetId())
                 .resourceAlert(null)
                 .visibility(defaultString(request.getVisibility(), "students"))
                 .scheduledPublishAt(parseDateTime(request.getScheduledPublishAt()))
@@ -110,6 +121,16 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
                 .build();
 
         save(video);
+
+        if (video.getAssetId() != null) {
+            ResourceAsset asset = resourceAssetMapper.selectById(video.getAssetId());
+            if (asset != null && "video".equals(asset.getModuleType())) {
+                asset.setModuleId(video.getId());
+                resourceAssetMapper.updateById(asset);
+                log.info("关联资源资产: assetId={}, videoId={}", asset.getId(), video.getId());
+            }
+        }
+
         return getById(video.getId());
     }
 
@@ -124,7 +145,7 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setTitle(normalize(request.getTitle()));
         video.setCourse(normalize(request.getCourse()));
         video.setChapter(normalize(request.getChapter()));
-        video.setDuration(defaultString(request.getDuration(), "00:00"));
+        video.setDuration(defaultString(request.getDuration()));
         video.setResolution(defaultString(request.getResolution(), "1080p"));
         video.setViewCount(request.getViewCount() != null ? request.getViewCount() : 0);
         video.setFileSize(defaultString(request.getFileSize()));
@@ -133,12 +154,19 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
         video.setDescription(defaultString(request.getDescription()));
         video.setProcessingStatus(defaultString(request.getProcessingStatus(), "ready"));
         video.setPublishStatus(defaultString(request.getPublishStatus(), "draft"));
+        video.setAssetId(request.getAssetId());
         video.setVisibility(defaultString(request.getVisibility(), "students"));
         video.setScheduledPublishAt(parseDateTime(request.getScheduledPublishAt()));
         video.setLastEditedAt(LocalDateTime.now());
 
         updateById(video);
         return getById(id);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteVideoWithAssets(Long id) {
+        deleteLinkedAssets(id);
+        super.removeById(id);
     }
 
     @Override
@@ -172,7 +200,34 @@ public class VideoServiceImpl extends ServiceImpl<VideoMapper, Video> implements
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(List<Long> ids) {
         for (Long id : ids) {
-            removeById(id);
+            deleteLinkedAssets(id);
+            super.removeById(id);
+        }
+    }
+
+    private void deleteLinkedAssets(Long videoId) {
+        LambdaQueryWrapper<ResourceAsset> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(ResourceAsset::getModuleType, "video")
+               .eq(ResourceAsset::getModuleId, videoId);
+
+        List<ResourceAsset> assets = resourceAssetMapper.selectList(wrapper);
+        for (ResourceAsset asset : assets) {
+            try {
+                Path filePath = Path.of(storageProperties.getUploadDir(), asset.getObjectKey());
+                Files.deleteIfExists(filePath);
+                Path parentDir = filePath.getParent();
+                if (Files.exists(parentDir) && Files.isDirectory(parentDir)) {
+                    try {
+                        Files.deleteIfExists(parentDir);
+                    } catch (IOException ignored) {
+                        // directory may not be empty if other files share the groupToken
+                    }
+                }
+                resourceAssetMapper.deleteById(asset.getId());
+                log.info("已清理资源资产: assetId={}, path={}", asset.getId(), filePath);
+            } catch (IOException e) {
+                log.warn("清理资源文件失败: assetId={}, path={}", asset.getId(), asset.getObjectKey(), e);
+            }
         }
     }
 

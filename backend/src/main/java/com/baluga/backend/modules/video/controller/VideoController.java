@@ -82,7 +82,7 @@ public class VideoController {
             return R.fail("视频不存在");
         }
 
-        videoService.removeById(id);
+        videoService.deleteVideoWithAssets(id);
         return R.ok();
     }
 

@@ -341,6 +341,7 @@ async function handleDrawerSaveDraft(data: VideoDrawerDraft) {
         uploadedBy: '当前用户',
         processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'draft',
+        assetId: data.videoAssetId,
       })
     } else if (drawerState.activeRecordId) {
       await updateVideo(Number(drawerState.activeRecordId), {
@@ -381,6 +382,7 @@ async function handleDrawerSavePublish(data: VideoDrawerDraft) {
         uploadedBy: '当前用户',
         processingStatus: uploadSucceeded ? 'ready' : 'uploading',
         publishStatus: 'published',
+        assetId: data.videoAssetId,
       })
     } else if (drawerState.activeRecordId) {
       await updateVideo(Number(drawerState.activeRecordId), {

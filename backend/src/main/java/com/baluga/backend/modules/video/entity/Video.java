@@ -66,6 +66,9 @@ public class Video {
     @TableField("publish_status")
     private String publishStatus;
 
+    @TableField("asset_id")
+    private Long assetId;
+
     @TableField("resource_alert")
     private String resourceAlert;
 

@@ -25,4 +25,6 @@ public interface VideoService extends IService<Video> {
     void batchOffline(List<Long> ids);
 
     void batchDelete(List<Long> ids);
+
+    void deleteVideoWithAssets(Long id);
 }

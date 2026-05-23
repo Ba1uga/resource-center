@@ -19,7 +19,7 @@ public class VideoCreateRequest {
     @NotBlank(message = "请填写所属章节")
     private String chapter;
 
-    private String duration = "00:00";
+    private String duration = "";
 
     private String resolution = "1080p";
 
@@ -43,4 +43,6 @@ public class VideoCreateRequest {
     private String visibility = "students";
 
     private String scheduledPublishAt;
+
+    private Long assetId;
 }
