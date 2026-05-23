@@ -12,6 +12,7 @@ import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
+import PreviewDrawer from '../../shared/ui/PreviewDrawer.vue'
 import UploadDropzone from '../../shared/ui/UploadDropzone.vue'
 import UploadQueue from '../../shared/ui/UploadQueue.vue'
 import { useUploader } from '../../shared/model/use-uploader.ts'
@@ -124,6 +125,23 @@ function handleCreate() {
   fillDrawerDraft(createDefaultCoursewareDraft())
   clearDrawerErrors()
   drawerOpen.value = true
+}
+
+const previewState = reactive({
+  open: false,
+  record: null as CoursewareRecord | null,
+})
+
+function handlePreview(id: string) {
+  const target = records.value.find((r) => r.id === id)
+  if (!target) return
+  previewState.record = target
+  previewState.open = true
+}
+
+function closePreview() {
+  previewState.open = false
+  previewState.record = null
 }
 
 function handleEdit(id: string) {
@@ -456,6 +474,17 @@ function handleBulkDelete() {
         <template #cell-actions="{ row }">
           <div class="courseware-management__row-actions">
             <button
+              v-if="row.assetId"
+              type="button"
+              class="courseware-management__icon-button"
+              aria-label="预览课件"
+              @click.stop="handlePreview(row.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.eye"></path>
+              </svg>
+            </button>
+            <button
               type="button"
               class="courseware-management__icon-button"
               aria-label="编辑课件"
@@ -487,6 +516,13 @@ function handleBulkDelete() {
     </template>
 
     <template #drawer>
+      <PreviewDrawer
+        :open="previewState.open"
+        :asset-id="previewState.record?.assetId ?? null"
+        :origin-name="previewState.record?.title ?? ''"
+        :mime-type="previewState.record?.mimeType ?? ''"
+        @close="closePreview"
+      />
       <WorkbenchFormDrawer
         :open="drawerOpen"
         width="lg"

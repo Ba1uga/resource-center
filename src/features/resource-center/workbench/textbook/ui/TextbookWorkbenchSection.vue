@@ -14,6 +14,7 @@ import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.v
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import UploadDropzone from '../../shared/ui/UploadDropzone.vue'
 import UploadQueue from '../../shared/ui/UploadQueue.vue'
+import PreviewDrawer from '../../shared/ui/PreviewDrawer.vue'
 import { useUploader } from '../../shared/model/use-uploader.ts'
 import { formatFileSize } from '../../shared/model/upload.types.ts'
 
@@ -464,6 +465,23 @@ function resetDrawerDraft(record?: TeacherOwnedTextbookRecord) {
   drawerDraft.course = record?.course ?? ''
 }
 
+const previewState = reactive({
+  open: false,
+  record: null as TeacherOwnedTextbookRecord | null,
+})
+
+function handlePreview(id: string) {
+  const target = visibleRows.value.find((r) => r.id === id)
+  if (!target) return
+  previewState.record = target
+  previewState.open = true
+}
+
+function closePreview() {
+  previewState.open = false
+  previewState.record = null
+}
+
 function openCreateDrawer() {
   drawerMode.value = 'create'
   drawerTargetId.value = undefined
@@ -813,6 +831,11 @@ async function handleBulkDelete() {
 
         <template #cell-actions="{ row }">
           <div class="textbook-management__row-actions">
+            <button v-if="row.assetId" type="button" aria-label="预览教材" @click.stop="handlePreview(row.id)">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path :d="iconPaths.eye"></path>
+              </svg>
+            </button>
             <button type="button" aria-label="编辑教材" @click.stop="openEditDrawer(row.id)">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path :d="iconPaths.edit"></path>
@@ -851,6 +874,13 @@ async function handleBulkDelete() {
     </template>
 
     <template #drawer>
+      <PreviewDrawer
+        :open="previewState.open"
+        :asset-id="previewState.record?.assetId ?? null"
+        :origin-name="previewState.record?.name ?? ''"
+        :mime-type="'application/pdf'"
+        @close="closePreview"
+      />
       <WorkbenchFormDrawer
         :open="drawerOpen"
         width="lg"
