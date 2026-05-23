@@ -3,7 +3,7 @@ import '../styles/video-workbench.css'
 
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
-import { createVideo, listVideos, updateVideo } from '@/api/video.ts'
+import { createVideo, deleteVideo, listVideos, updateVideo, batchUpdateVideos } from '@/api/video.ts'
 
 const processingStatusLabel: Record<string, string> = {
   uploading: '上传中',
@@ -210,19 +210,24 @@ function toggleVisibleSelection() {
     : [...new Set([...selectedIds.value, ...visibleIds.value])]
 }
 
-function handleBulkAction(action: BulkAction) {
+async function handleBulkAction(action: BulkAction) {
   if (selectedIds.value.length === 0) {
     return
   }
 
   if (action === 'publish') {
+    if (!isUsingFallback.value) {
+      try {
+        await batchUpdateVideos({
+          ids: selectedIds.value.map(Number),
+          action: 'publish',
+        })
+        await loadVideos()
+      } catch { /* fall through */ }
+    }
     fallbackRecords.value = fallbackRecords.value.map((record) =>
       selectedIds.value.includes(record.id)
-        ? {
-            ...record,
-            processingStatus: 'ready',
-            publishStatus: 'published',
-          }
+        ? { ...record, processingStatus: 'ready' as const, publishStatus: 'published' as const }
         : record,
     )
     selectedIds.value = []
@@ -230,12 +235,18 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'offline') {
+    if (!isUsingFallback.value) {
+      try {
+        await batchUpdateVideos({
+          ids: selectedIds.value.map(Number),
+          action: 'offline',
+        })
+        await loadVideos()
+      } catch { /* fall through */ }
+    }
     fallbackRecords.value = fallbackRecords.value.map((record) =>
       selectedIds.value.includes(record.id)
-        ? {
-            ...record,
-            publishStatus: 'offline',
-          }
+        ? { ...record, publishStatus: 'offline' as const }
         : record,
     )
     selectedIds.value = []
@@ -243,13 +254,22 @@ function handleBulkAction(action: BulkAction) {
   }
 
   if (action === 'delete') {
+    if (!isUsingFallback.value) {
+      try {
+        await batchUpdateVideos({
+          ids: selectedIds.value.map(Number),
+          action: 'delete',
+        })
+        await loadVideos()
+      } catch { /* fall through */ }
+    }
     const nextRecords = fallbackRecords.value.filter((record) => !selectedIds.value.includes(record.id))
     const totalAfterDeletion = nextRecords.filter((record) =>
-      matchesVideoFilters(record, {
-        ...filters.value,
-      }),
+      matchesVideoFilters(record, { ...filters.value }),
     ).length
     fallbackRecords.value = nextRecords
+    apiRecords.value = apiRecords.value.filter((record) => !selectedIds.value.includes(record.id))
+    apiTotal.value = isUsingFallback.value ? fallbackRecords.value.length : Math.max(0, apiTotal.value - selectedIds.value.length)
     sessionStore.setPage(resolveVideoPageAfterDeletion({
       currentPage: page.value,
       pageSize,
@@ -260,24 +280,29 @@ function handleBulkAction(action: BulkAction) {
   }
 }
 
-function handleDelete(id: string) {
+async function handleDelete(id: string) {
   const target = records.value.find((record) => record.id === id)
   if (!target) {
     return
   }
 
-  if (typeof window !== 'undefined' && !window.confirm(`确定删除“${target.title}”吗？`)) {
+  if (typeof window !== 'undefined' && !window.confirm(`确定删除”${target.title}”吗？`)) {
     return
   }
 
-  const nextRecords = fallbackRecords.value.filter((record) => record.id !== id)
-  const totalAfterDeletion = nextRecords.filter((record) =>
-    matchesVideoFilters(record, {
-      ...filters.value,
-    }),
-  ).length
+  try {
+    if (!isUsingFallback.value) {
+      await deleteVideo(Number(id))
+    }
+  } catch {
+    // fall through to local removal
+  }
 
-  fallbackRecords.value = nextRecords
+  fallbackRecords.value = fallbackRecords.value.filter((record) => record.id !== id)
+  apiRecords.value = apiRecords.value.filter((record) => record.id !== id)
+  const totalAfterDeletion = (isUsingFallback.value ? fallbackRecords.value : apiRecords.value)
+    .filter((record) => matchesVideoFilters(record, { ...filters.value })).length
+  apiTotal.value = isUsingFallback.value ? fallbackRecords.value.length : Math.max(0, apiTotal.value - 1)
   sessionStore.setPage(resolveVideoPageAfterDeletion({
     currentPage: page.value,
     pageSize,
