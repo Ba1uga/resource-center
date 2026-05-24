@@ -8,8 +8,10 @@ import com.baluga.backend.infrastructure.integration.chunking.ChunkStrategy.Chun
 import com.baluga.backend.infrastructure.integration.chunking.ChunkerFactory;
 import com.baluga.backend.modules.mapping.entity.ResourceChunk;
 import com.baluga.backend.modules.mapping.entity.ResourceContent;
+import com.baluga.backend.infrastructure.integration.embedding.EmbeddingService;
 import com.baluga.backend.modules.mapping.mapper.ResourceChunkMapper;
 import com.baluga.backend.modules.mapping.service.ChunkService;
+import com.baluga.backend.modules.mapping.service.VectorStoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,16 @@ public class ChunkServiceImpl implements ChunkService {
 
     private final ResourceChunkMapper resourceChunkMapper;
     private final ChunkerFactory chunkerFactory;
+    private final EmbeddingService embeddingService;
+    private final VectorStoreService vectorStoreService;
 
-    public ChunkServiceImpl(ResourceChunkMapper resourceChunkMapper) {
+    public ChunkServiceImpl(ResourceChunkMapper resourceChunkMapper,
+                             EmbeddingService embeddingService,
+                             VectorStoreService vectorStoreService) {
         this.resourceChunkMapper = resourceChunkMapper;
         this.chunkerFactory = new ChunkerFactory();
+        this.embeddingService = embeddingService;
+        this.vectorStoreService = vectorStoreService;
     }
 
     @Override
@@ -76,6 +84,19 @@ public class ChunkServiceImpl implements ChunkService {
             }
             log.info("分块完成: resourceType={}, resourceId={}, chunks={}",
                     content.getResourceType(), content.getResourceId(), entities.size());
+
+            // Generate embeddings for each chunk
+            for (ResourceChunk entity : entities) {
+                try {
+                    log.info("Embedding chunk {}: {} chars", entity.getId(), entity.getChunkText().length());
+                    float[] emb = embeddingService.encode(entity.getChunkText());
+                    log.info("Chunk {} embedded, dim={}", entity.getId(), emb.length);
+                    vectorStoreService.insertChunkEmbedding(entity.getId(), emb);
+                    log.info("Chunk {} embedding stored", entity.getId());
+                } catch (Exception e) {
+                    log.error("Chunk {} embedding failed: {}", entity.getId(), e.getMessage(), e);
+                }
+            }
         }
 
         return entities;
