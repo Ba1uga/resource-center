@@ -14,6 +14,7 @@ import com.baluga.backend.modules.mount.dto.MountDecision;
 import com.baluga.backend.modules.mount.dto.ResourceContext;
 import com.baluga.backend.modules.mount.engine.FusionMountEngine;
 import com.baluga.backend.modules.mount.engine.KnowledgeGraphScope;
+import com.baluga.backend.modules.mount.rag.KnowledgePointRetriever;
 import com.baluga.backend.modules.mount.engine.KnowledgeGraphScope.KnowledgeNode;
 import com.baluga.backend.modules.mapping.entity.KnowledgePoint;
 import com.baluga.backend.modules.mapping.mapper.KnowledgePointMapper;
@@ -44,6 +45,7 @@ public class MountOrchestrator {
     private final AiMountTaskMapper taskMapper;
     private final ResourceMountRelationMapper mountRelationMapper;
     private final MountReviewRecordMapper reviewRecordMapper;
+    private final KnowledgePointRetriever kpRetriever;
 
     public MountOrchestrator(ResourceParseService resourceParseService,
                               ChunkService chunkService,
@@ -51,7 +53,8 @@ public class MountOrchestrator {
                               KnowledgePointMapper knowledgePointMapper,
                               AiMountTaskMapper taskMapper,
                               ResourceMountRelationMapper mountRelationMapper,
-                              MountReviewRecordMapper reviewRecordMapper) {
+                              MountReviewRecordMapper reviewRecordMapper,
+                              KnowledgePointRetriever kpRetriever) {
         this.resourceParseService = resourceParseService;
         this.chunkService = chunkService;
         this.fusionEngine = fusionEngine;
@@ -59,6 +62,7 @@ public class MountOrchestrator {
         this.taskMapper = taskMapper;
         this.mountRelationMapper = mountRelationMapper;
         this.reviewRecordMapper = reviewRecordMapper;
+        this.kpRetriever = kpRetriever;
     }
 
     /**
@@ -86,6 +90,9 @@ public class MountOrchestrator {
             updateTask(task, "matching", 0.30, "构建知识图谱...");
             ResourceContext ctx = buildContext(task, content, chunks);
             KnowledgeGraphScope scope = buildScope(task);
+
+            // Ensure knowledge points are embedded for RAG
+            kpRetriever.ensureKnowledgePointsEmbedded();
 
             // Phase 4: Multi-strategy fusion
             updateTask(task, "matching", 0.35, "AI多策略匹配中...");
@@ -218,8 +225,14 @@ public class MountOrchestrator {
                 .mountedAt(LocalDateTime.now())
                 .deleted(0)
                 .build();
-        mountRelationMapper.insert(rel);
-        return rel.getId();
+        try {
+            mountRelationMapper.insert(rel);
+            return rel.getId();
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.debug("Mount relation already exists: {}-{}-{}",
+                    task.getResourceType(), task.getResourceId(), decision.getNodeId());
+            return null;
+        }
     }
 
     private void createReviewRecord(AiMountTask task, MountDecision decision, Long mountRelationId) {

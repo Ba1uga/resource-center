@@ -3,6 +3,7 @@ package com.baluga.backend.modules.mount.engine;
 import com.baluga.backend.infrastructure.integration.ai.AiMatchingConfig;
 import com.baluga.backend.modules.mount.dto.MountCandidate;
 import com.baluga.backend.modules.mount.dto.ResourceContext;
+import com.baluga.backend.modules.mount.rag.KnowledgePointRetriever;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,10 +27,13 @@ public class LLMReasoningMountEngine implements MountStrategy {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final AiMatchingConfig config;
+    private final KnowledgePointRetriever kpRetriever;
 
-    public LLMReasoningMountEngine(AiMatchingConfig config, ObjectMapper objectMapper) {
+    public LLMReasoningMountEngine(AiMatchingConfig config, ObjectMapper objectMapper,
+                                    KnowledgePointRetriever kpRetriever) {
         this.config = config;
         this.objectMapper = objectMapper;
+        this.kpRetriever = kpRetriever;
         this.restClient = RestClient.builder()
                 .baseUrl(config.getOpenaiBaseUrl())
                 .defaultHeader("Authorization", "Bearer " + config.getOpenaiApiKey())
@@ -111,9 +115,34 @@ public class LLMReasoningMountEngine implements MountStrategy {
         var kpNodes = scope.nodesByType().getOrDefault("knowledge_point", List.of());
         if (kpNodes.isEmpty()) return List.of();
 
-        // Limit to prevent prompt overflow
-        List<KnowledgeGraphScope.KnowledgeNode> candidates = kpNodes.size() > 50
-                ? kpNodes.subList(0, 50) : kpNodes;
+        // RAG: embed resource text → retrieve top-K similar KPs from pgvector
+        int ragTopK = 15;
+        List<KnowledgeGraphScope.KnowledgeNode> candidates;
+
+        try {
+            String queryText = ctx.getTitle() + " " + ctx.contentSnippet(600);
+            var ragResults = kpRetriever.retrieve(queryText, ragTopK);
+
+            if (!ragResults.isEmpty()) {
+                // Build candidates from RAG results, merge with scope nodes for metadata
+                candidates = ragResults.stream()
+                        .map(r -> kpNodes.stream()
+                                .filter(n -> n.id().equals(r.kp().getId()))
+                                .findFirst()
+                                .orElse(new KnowledgeGraphScope.KnowledgeNode(
+                                        r.kp().getId(), r.kp().getName(), "knowledge_point", 3,
+                                        null, null, null, r.kp().getDescription(),
+                                        null, null, null)))
+                        .toList();
+                log.debug("RAG: selected {}/{} KPs for LLM prompt", candidates.size(), kpNodes.size());
+            } else {
+                // Fallback: use first 50 KPs (no RAG available)
+                candidates = kpNodes.size() > 50 ? kpNodes.subList(0, 50) : kpNodes;
+            }
+        } catch (Exception e) {
+            log.warn("RAG retrieval failed, falling back to first 50 KPs: {}", e.getMessage());
+            candidates = kpNodes.size() > 50 ? kpNodes.subList(0, 50) : kpNodes;
+        }
 
         try {
             String prompt = buildKPPrompt(ctx, candidates);
