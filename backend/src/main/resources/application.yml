@@ -23,6 +23,16 @@ spring:
     multipart:
       max-file-size: 500MB
       max-request-size: 500MB
+  pgvector:
+    datasource:
+      url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DB:resource_center}
+      username: ${PG_USER:postgres}
+      password: ${PG_PASSWORD:baluga123}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 5
+        minimum-idle: 1
+        connection-timeout: 10000
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -49,6 +59,8 @@ management:
 baluga:
   storage:
     upload-dir: ${BALUGA_UPLOAD_DIR:}
+  embedding:
+    base-url: ${EMBEDDING_URL:http://localhost:8000}
   ai:
     matching:
       provider: openai
