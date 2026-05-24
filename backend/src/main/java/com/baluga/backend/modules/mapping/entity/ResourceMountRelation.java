@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
@@ -18,14 +19,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("mapping_record")
-public class MappingRecord {
+@TableName("resource_mount_relation")
+public class ResourceMountRelation {
 
     @TableId(type = IdType.AUTO)
     private Long id;
-
-    @TableField("batch_id")
-    private Long batchId;
 
     @TableField("resource_type")
     private String resourceType;
@@ -36,48 +34,35 @@ public class MappingRecord {
     @TableField("resource_title")
     private String resourceTitle;
 
-    @TableField("course_name")
-    private String courseName;
+    @TableField("knowledge_node_id")
+    private Long knowledgeNodeId;
 
-    @TableField("chapter_name")
-    private String chapterName;
+    @TableField("knowledge_node_type")
+    private String knowledgeNodeType;
 
-    @TableField("review_status")
-    private String reviewStatus;
-
-    @TableField("confidence_level")
-    private String confidenceLevel;
-
-    @TableField("primary_knowledge_point_id")
-    private Long primaryKnowledgePointId;
-
-    @TableField("selected_candidate_id")
-    private Long selectedCandidateId;
-
-    // V16: 多层级挂载扩展字段
-    @TableField("mount_target_type")
-    private String mountTargetType;
-
-    @TableField("mount_target_id")
-    private Long mountTargetId;
-
-    @TableField("mount_target_name")
-    private String mountTargetName;
+    @TableField("knowledge_node_name")
+    private String knowledgeNodeName;
 
     @TableField("mount_path")
     private String mountPath;
 
-    @TableField("auto_mounted")
-    private Integer autoMounted;
+    @TableField("mount_source")
+    private String mountSource;
 
-    @TableField("mount_confidence")
-    private java.math.BigDecimal mountConfidence;
+    @TableField("confidence")
+    private BigDecimal confidence;
 
-    @TableField("mount_strategy")
-    private String mountStrategy;
+    @TableField("mapping_record_id")
+    private Long mappingRecordId;
 
-    @TableField("feedback_status")
-    private String feedbackStatus;
+    @TableField("status")
+    private String status;
+
+    @TableField("mounted_by")
+    private String mountedBy;
+
+    @TableField("mounted_at")
+    private LocalDateTime mountedAt;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

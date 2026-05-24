@@ -38,6 +38,37 @@ public class KnowledgePoint {
     @TableField("source_id")
     private Long sourceId;
 
+    // V15: 层级知识节点扩展字段
+    @TableField("parent_id")
+    private Long parentId;
+
+    @TableField("node_type")
+    private String nodeType;
+
+    @TableField("node_level")
+    private Integer nodeLevel;
+
+    @TableField("sort_order")
+    private Integer sortOrder;
+
+    @TableField("difficulty")
+    private String difficulty;
+
+    @TableField("bloom_level")
+    private Integer bloomLevel;
+
+    @TableField("keywords")
+    private String keywords;
+
+    @TableField("prerequisites")
+    private String prerequisites;
+
+    @TableField("embedding_id")
+    private String embeddingId;
+
+    @TableField("extra_meta")
+    private String extraMeta;
+
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

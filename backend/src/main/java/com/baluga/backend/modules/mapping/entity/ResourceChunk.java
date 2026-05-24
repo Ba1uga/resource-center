@@ -18,41 +18,50 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("mapping_candidate")
-public class MappingCandidate {
+@TableName("resource_chunk")
+public class ResourceChunk {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @TableField("mapping_record_id")
-    private Long mappingRecordId;
+    @TableField("resource_type")
+    private String resourceType;
 
-    @TableField("knowledge_point_id")
-    private Long knowledgePointId;
+    @TableField("resource_id")
+    private Long resourceId;
 
-    @TableField("knowledge_point_name")
-    private String knowledgePointName;
+    @TableField("content_id")
+    private Long contentId;
 
-    @TableField("confidence_level")
-    private String confidenceLevel;
+    @TableField("chunk_index")
+    private Integer chunkIndex;
 
-    @TableField("matched_by")
-    private String matchedBy;
+    @TableField("chunk_text")
+    private String chunkText;
 
-    private String note;
+    @TableField("token_count")
+    private Integer tokenCount;
 
-    // V17: 多策略匹配扩展字段
-    @TableField("match_strategy")
-    private String matchStrategy;
+    @TableField("content_type")
+    private String contentType;
 
-    @TableField("similarity_score")
-    private java.math.BigDecimal similarityScore;
+    @TableField("page_number")
+    private Integer pageNumber;
 
-    @TableField("evidence_snippet")
-    private String evidenceSnippet;
+    @TableField("slide_number")
+    private Integer slideNumber;
 
-    @TableField("rank_position")
-    private Integer rankPosition;
+    @TableField("timestamp_start")
+    private Integer timestampStart;
+
+    @TableField("timestamp_end")
+    private Integer timestampEnd;
+
+    @TableField("section_title")
+    private String sectionTitle;
+
+    @TableField("embedding_id")
+    private String embeddingId;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

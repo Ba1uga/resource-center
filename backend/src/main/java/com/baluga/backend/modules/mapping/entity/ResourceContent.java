@@ -18,41 +18,35 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("mapping_candidate")
-public class MappingCandidate {
+@TableName("resource_content")
+public class ResourceContent {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @TableField("mapping_record_id")
-    private Long mappingRecordId;
+    @TableField("resource_type")
+    private String resourceType;
 
-    @TableField("knowledge_point_id")
-    private Long knowledgePointId;
+    @TableField("resource_id")
+    private Long resourceId;
 
-    @TableField("knowledge_point_name")
-    private String knowledgePointName;
+    @TableField("full_text")
+    private String fullText;
 
-    @TableField("confidence_level")
-    private String confidenceLevel;
+    @TableField("text_format")
+    private String textFormat;
 
-    @TableField("matched_by")
-    private String matchedBy;
+    @TableField("parse_status")
+    private String parseStatus;
 
-    private String note;
+    @TableField("parse_error")
+    private String parseError;
 
-    // V17: 多策略匹配扩展字段
-    @TableField("match_strategy")
-    private String matchStrategy;
+    @TableField("word_count")
+    private Integer wordCount;
 
-    @TableField("similarity_score")
-    private java.math.BigDecimal similarityScore;
-
-    @TableField("evidence_snippet")
-    private String evidenceSnippet;
-
-    @TableField("rank_position")
-    private Integer rankPosition;
+    @TableField("parsed_at")
+    private LocalDateTime parsedAt;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
