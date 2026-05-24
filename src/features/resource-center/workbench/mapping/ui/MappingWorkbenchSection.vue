@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import '../styles/mapping-workbench.css'
 
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import { mappingRecords } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.fixtures.ts'
-import { createMappingBatch, listMappingRecords, runMappingBatch, batchRemapMappingRecords } from '@/api/mapping.ts'
+import { createMappingBatch, listMappingRecords, runMappingBatch, batchRemapMappingRecords, listMappingBatches, getMappingSummary } from '@/api/mapping.ts'
+import { previewMount } from '@/api/mount.ts'
+import type { MountPreview } from '@/api/mount.ts'
 import {
   createMappingWorkbenchViewModel,
   matchesMappingFilters,
   resolveMappingPageAfterMutation,
   resolveSelectedOrFirstCandidate,
 } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.view-model.ts'
+import type { MappingSummaryCounts } from '@/features/resource-center/workbench/mapping/model/mapping-workbench.view-model.ts'
 import { useMappingWorkbenchSessionStore } from '@/features/resource-center/workbench/mapping/store/mapping-workbench-session.ts'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
@@ -19,6 +21,7 @@ import MappingWorkbenchBulkBar from './MappingWorkbenchBulkBar.vue'
 import MappingWorkbenchFilters from './MappingWorkbenchFilters.vue'
 import MappingWorkbenchReviewDrawer from './MappingWorkbenchReviewDrawer.vue'
 import MappingWorkbenchTable from './MappingWorkbenchTable.vue'
+import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 
 import type { WorkbenchSectionMeta } from '@/features/resource-center/workbench/shared/model/workbench.registry.ts'
@@ -36,16 +39,20 @@ const props = defineProps<{
 
 const pageSize = 8
 
-const connectionStatus = ref<'' | 'offline'>('')
-const isLoading = ref(false)
+const connectionStatus = ref<'' | 'offline' | 'empty' | 'loading'>('loading')
+const isLoading = ref(true)
 const isUsingFallback = ref(false)
+const statusPillRef = ref<InstanceType<typeof WorkbenchStatusPill> | null>(null)
 const totalCount = ref(0)
 
 const sessionStore = useMappingWorkbenchSessionStore()
-const records = ref<MappingRecord[]>(createLocalRecords())
+const records = ref<MappingRecord[]>([])
+const summaryCounts = ref<MappingSummaryCounts | undefined>(undefined)
 const selectedIds = ref<string[]>([])
 const drawerOpen = ref(false)
 const activeRecordId = ref<string | null>(null)
+const mountPreview = ref<MountPreview | null>(null)
+const mountPreviewLoading = ref(false)
 const feedback = ref<{
   tone: FeedbackTone
   text: string
@@ -67,6 +74,8 @@ const viewModel = computed(() =>
     },
     page: page.value,
     pageSize,
+    totalFromApi: totalCount.value > 0 ? totalCount.value : undefined,
+    summaryCounts: summaryCounts.value,
   }),
 )
 
@@ -81,6 +90,18 @@ watch(
   () => {
     selectedIds.value = []
   },
+)
+
+watch(
+  [page, () => filters.value.keyword, () => filters.value.resourceType,
+   () => filters.value.course, () => filters.value.chapter,
+   () => filters.value.batchId, () => filters.value.reviewStatus,
+   () => filters.value.confidenceLevel, () => filters.value.overviewStatus],
+  async () => {
+    if (isUsingFallback.value) return
+    await loadData()
+  },
+  { flush: 'post' },
 )
 
 async function loadData() {
@@ -100,15 +121,36 @@ async function loadData() {
     })
     records.value = data.records as MappingRecord[]
     totalCount.value = data.total
-    connectionStatus.value = ''
+    connectionStatus.value = totalCount.value === 0 ? 'empty' : ''
     isUsingFallback.value = false
+
+    // Fetch summary counts across ALL records (not page-limited)
+    try {
+      const summary = await getMappingSummary({
+        keyword: filters.value.keyword,
+        resourceType: filters.value.resourceType,
+        course: filters.value.course,
+        chapter: filters.value.chapter,
+        batchId: filters.value.batchId,
+        reviewStatus: filters.value.reviewStatus,
+        confidenceLevel: filters.value.confidenceLevel,
+      })
+      summaryCounts.value = {
+        pendingCount: summary.pendingCount,
+        matchedCount: summary.matchedCount,
+        manualReviewCount: summary.manualReviewCount,
+        confirmedCount: summary.confirmedCount,
+        failedCount: summary.failedCount,
+        lowConfidenceCount: summary.lowConfidenceCount,
+      }
+    } catch {
+      summaryCounts.value = undefined // fallback to computing from page records
+    }
   } catch (error) {
-    console.error('Mapping module: failed to load records, using local fixtures', error)
+    console.error('Mapping module: failed to load records', error)
     connectionStatus.value = 'offline'
     isUsingFallback.value = true
-    if (records.value.length === 0) {
-      records.value = createLocalRecords()
-    }
+    statusPillRef.value?.show()
   } finally {
     isLoading.value = false
   }
@@ -131,7 +173,7 @@ async function handleLaunchBatch() {
   if (isUsingFallback.value) {
     feedback.value = {
       tone: 'info',
-      text: '当前为离线模式，AI 挂载批次将使用本地数据模拟。已创建模拟批次。',
+      text: '当前为离线模式，无法连接后端服务。请检查后端是否已启动。',
     }
     return
   }
@@ -145,18 +187,44 @@ async function handleLaunchBatch() {
       resourceType: batchResourceType.value || '',
       createdBy: '管理员',
     })
-    feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建，AI 匹配已提交，请稍候...` }
 
+    if (batch.totalResources === 0) {
+      feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建，但未采集到任何资源。请检查资源库是否有数据。` }
+      return
+    }
+
+    feedback.value = { tone: 'info', text: `批次"${batch.label}"已创建(${batch.totalResources}条资源)，AI 匹配中...` }
+
+    // Run matching asynchronously
     await runMappingBatch(batch.id)
-    // Poll for completion since runBatch is now async
-    setTimeout(async () => {
-      await loadData()
-      feedback.value = { tone: 'success', text: 'AI 挂载完成，请查看下方结果。' }
-    }, 3000)
+
+    // Auto-select the new batch filter
+    sessionStore.patchFilters({ batchId: String(batch.id), overviewStatus: 'all', confidenceLevel: 'all' })
+
+    // Poll until batch completes
+    await pollBatchCompletion(batch.id)
+
+    await loadData()
+    feedback.value = { tone: 'success', text: `AI 挂载完成！共处理 ${batch.totalResources} 条资源。` }
   } catch (error) {
     feedback.value = {
       tone: 'error',
       text: `AI 挂载批次执行失败：${error instanceof Error ? error.message : '未知错误'}`,
+    }
+  }
+}
+
+async function pollBatchCompletion(batchId: number, maxRetries = 30) {
+  for (let i = 0; i < maxRetries; i++) {
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      const result = await listMappingBatches({ page: 1, pageSize: 100 })
+      const batch = result.records.find(b => b.id === batchId)
+      if (batch && (batch.status === 'completed' || batch.status === 'failed')) {
+        return
+      }
+    } catch (e) {
+      // continue polling
     }
   }
 }
@@ -316,12 +384,37 @@ function handleReview(recordId: string) {
 
   activeRecordId.value = recordId
   drawerOpen.value = true
+  mountPreview.value = null
+  mountPreviewLoading.value = false
   feedback.value = null
+}
+
+async function handleLoadMountPreview() {
+  const record = activeRecord.value
+  if (!record) return
+
+  mountPreviewLoading.value = true
+  try {
+    const resourceTypeMap: Record<string, string> = {
+      article: 'article', courseware: 'courseware',
+      question: 'question', video: 'video', excerpt: 'excerpt',
+    }
+    mountPreview.value = await previewMount({
+      resourceType: resourceTypeMap[record.resourceType] || record.resourceType,
+      resourceId: Number(record.id),
+    })
+  } catch (e) {
+    console.error('Mount preview failed', e)
+  } finally {
+    mountPreviewLoading.value = false
+  }
 }
 
 function closeDrawer() {
   drawerOpen.value = false
   activeRecordId.value = null
+  mountPreview.value = null
+  mountPreviewLoading.value = false
 }
 
 function handleSwitchPrimary(candidateId: string) {
@@ -412,13 +505,6 @@ function syncPageAfterMutation() {
   }))
 }
 
-function createLocalRecords(): MappingRecord[] {
-  return mappingRecords.map((record) => ({
-    ...record,
-    candidates: record.candidates.map((candidate) => ({ ...candidate })),
-  }))
-}
-
 onMounted(() => {
   loadData()
 })
@@ -430,6 +516,13 @@ onMounted(() => {
       <header class="mapping-management__head">
         <div class="mapping-management__copy">
           <h2>{{ props.section.title }}</h2>
+          <WorkbenchStatusPill
+            v-if="connectionStatus === 'offline'"
+            ref="statusPillRef"
+            label="连接异常"
+            message="后端连接失败，当前无法加载映射记录。"
+            severity="error"
+          />
         </div>
 
         <div class="mapping-management__batch-controls">
@@ -450,6 +543,15 @@ onMounted(() => {
     </template>
 
     <template #feedback>
+      <div v-if="connectionStatus === 'loading'" class="mapping-management__feedback is-info" role="status">
+        正在加载数据...
+      </div>
+      <div v-else-if="connectionStatus === 'offline'" class="mapping-management__feedback is-error" role="status">
+        无法连接后端服务。请确认后端已启动（http://localhost:8080），数据库已执行 Flyway 迁移。
+      </div>
+      <div v-else-if="connectionStatus === 'empty'" class="mapping-management__feedback is-info" role="status">
+        暂无映射记录。请点击"发起 AI 挂载批次"创建第一个挂载批次。
+      </div>
       <div
         v-if="feedback"
         class="mapping-management__feedback"
@@ -510,10 +612,13 @@ onMounted(() => {
       <MappingWorkbenchReviewDrawer
         :open="drawerOpen"
         :record="activeRecord"
+        :mount-preview="mountPreview"
+        :mount-preview-loading="mountPreviewLoading"
         @close="closeDrawer"
         @confirm-record="handleConfirmRecord"
         @ignore-record="handleIgnoreRecord"
         @switch-primary="handleSwitchPrimary"
+        @load-preview="handleLoadMountPreview"
       />
     </template>
   </WorkbenchDataView>

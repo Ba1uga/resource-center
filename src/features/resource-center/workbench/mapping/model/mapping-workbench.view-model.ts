@@ -98,23 +98,32 @@ export function createMappingWorkbenchViewModel(options: {
   filters: MappingFilterState
   page: number
   pageSize: number
+  totalFromApi?: number
+  summaryCounts?: MappingSummaryCounts
 }): MappingWorkbenchViewModel {
   const scopedRecords = options.records.filter((record) =>
     matchesMappingFiltersWithoutOverviewStatus(record, options.filters),
   )
   const filteredRecords = scopedRecords.filter((record) => matchesMappingOverviewStatus(record, options.filters))
+  const paginationTotal = options.totalFromApi ?? filteredRecords.length
   const pagination = createPaginationState({
-    total: filteredRecords.length,
+    total: paginationTotal,
     page: options.page,
     pageSize: options.pageSize,
   })
 
+  // When data comes from API (server-side pagination), records are already the correct page.
+  // When all records are in memory (no totalFromApi), slice using pagination offsets.
+  const useServerSlicing = options.totalFromApi != null
+  const rows = filteredRecords.length > 0
+    ? (useServerSlicing
+        ? filteredRecords.map((record) => mapRecordToRow(record))
+        : filteredRecords.slice(pagination.from - 1, pagination.to).map((record) => mapRecordToRow(record)))
+    : []
+
   return {
-    rows:
-      filteredRecords.length > 0
-        ? filteredRecords.slice(pagination.from - 1, pagination.to).map((record) => mapRecordToRow(record))
-        : [],
-    summaryCards: createSummaryCards(scopedRecords, options.filters),
+    rows,
+    summaryCards: createSummaryCards(options.summaryCounts ?? countSummaryFromRecords(scopedRecords), options.filters),
     resourceTypeOptions: createResourceTypeOptions(options.records),
     courseOptions: createCourseOptions(options.records),
     chapterOptions: createChapterOptions(options.records, options.filters.course),
@@ -125,6 +134,15 @@ export function createMappingWorkbenchViewModel(options: {
     pagination,
     emptyState: createEmptyState(options.records.length, filteredRecords.length),
   }
+}
+
+export interface MappingSummaryCounts {
+  pendingCount: number
+  matchedCount: number
+  manualReviewCount: number
+  confirmedCount: number
+  failedCount: number
+  lowConfidenceCount: number
 }
 
 export function matchesMappingFilters(record: MappingRecord, filters: MappingFilterState): boolean {
@@ -191,16 +209,31 @@ function mapRecordToRow(record: MappingRecord): MappingWorkbenchRow {
   }
 }
 
-function createSummaryCards(records: MappingRecord[], filters: MappingFilterState): MappingSummaryCard[] {
+function countSummaryFromRecords(records: MappingRecord[]): MappingSummaryCounts {
+  return {
+    pendingCount: records.filter((r) => resolveOverviewStatus(r) === 'pending').length,
+    matchedCount: records.filter((r) => resolveOverviewStatus(r) === 'matched').length,
+    manualReviewCount: records.filter((r) => resolveOverviewStatus(r) === 'manual-review').length,
+    confirmedCount: records.filter((r) => resolveOverviewStatus(r) === 'confirmed').length,
+    failedCount: records.filter((r) => resolveOverviewStatus(r) === 'failed').length,
+    lowConfidenceCount: records.filter((r) => r.confidenceLevel === 'low').length,
+  }
+}
+
+function createSummaryCards(counts: MappingSummaryCounts, filters: MappingFilterState): MappingSummaryCard[] {
+  const valueMap: Record<string, number> = {
+    pending: counts.pendingCount,
+    matched: counts.matchedCount,
+    'manual-review': counts.manualReviewCount,
+    confirmed: counts.confirmedCount,
+    failed: counts.failedCount,
+    'low-confidence': counts.lowConfidenceCount,
+  }
   return summaryCardDefinitions.map((definition) => ({
     key: definition.key,
     label: definition.label,
     hint: definition.hint,
-    value: String(
-      definition.key === 'low-confidence'
-        ? records.filter((record) => record.confidenceLevel === 'low').length
-        : records.filter((record) => resolveOverviewStatus(record) === definition.key).length,
-    ),
+    value: String(valueMap[definition.key] ?? 0),
     kind: 'filter',
     active: isSummaryCardActive(definition.key, filters),
     interactive: true,

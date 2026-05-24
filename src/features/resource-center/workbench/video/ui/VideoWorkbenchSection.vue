@@ -21,6 +21,7 @@ import { iconPaths } from '@/features/resource-center/shared/config/icons.ts'
 import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
+import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import VideoWorkbenchBulkBar from './VideoWorkbenchBulkBar.vue'
@@ -54,6 +55,8 @@ const fallbackRecords = ref<VideoRecord[]>([...videoRecords])
 const apiRecords = ref<VideoRecord[]>([])
 const isLoading = ref(false)
 const isUsingFallback = ref(false)
+const connectionStatus = ref<'' | 'offline'>('')
+const statusPillRef = ref<InstanceType<typeof WorkbenchStatusPill> | null>(null)
 const apiTotal = ref(0)
 const keywordInput = ref(sessionStore.filters.keyword)
 let keywordDebounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -111,10 +114,13 @@ async function loadVideos() {
     apiRecords.value = result.records
     apiTotal.value = result.total
     isUsingFallback.value = false
+    connectionStatus.value = ''
   } catch {
     apiRecords.value = []
     apiTotal.value = fallbackRecords.value.length
     isUsingFallback.value = true
+    connectionStatus.value = 'offline'
+    statusPillRef.value?.show()
   } finally {
     isLoading.value = false
   }
@@ -465,6 +471,13 @@ function handlePageChange(nextPage: number) {
       <header class="video-management__heading">
         <div class="video-management__copy">
           <h2>{{ props.section.title }}</h2>
+          <WorkbenchStatusPill
+            v-if="connectionStatus === 'offline'"
+            ref="statusPillRef"
+            label="连接异常"
+            message="后端连接失败，当前显示本地视频样例。"
+            severity="error"
+          />
         </div>
       </header>
 

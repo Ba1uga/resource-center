@@ -10,6 +10,7 @@ import WorkbenchDataView from '../../shared/ui/WorkbenchDataView.vue'
 import WorkbenchSummaryCards from '../../shared/ui/WorkbenchSummaryCards.vue'
 import WorkbenchTable from '../../shared/ui/WorkbenchTable.vue'
 import WorkbenchFormDrawer from '../../shared/ui/WorkbenchFormDrawer.vue'
+import WorkbenchStatusPill from '../../shared/ui/WorkbenchStatusPill.vue'
 import WorkbenchTablePagination from '../../shared/ui/WorkbenchTablePagination.vue'
 import WorkbenchSelect from '../../shared/ui/WorkbenchSelect.vue'
 import PreviewDrawer from '../../shared/ui/PreviewDrawer.vue'
@@ -53,6 +54,8 @@ const props = defineProps<{
 const pageSize = 8
 const sessionStore = useCoursewareWorkbenchSessionStore()
 const records = ref<CoursewareRecord[]>([...coursewareRecords])
+const connectionStatus = ref<'' | 'offline'>('')
+const statusPillRef = ref<InstanceType<typeof WorkbenchStatusPill> | null>(null)
 const selectedIds = ref<string[]>([])
 const drawerOpen = ref(false)
 const drawerMode = ref<DrawerMode>('create')
@@ -306,8 +309,10 @@ async function loadCoursewares() {
       type: filters.value.type,
     })
     records.value = result.records
+    connectionStatus.value = ''
   } catch {
-    // keep local records on error
+    connectionStatus.value = 'offline'
+    statusPillRef.value?.show()
   }
 }
 
@@ -374,6 +379,13 @@ function handleBulkDelete() {
     <template #summary>
       <header class="courseware-management__head">
         <h2>{{ props.section.title }}</h2>
+        <WorkbenchStatusPill
+          v-if="connectionStatus === 'offline'"
+          ref="statusPillRef"
+          label="连接异常"
+          message="后端连接失败，当前显示本地课件样例。"
+          severity="error"
+        />
       </header>
 
       <WorkbenchSummaryCards :items="viewModel.summaryCards" @select="(key) => handleSummaryCardSelect(key)" />
