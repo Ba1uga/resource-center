@@ -301,7 +301,13 @@ resource-center/
 │           └── mapping/              #       知识映射工作台
 ├── embedding-service/                # Python 嵌入服务
 │   ├── main.py                       #   FastAPI 应用
+│   ├── Dockerfile                    #   嵌入服务镜像
 │   └── requirements.txt              #   Python 依赖
+├── docker/                           # Docker 辅助文件
+│   └── init-pgvector.sql             #   pgvector 初始化脚本
+├── docker-compose.yml                # Docker Compose 编排
+├── Dockerfile.frontend               # 前端镜像（Vue → Nginx）
+├── nginx.conf                        # Nginx 配置（API 代理）
 ├── docs/                             # 设计文档
 │   ├── resource-mounting-system-design.md
 │   ├── requirements/
@@ -320,12 +326,15 @@ resource-center/
 
 | 环境 | 最低版本 | 说明 |
 |---|---|---|
-| JDK | 17 | 编译与运行后端 |
+| Docker | 26+ | 容器运行时（使用 Docker Compose 时） |
+| JDK | 17 | 编译与运行后端（手动启动时） |
 | Maven | 3.9+ | 后端构建（Wrapper 已包含） |
-| Node.js | 20.19.0 / 22.12.0+ | 前端开发与构建 |
-| MySQL | 8.0+ | 业务数据库 |
-| PostgreSQL | 15+ (含 pgvector 扩展) | 向量数据库 |
-| Python | 3.10+ | 嵌入服务运行 |
+| Node.js | 20.19.0 / 22.12.0+ | 前端开发与构建（手动启动时） |
+| MySQL | 8.0+ | 业务数据库（手动启动时） |
+| PostgreSQL | 15+ (含 pgvector 扩展) | 向量数据库（手动启动时） |
+| Python | 3.10+ | 嵌入服务运行（手动启动时） |
+
+> **推荐使用 Docker Compose 一键启动**，无需手动安装 JDK/Maven/Node/MySQL/PostgreSQL/Python。
 
 ### 5.2 可选环境
 
@@ -337,11 +346,14 @@ resource-center/
 
 | 服务 | 端口 | 可配置 |
 |---|---|---|
-| 后端 (Spring Boot) | 8080 | `server.port` |
+| 前端 (Docker Nginx) | 80 | `FRONTEND_PORT` |
+| 后端 (Spring Boot) | 8080 | `BACKEND_PORT` |
 | 前端 (Vite Dev) | 5175 | `vite.config.ts` |
-| 嵌入服务 (FastAPI) | 8000 | `embedding-service/main.py` |
-| MySQL | 3306 | `DB_PORT` 环境变量 |
+| 嵌入服务 (FastAPI) | 8000 | `EMBEDDING_PORT` |
+| MySQL | 3307 | `DB_PORT` 环境变量 (Docker 默认 3307) |
 | PostgreSQL | 5432 | `PG_PORT` 环境变量 |
+
+> 使用 Docker Compose 时，MySQL 主机端口默认映射为 3307（避免与本机已有 MySQL 冲突），容器内部仍为 3306。
 
 ---
 
@@ -376,7 +388,37 @@ export EMBEDDING_URL=http://localhost:8000
 export BALUGA_UPLOAD_DIR=/path/to/uploads
 ```
 
-### 6.2 一键启动（3 个终端）
+### 6.2 一键启动（Docker Compose，推荐）
+
+```bash
+# 1. 编辑环境变量（可选，默认值即可运行）
+cp .env.example .env
+# 按需修改 .env 中的数据库密码、API Key 等
+
+# 2. 一键启动所有服务
+docker compose up -d
+
+# 3. 等待所有容器 healthy（首次启动需下载 2GB 模型，约 5 分钟）
+docker compose ps
+
+# 4. 访问
+# 前端:     http://localhost
+# 后端健康:  http://localhost:8080/actuator/health
+# 嵌入服务:  http://localhost:8000/health
+```
+
+常用命令：
+
+```bash
+docker compose logs -f              # 查看所有日志
+docker compose logs -f backend      # 只看后端日志
+docker compose restart backend      # 重启某个服务
+docker compose down                 # 停止所有服务
+docker compose down -v              # 停止并清除所有数据卷
+docker compose up -d --build        # 重新构建并启动
+```
+
+### 6.3 手动启动（3 个终端，开发调试时使用）
 
 **终端 1** — 启动嵌入服务：
 
@@ -409,10 +451,17 @@ npm run dev
 
 ## 7. 中间件启动
 
-### 7.1 MySQL
+### 7.1 Docker Compose 一键启动（推荐）
 
 ```bash
-# Docker
+docker compose up -d mysql postgres embedding
+```
+
+此命令启动 MySQL、PostgreSQL/pgvector 和嵌入服务，数据库迁移脚本和 pgvector 初始化会自动执行。
+
+### 7.2 MySQL（手动）
+
+```bash
 docker run -d --name mysql \
   -e MYSQL_ROOT_PASSWORD=your_password \
   -e MYSQL_DATABASE=resource_center \
@@ -423,22 +472,18 @@ docker run -d --name mysql \
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS resource_center DEFAULT CHARACTER SET utf8mb4;"
 ```
 
-### 7.2 PostgreSQL + pgvector
+### 7.3 PostgreSQL + pgvector（手动）
 
 ```bash
-# 推荐使用 pgvector 官方镜像
 docker run -d --name pgvector \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=baluga123 \
   -e POSTGRES_DB=resource_center \
   -p 5432:5432 \
   pgvector/pgvector:pg16
-
-# 或手动安装 pgvector 扩展：
-# CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-### 7.3 嵌入服务
+### 7.4 嵌入服务（手动）
 
 ```bash
 cd embedding-service
@@ -446,13 +491,15 @@ pip install -r requirements.txt
 python main.py
 ```
 
-首次启动会自动从 HuggingFace 下载 `BAAI/bge-large-zh-v1.5` 模型（约 2GB），请确保网络通畅。
+首次启动会自动下载 `BAAI/bge-large-zh-v1.5` 模型（约 2GB），请确保网络通畅。国内用户可使用 modelscope 加速下载。
 
 ---
 
 ## 8. 数据库初始化
 
-### 8.1 执行迁移脚本
+> **使用 Docker Compose 时，迁移脚本会自动执行，无需手动操作。** MySQL 容器首次启动时，`db/migration/` 目录下的 SQL 文件会按文件名序（V01 → V23）自动执行。pgvector 扩展和 `resource_embedding` 表也通过 `docker/init-pgvector.sql` 自动创建。
+
+### 8.1 执行迁移脚本（手动）
 
 数据库迁移脚本位于 `backend/src/main/resources/db/migration/`，按版本号顺序手动执行：
 
@@ -801,7 +848,29 @@ OSError: [WinError 1455] 页面文件太小，无法完成操作
 - 确认后端已启动并监听 8080 端口
 - 前端 API 调用路径必须以 `/api` 开头才能触发代理
 
-### 13.7 文件上传 500 错误
+### 13.7 Docker 容器启动失败
+
+```bash
+# 查看容器日志
+docker logs rc-mysql
+docker logs rc-backend
+docker logs rc-embedding
+
+# 端口冲突（如 MySQL 3306 被占用）
+# 编辑 .env 文件修改 DB_PORT=3307
+
+# 镜像拉取失败（国内网络）
+# 在 Docker Desktop Settings → Docker Engine 中添加镜像加速：
+# "registry-mirrors": ["https://docker.1ms.run"]
+
+# 数据乱码
+# 重置数据卷重建：docker compose down -v && docker compose up -d
+
+# 嵌入服务 DNS 失败
+# 重建网络：docker compose down && docker compose up -d
+```
+
+### 13.8 文件上传 500 错误
 
 - 检查 `BALUGA_UPLOAD_DIR` 目录是否存在且有写入权限
 - 默认使用系统临时目录，确认磁盘空间充足
@@ -814,8 +883,7 @@ OSError: [WinError 1455] 页面文件太小，无法完成操作
 | 规划项 | 说明 |
 |---|---|
 | SpringDoc OpenAPI | 集成 Swagger/Knife4j 自动生成 API 文档 |
-| Flyway 集成 | 自动化数据库迁移，替代手动执行 SQL |
-| Docker Compose | 一键启动所有中间件和服务 |
+| ~~Docker Compose~~ | ~~一键启动所有中间件和服务~~ ✅ 已完成 |
 | Redis 缓存 | 热点知识点缓存、会话管理 |
 | Elasticsearch | 资源全文检索、混合搜索 |
 | MinIO / OSS | 对象存储替代本地文件存储 |

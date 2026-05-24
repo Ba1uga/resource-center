@@ -1,0 +1,168 @@
+services:
+  # ============================================================
+  # Middleware
+  # ============================================================
+  mysql:
+    image: mysql:8.0
+    container_name: rc-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+      MYSQL_DATABASE: ${DB_NAME:-resource_center}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+      LANG: C.UTF-8
+      TZ: Asia/Shanghai
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - rc-network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-baluga123}
+      POSTGRES_DB: ${PG_DB:-resource_center}
+      TZ: Asia/Shanghai
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${PG_USER:-postgres}", "-d", "${PG_DB:-resource_center}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - rc-network
+
+  # ============================================================
+  # Embedding Service (Python FastAPI + BGE-large-zh)
+  # ============================================================
+  embedding:
+    build:
+      context: ./embedding-service
+      dockerfile: Dockerfile
+    image: rc-embedding:latest
+    container_name: rc-embedding
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
+    environment:
+      HF_HOME: /app/.cache/huggingface
+    ports:
+      - "${EMBEDDING_PORT:-8000}:8000"
+    volumes:
+      - hf-cache:/app/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 600s
+    networks:
+      - rc-network
+
+  # ============================================================
+  # Backend (Spring Boot)
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: rc-backend:latest
+    container_name: rc-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-resource_center}
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-root123}
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DB: ${PG_DB:-resource_center}
+      PG_USER: ${PG_USER:-postgres}
+      PG_PASSWORD: ${PG_PASSWORD:-baluga123}
+      EMBEDDING_URL: http://embedding:8000
+      SERVER_SERVLET_ENCODING_CHARSET: UTF-8
+      SERVER_SERVLET_ENCODING_FORCE: "true"
+      SPRING_MESSAGES_ENCODING: UTF-8
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      BALUGA_UPLOAD_DIR: /app/uploads
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/resource_center?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&characterSetResults=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      TZ: Asia/Shanghai
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - upload-data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - rc-network
+
+  # ============================================================
+  # Frontend (Vue 3 + Nginx)
+  # ============================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: rc-frontend:latest
+    container_name: rc-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - rc-network
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  mysql-data:
+  postgres-data:
+  upload-data:
+  hf-cache:
+
+# ============================================================
+# Network
+# ============================================================
+networks:
+  rc-network:
+    driver: bridge

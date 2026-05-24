@@ -1,11 +1,24 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
+import os, shutil
+
+MODEL_NAME = "BAAI/bge-large-zh-v1.5"
+HF_HOME = os.environ.get("HF_HOME", "/app/.cache/huggingface")
+MODEL_DIR = os.path.join(HF_HOME, "hub", "models--BAAI--bge-large-zh-v1.5")
 
 app = FastAPI(title="Resource Center Embedding Service")
 
-print("Loading BGE-large-zh-v1.5 model (first load downloads ~2GB)...")
-model = SentenceTransformer("BAAI/bge-large-zh-v1.5")
+print(f"Downloading {MODEL_NAME} from ModelScope...")
+from modelscope import snapshot_download
+local_path = snapshot_download(MODEL_NAME, cache_dir=HF_HOME)
+print(f"Model downloaded to: {local_path}")
+
+# Switch HF endpoint to local so SentenceTransformer reads from disk
+os.environ["HF_ENDPOINT"] = ""
+from sentence_transformers import SentenceTransformer
+
+print(f"Loading {MODEL_NAME} from local cache...")
+model = SentenceTransformer(local_path, local_files_only=True)
 print(f"Model loaded. Dimension: {model.get_sentence_embedding_dimension()}")
 
 
