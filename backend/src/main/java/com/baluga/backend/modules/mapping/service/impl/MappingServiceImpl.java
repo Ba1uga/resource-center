@@ -6,11 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baluga.backend.infrastructure.integration.ai.AiMatchingConfig;
 import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider;
-import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider.KnowledgePointInfo;
-import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider.KnowledgePointMatch;
 import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider.ResourceInfo;
-import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider.ResourceMatchRequest;
-import com.baluga.backend.infrastructure.integration.ai.AiMatchingProvider.ResourceMatchResponse;
 import com.baluga.backend.infrastructure.integration.ai.KeywordFallbackMatchingProvider;
 import com.baluga.backend.infrastructure.integration.ai.OpenAiCompatibleMatchingProvider;
 import com.baluga.backend.infrastructure.integration.matching.ResourceCollector;
@@ -35,7 +31,6 @@ import com.baluga.backend.modules.mapping.service.MappingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -63,6 +58,7 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
     private final ResourceCollector resourceCollector;
     private final ObjectMapper objectMapper;
     private final AiMatchingConfig aiConfig;
+    private final MappingBatchExecutor batchExecutor;
     private AiMatchingProvider currentProvider;
 
     public MappingServiceImpl(
@@ -72,13 +68,15 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
             KnowledgePointMapper knowledgePointMapper,
             ResourceCollector resourceCollector,
             ObjectMapper objectMapper,
-            AiMatchingConfig aiConfig) {
+            AiMatchingConfig aiConfig,
+            MappingBatchExecutor batchExecutor) {
         this.mappingRecordMapper = mappingRecordMapper;
         this.mappingCandidateMapper = mappingCandidateMapper;
         this.mappingBatchMapper = mappingBatchMapper;
         this.knowledgePointMapper = knowledgePointMapper;
         this.resourceCollector = resourceCollector;
         this.objectMapper = objectMapper;
+        this.batchExecutor = batchExecutor;
 
         // Diagnostic: print actual config values at startup
         log.info("AI Matching Config — provider: '{}'", aiConfig.getProvider());
@@ -241,15 +239,9 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
             throw new IllegalArgumentException("批次不存在");
         }
         MappingBatchVO vo = MappingBatchVO.fromEntity(batch);
-        // Run asynchronously, frontend polls GET /batches/{id} for status
-        runBatchAsync(batch);
+        // Run asynchronously via separate bean so @Async proxy works
+        batchExecutor.executeAsync(batch);
         return vo;
-    }
-
-    @Async
-    @Transactional(rollbackFor = Exception.class)
-    public void runBatchAsync(MappingBatch batch) {
-        executeRunBatch(batch);
     }
 
     public void setProvider(String name) {
@@ -259,161 +251,6 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
 
     public String getCurrentProviderName() {
         return currentProvider.getProviderName();
-    }
-
-    private MappingBatchVO executeRunBatch(MappingBatch batch) {
-        batch.setStatus("processing");
-        batch.setStartedAt(LocalDateTime.now());
-        mappingBatchMapper.updateById(batch);
-
-        try {
-            // Collect mapping records for this batch
-            LambdaQueryWrapper<MappingRecord> recordWrapper = Wrappers.lambdaQuery();
-            recordWrapper.eq(MappingRecord::getBatchId, batch.getId());
-            List<MappingRecord> records = mappingRecordMapper.selectList(recordWrapper);
-
-            if (records.isEmpty()) {
-                batch.setStatus("completed");
-                batch.setCompletedAt(LocalDateTime.now());
-                mappingBatchMapper.updateById(batch);
-                log.info("Batch {} has no records to match", batch.getId());
-                return MappingBatchVO.fromEntity(batch);
-            }
-
-            // Collect knowledge points
-            LambdaQueryWrapper<KnowledgePoint> kpWrapper = Wrappers.lambdaQuery();
-            if (StringUtils.hasText(batch.getCourseFilter())) {
-                kpWrapper.eq(KnowledgePoint::getCourse, batch.getCourseFilter());
-            }
-            List<KnowledgePoint> knowledgePoints = knowledgePointMapper.selectList(kpWrapper);
-
-            log.info("Batch {}: collected {} resources and {} knowledge points", batch.getId(),records.size(), knowledgePoints.size());
-
-            if (knowledgePoints.isEmpty()) {
-                log.warn("Batch {}: no knowledge points found, cannot perform AI matching", batch.getId());
-                batch.setStatus("failed");
-                batch.setCompletedAt(LocalDateTime.now());
-                mappingBatchMapper.updateById(batch);
-                return MappingBatchVO.fromEntity(batch);
-            }
-
-            // Build AI request
-            List<ResourceInfo> resourceInfos = new ArrayList<>();
-            for (int i = 0; i < records.size(); i++) {
-                MappingRecord r = records.get(i);
-                resourceInfos.add(new ResourceInfo(
-                        i, r.getResourceId(), r.getResourceTitle(), r.getResourceType(),
-                        r.getCourseName(), r.getChapterName(), ""
-                ));
-            }
-
-            List<KnowledgePointInfo> kpInfos = new ArrayList<>();
-            for (int i = 0; i < knowledgePoints.size(); i++) {
-                KnowledgePoint kp = knowledgePoints.get(i);
-                kpInfos.add(new KnowledgePointInfo(
-                        i, kp.getId(), kp.getName(),
-                        kp.getCourse(), kp.getChapter(), kp.getDescription()
-                ));
-            }
-
-            ResourceMatchRequest aiRequest = new ResourceMatchRequest(
-                    resourceInfos, kpInfos, 3
-            );
-
-            log.info("Batch {}: calling AI provider '{}' for matching", batch.getId(),currentProvider.getProviderName());
-            List<ResourceMatchResponse> responses = currentProvider.match(aiRequest);
-            log.info("Batch {}: AI matching returned {} resource match responses", batch.getId(),responses.size());
-
-            int matchedCount = 0;
-            int failedCount = 0;
-
-            for (ResourceMatchResponse resp : responses) {
-                if (resp.resourceIndex() < 0 || resp.resourceIndex() >= records.size()) {
-                    continue;
-                }
-
-                MappingRecord record = records.get(resp.resourceIndex());
-                List<KnowledgePointMatch> matches = resp.matches();
-
-                if (matches.isEmpty()) {
-                    failedCount++;
-                    continue;
-                }
-
-                // Determine top confidence
-                String topConfidence = resolveTopConfidence(matches);
-
-                record.setConfidenceLevel(topConfidence);
-                matchedCount++;
-
-                // Create candidates
-                for (KnowledgePointMatch match : matches) {
-                    String confidence = match.confidence() != null ? match.confidence() : "low";
-                    String kpName = "";
-                    Long kpId = null;
-                    if (match.knowledgePointIndex() >= 0 && match.knowledgePointIndex() < knowledgePoints.size()) {
-                        KnowledgePoint kp = knowledgePoints.get(match.knowledgePointIndex());
-                        kpName = kp.getName();
-                        kpId = kp.getId();
-                    }
-
-                    MappingCandidate candidate = MappingCandidate.builder()
-                            .mappingRecordId(record.getId())
-                            .knowledgePointId(kpId != null ? kpId : 0L)
-                            .knowledgePointName(kpName)
-                            .confidenceLevel(confidence)
-                            .matchedBy("ai")
-                            .note(match.reasoning() != null ? match.reasoning() : "")
-                            .deleted(0)
-                            .build();
-                    mappingCandidateMapper.insert(candidate);
-
-                    // Auto-select the first high-confidence match
-                    if (record.getSelectedCandidateId() == null && "high".equals(confidence)) {
-                        record.setSelectedCandidateId(candidate.getId());
-                        record.setPrimaryKnowledgePointId(kpId);
-                    }
-                }
-
-                // Fallback: select first candidate if none selected
-                if (record.getSelectedCandidateId() == null && matches.size() > 0) {
-                    LambdaQueryWrapper<MappingCandidate> cw = Wrappers.lambdaQuery();
-                    cw.eq(MappingCandidate::getMappingRecordId, record.getId())
-                      .orderByAsc(MappingCandidate::getId);
-                    List<MappingCandidate> candidates = mappingCandidateMapper.selectList(cw);
-                    if (!candidates.isEmpty()) {
-                        record.setSelectedCandidateId(candidates.get(0).getId());
-                        record.setPrimaryKnowledgePointId(candidates.get(0).getKnowledgePointId());
-                    }
-                }
-
-                mappingRecordMapper.updateById(record);
-            }
-
-            // Mark records not returned by AI as failed
-            Set<Integer> matchedIndices = responses.stream()
-                    .map(ResourceMatchResponse::resourceIndex)
-                    .collect(Collectors.toSet());
-            for (int i = 0; i < records.size(); i++) {
-                if (!matchedIndices.contains(i)) {
-                    failedCount++;
-                }
-            }
-
-            batch.setMatchedCount(matchedCount);
-            batch.setFailedCount(failedCount);
-            batch.setStatus("completed");
-            batch.setCompletedAt(LocalDateTime.now());
-            mappingBatchMapper.updateById(batch);
-
-        } catch (Exception ex) {
-            log.error("Batch AI matching failed: {}", ex.getMessage(), ex);
-            batch.setStatus("failed");
-            batch.setCompletedAt(LocalDateTime.now());
-            mappingBatchMapper.updateById(batch);
-        }
-
-        return MappingBatchVO.fromEntity(batch);
     }
 
     @Override
@@ -682,16 +519,6 @@ public class MappingServiceImpl extends ServiceImpl<MappingRecordMapper, Mapping
         if ("low".equals(record.getConfidenceLevel())) return "manual-review";
         if (record.getSelectedCandidateId() != null) return "matched";
         return "pending";
-    }
-
-    private String resolveTopConfidence(List<KnowledgePointMatch> matches) {
-        for (KnowledgePointMatch m : matches) {
-            if ("high".equals(m.confidence())) return "high";
-        }
-        for (KnowledgePointMatch m : matches) {
-            if ("medium".equals(m.confidence())) return "medium";
-        }
-        return "low";
     }
 
     private List<SelectOption> buildSelectOptions(Set<String> values, String allLabel) {
