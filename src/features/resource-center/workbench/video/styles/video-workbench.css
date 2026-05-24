@@ -23,6 +23,12 @@
   align-content: start;
 }
 
+.video-management__copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .video-management__heading p {
   margin: 0;
   color: var(--video-soft);

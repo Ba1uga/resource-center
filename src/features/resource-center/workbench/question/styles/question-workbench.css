@@ -22,8 +22,9 @@
 }
 
 .question-management__head {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .question-management__editor-copy p,

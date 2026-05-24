@@ -27,9 +27,16 @@
 }
 
 .mapping-management__copy {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
+}
+
+.mapping-management__batch-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .mapping-management__copy h2 {
@@ -483,4 +490,164 @@
   .mapping-management-table__review-button {
     width: 100%;
   }
+}
+
+/* ===== Mount Task Progress ===== */
+
+.mount-task-progress {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: oklch(0.98 0 0);
+  border: 1px solid oklch(0.9 0 0);
+  margin-bottom: 16px;
+}
+
+.mount-task-progress.is-success {
+  border-color: oklch(0.6 0.15 140);
+  background: oklch(0.97 0.02 140);
+}
+
+.mount-task-progress.is-error {
+  border-color: oklch(0.55 0.2 25);
+  background: oklch(0.97 0.02 25);
+}
+
+.mount-task-progress__bar {
+  height: 6px;
+  background: oklch(0.9 0 0);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.mount-task-progress__track {
+  height: 100%;
+  border-radius: 3px;
+  background: oklch(0.55 0.15 255);
+  transition: width 0.4s ease;
+}
+
+.mount-task-progress__track.is-success {
+  background: oklch(0.6 0.15 140);
+}
+
+.mount-task-progress__track.is-error {
+  background: oklch(0.55 0.2 25);
+}
+
+.mount-task-progress__track--indeterminate {
+  width: 30% !important;
+  animation: mount-progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes mount-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.mount-task-progress__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.mount-task-progress__label {
+  font-weight: 600;
+  color: oklch(0.3 0 0);
+}
+
+.mount-task-progress__detail {
+  color: oklch(0.5 0 0);
+  flex: 1;
+}
+
+.mount-task-progress__percent {
+  font-variant-numeric: tabular-nums;
+  color: oklch(0.4 0 0);
+  font-weight: 600;
+}
+
+.mount-task-progress__error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: oklch(0.5 0.15 25);
+  padding: 6px 10px;
+  background: oklch(0.95 0.03 25);
+  border-radius: 4px;
+}
+
+/* ===== Mount Preview in Review Drawer ===== */
+
+.mapping-management__mount-preview {
+  border-top: 1px solid oklch(0.9 0 0);
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.mapping-management__mount-preview summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: oklch(0.35 0 0);
+  margin-bottom: 12px;
+}
+
+.mapping-management__mount-decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapping-management__mount-decision {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: oklch(0.98 0 0);
+  border: 1px solid oklch(0.92 0 0);
+  font-size: 13px;
+}
+
+.mapping-management__mount-decision__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.mapping-management__mount-decision__name {
+  font-weight: 600;
+  color: oklch(0.25 0 0);
+}
+
+.mapping-management__mount-decision__score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mapping-management__mount-decision__score.is-high {
+  color: oklch(0.55 0.15 140);
+}
+
+.mapping-management__mount-decision__score.is-medium {
+  color: oklch(0.6 0.12 70);
+}
+
+.mapping-management__mount-decision__score.is-low {
+  color: oklch(0.5 0.12 25);
+}
+
+.mapping-management__mount-decision__meta {
+  color: oklch(0.5 0 0);
+  font-size: 12px;
+}
+
+.mapping-management__mount-decision__evidence {
+  margin-top: 6px;
+  font-size: 12px;
+  color: oklch(0.45 0 0);
+  padding: 6px 8px;
+  background: oklch(0.96 0 0);
+  border-radius: 4px;
+  border-left: 3px solid oklch(0.7 0.12 255);
 }
